@@ -1,0 +1,191 @@
+# -*- coding: utf-8 -*-
+import uuid
+from itertools import permutations
+
+from django.db import models
+from django.contrib.auth import models as auth_models
+from django.contrib.auth.models import AbstractUser, UserManager as BaseUserManager
+
+# from corelib.memcache import mc, cache
+from corelib.props import PropsMixin
+from corelib.weibo import Weibo
+
+from user.consts import MC_USER_KEY, EMOJI_LIST
+
+
+class UserManager(BaseUserManager):
+
+    def _create_user(self, username, email, password, **extra_fields):
+        user = self.model(
+            nickname=extra_fields['nickname'],
+            username=username,
+            email=BaseUserManager.normalize_email(email),
+        )
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def add_user(self, nickname, gender=0, mobile="", version="", platform=""):
+        try:
+            name = str(uuid.uuid4())[:30]
+            password = name
+            email = "%s@%s.com" % (name, name)
+            user = self._create_user(username=name, email=email, password=password, nickname=nickname)
+            user.mobile = mobile
+            user.gender = gender
+            user.platform = platform
+            user.save()
+            return user
+        except Exception as e:
+            return None
+
+    def filter_nickname(self, nickname):
+        return super(UserManager, self).get_queryset().filter(nickname=nickname).first()
+
+    # @cache(MC_USER_KEY % '{id}')
+    # def get(self, user_id):
+    #     return super(UserManager, self).get_queryset().filter(id=user_id).first()
+
+
+def rename_nickname(nickname):
+    """昵称重名后的处理函数,50个emoji选index个的组合"""
+    user = User.objects.filter_nickname(nickname=nickname)
+    if not user:
+        return nickname
+
+    for i in range(50):
+        for e in permutations(EMOJI_LIST, i + 1):
+            e_str = "".join(e)
+            new_nickname = "%s%s" % (nickname, e_str)
+            user = User.objects.filter_nickname(nickname=new_nickname)
+            if not user:
+                return new_nickname
+
+
+def create_third_user(third_id, third_name, nickname, avatar, gender, mobile, platform, version):
+    nickname = nickname.replace(" ", "").replace("#", "").replace("@", "")
+    has_samename_user = User.objects.filter_nickname(nickname=nickname) is not None
+    if has_samename_user:
+        nickname = rename_nickname(nickname)
+
+    user = User.objects.add_user(nickname=nickname, gender=gender, mobile=mobile, platform=platform, version=version)
+    ThirdUser.objects.create(user_id=user.id, third_id=third_id, third_name=third_name)
+    return user
+
+
+class User(AbstractUser, PropsMixin):
+    nickname = models.CharField(max_length=30)
+    mobile = models.CharField(max_length=20, default="")
+    avatar = models.CharField(max_length=20, default="")
+    gender = models.SmallIntegerField(default=0)
+    intro = models.CharField(max_length=100, default="")
+    country = models.CharField(max_length=20, default="")
+    platform = models.SmallIntegerField(default=0)
+    version = models.CharField(max_length=10, default="")
+
+    objects = UserManager()
+
+    class Meta:
+        db_table = "user"
+        unique_together = ('nickname',)
+        verbose_name = u'用户'
+        verbose_name_plural = u'用户列表'
+
+    def __getattr__(self, attr):
+        try:
+            return object.__getattr__(self, attr)
+        except AttributeError:
+            return ""
+
+    def __str__(self):
+        return "<User(%s, %s)>" % (self.id, self.nickname)
+
+    __repr__ = __str__
+
+    @property
+    def _props_db_key(self):
+        return "db:user:%s" % self.id
+
+    def save(self, *args, **kwargs):
+        # mc.delete(MC_USER_KEY % self.id)
+        super(User, self).save(*args, **kwargs)
+
+    @property
+    def avatar_url(self):
+        _avatar = "default_avatar"
+        if self.avatar:
+            _avatar = self.avatar
+        else:
+            avatar_url = self.get_props_item("third_user_avatar", "")
+            if avatar_url:
+                return avatar_url
+        return "http://img2.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % _avatar
+
+    @property
+    def disable_login(self):
+        return self.id in list(BanUser.objects.values_list("user_id", flat=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "nickname": self.nickname,
+            "email": self.email,
+            "gender": self.gender,
+            "avatar": self.avatar,
+            "intro": self.intro or '',
+            "mobile": self.mobile,
+        }
+
+    def get_say_account(self):
+        return (11000000 + self.id)
+
+    @property
+    def say_id(self):
+        return self.get_say_account()
+
+    # @property
+    # def livemedia_text(self):
+    #     from livemedia.models import Channel, ChannelMember
+    #     member = ChannelMember.objects.filter(user_id=self.id).first()
+    #     if not member:
+    #         return ""
+    #
+    #     channel = Channel.get_channel(channel_id=member.channel_id)
+    #     duration_time = channel.duration_time
+    #     if channel:
+    #         return "正在视频party, %s" % duration_time
+    #     return ""
+    #
+    # def gift_count(self):
+    #     return redis.get(REDIS_GIFT_COUNT % self.id) or 0
+
+    def basic_info(self):
+        return {
+            "id": self.id,
+            "nickname": self.nickname,
+            "avatar_url": self.avatar_url,
+            "gender": self.gender,
+            "intro": self.intro or ""
+        }
+
+auth_models.User = User
+
+
+class ThirdUser(models.Model):
+    user_id = models.IntegerField(default=0)
+    third_id = models.CharField(max_length=30)
+    third_name = models.CharField(max_length=20)
+
+    class Meta:
+        db_table = "third_user"
+
+
+class BanUser(models.Model):
+    user_id = models.IntegerField()
+    desc = models.CharField(max_length=200)
+    date = models.DateTimeField(auto_now_add=True)
+    second = models.IntegerField()
+
+    class Meta:
+        db_table = "ban_user"

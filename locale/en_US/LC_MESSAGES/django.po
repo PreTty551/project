@@ -1,0 +1,54 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-03-22 21:39+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: corelib/errors.py:31
+msgid "未登录"
+msgstr ""
+
+#: corelib/errors.py:32
+msgid "请求验证码错误"
+msgstr ""
+
+#: corelib/errors.py:33
+msgid "验证码不正确，请重新输入"
+msgstr ""
+
+#: corelib/errors.py:34
+msgid "昵称不可用"
+msgstr ""
+
+#: corelib/errors.py:35
+msgid "无效的手机号"
+msgstr ""
+
+#: corelib/errors.py:36
+msgid "发送验证码失败"
+msgstr ""
+
+#: corelib/errors.py:37
+msgid "微信登录失败"
+msgstr ""
+
+#: corelib/errors.py:38
+msgid "微博登录失败"
+msgstr ""
+
+#: corelib/errors.py:39
+msgid "账号已被封禁, 禁止登录"
+msgstr ""
