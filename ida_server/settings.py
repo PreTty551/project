@@ -134,13 +134,19 @@ TESTING = True
 AUTH_USER_MODEL = 'user.User'
 
 # 极光短信
-JSMS_APP_KEY = "0503fd95fae12affa7d7b087"
-JSMS_MASTER_SECRET = "3af292e6f3300c5f7ce73a22"
+JSMS_APP_KEY = ""
+JSMS_MASTER_SECRET = ""
 
 # 微博
-WEIBO_CLIENT_KEY = "843938513"
-WEIBO_CLIENT_SECRET = "ba55b45fe1d6bc15852ca56b464732b5"
+WEIBO_CLIENT_KEY = ""
+WEIBO_CLIENT_SECRET = ""
 
 # Agora
-AGORA_KEY = "4bab5781320e4706950a5e321a4d3b63"
-AGORA_SECRET = "b815d5681a63478bab1f169906e1b64c"
+AGORA_KEY = ""
+AGORA_SECRET = ""
+
+
+try:
+    from .local_settings import *
+except ImportError:
+    pass
