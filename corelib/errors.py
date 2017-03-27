@@ -37,3 +37,5 @@ class LoginError(BaseError):
     WX_LOGIN = ErrorCodeField(10007, ugettext("微信登录失败"))
     WB_LOGIN = ErrorCodeField(10008, ugettext("微博登录失败"))
     DISABLE_LOGIN = ErrorCodeField(10009, ugettext("账号已被封禁, 禁止登录"))
+    BAND_ERROR = ErrorCodeField(10010, ugettext("绑定失败"))
+    MOBILE_ALREADY_USED = ErrorCodeField(10011, ugettext("手机号已使用，请重新输入"))

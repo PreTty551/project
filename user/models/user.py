@@ -173,7 +173,7 @@ auth_models.User = User
 
 
 class ThirdUser(models.Model):
-    user_id = models.IntegerField(default=0)
+    mobile = models.CharField(max_length=20, db_index=True)
     third_id = models.CharField(max_length=30)
     third_name = models.CharField(max_length=20)
 

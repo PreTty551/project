@@ -1,21 +1,8 @@
 # -*- coding: utf-8 -*-
 import json
 
-import redis as redis_py
-
 from django.conf import settings
-
-
-redis_ip = settings.REDIS_CONFIG['default']['HOST']
-redis_port = settings.REDIS_CONFIG['default']['PORT']
-redis_db = settings.REDIS_CONFIG['default']['DB']
-
-if settings.TESTING:
-    redis_db = 1
-
-pool = redis_py.ConnectionPool(host=redis_ip, port=redis_port, db=redis_db)
-saydb = redis_py.Redis(connection_pool=pool)
-
+from corelib.redis import redis
 
 
 class PropsMixin(object):
@@ -28,10 +15,10 @@ class PropsMixin(object):
         raise Exception("%s instance not property '_props_db_key'." % self.__class__)
 
     def _set_props(self, props):
-        saydb.hmset(self._props_db_key, props)
+        redis.hmset(self._props_db_key, props)
 
     def _get_props(self):
-        return saydb.hgetall(self._props_db_key)
+        return redis.hgetall(self._props_db_key)
 
     get_props = _get_props
     set_props = _set_props
@@ -54,10 +41,10 @@ class PropsMixin(object):
         return default
 
     def delete_props_item(self, key):
-        saydb.hdel(self._props_db_key, key)
+        redis.hdel(self._props_db_key, key)
 
     def incr_props_item(self, key, amount=1):
-        saydb.hincrby(self._props_db_key, key, amount)
+        redis.hincrby(self._props_db_key, key, amount)
 
     def delete(self):
-        saydb.delete(self._props_db_key)
+        redis.delete(self._props_db_key)
