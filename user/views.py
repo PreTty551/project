@@ -123,8 +123,13 @@ def wx_user_login(request):
     else:
         sex = int(user_info["sex"])
         gender = 0 if sex == 2 else sex
-        user_info["gender"] = gender
-        return JsonResponse({"user": user_info, "is_new_user": True})
+        temp_third_user = TempThirdUser.objects.create(third_id=user_info["openid"],
+                                                       third_name="wx",
+                                                       gender=gender,
+                                                       nickname=user_info["nickname"],
+                                                       avatar=user_info["avatar"])
+
+        return JsonResponse({"temp_third_id": temp_third_user.id, "is_new_user": True})
 
 
 def wb_user_login(request):
@@ -152,7 +157,12 @@ def wb_user_login(request):
         except:
             return JsonResponse(error=LoginError.WB_LOGIN)
 
-        return JsonResponse({"user": user_info, "is_new_user": True})
+        temp_third_user = TempThirdUser.objects.create(third_id=user_info["uid"],
+                                                       third_name="wb",
+                                                       gender=user_info["gender"],
+                                                       nickname=user_info["nickname"],
+                                                       avatar=user_info["avatar"])
+        return JsonResponse({"temp_third_id": temp_third_user.id, "is_new_user": True})
 
 
 def third_request_sms_code(request):
@@ -177,12 +187,8 @@ def third_request_sms_code(request):
 
 def third_verify_sms_code(request):
     """1男0女"""
-    third_id = request.POST.get("third_id")
-    third_name = request.POST.get("third_name")
-    nickname = request.POST.get("nickname")
-    gender = request.POST.get("gender")
+    temp_third_id = request.POST.get("temp_third_id")
     mobile = request.POST.get("mobile", "")
-    avatar = request.POST.get("avatar", "")
     platform = request.POST.get("platform", "")
     version = request.POST.get("version", "")
 
@@ -195,16 +201,17 @@ def third_verify_sms_code(request):
     if not is_success:
         return JsonResponse(error=error_dict)
 
-    user = create_third_user(third_id=third_id,
-                             third_name=third_name,
-                             nickname=nickname,
+    temp_user = TempThirdUser.objects.filter(id=temp_third_id).first()
+    user = create_third_user(third_id=temp_user.third_id,
+                             third_name=temp_user.third_name,
+                             nickname=temp_user.nickname,
                              avatar="",
-                             gender=gender,
+                             gender=temp_user.gender,
                              mobile=mobile,
                              platform=platform,
                              version=version)
 
-    user.set_props_item("third_user_avatar", avatar)
+    user.set_props_item("third_user_avatar", temp_user.avatar)
 
     # 异步队列更新头像
     queue = django_rq.get_queue('avatar')
@@ -216,7 +223,7 @@ def third_verify_sms_code(request):
     # 登录
     if _login(request, user):
         return JsonResponse({"user": user.basic_info()})
-    return JsonResponse(error=LoginError.NOT_LOGIN)
+    return JsonResponse(error=LoginError.REGISTER_ERROR)
 
 
 def _login(request, user):

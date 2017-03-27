@@ -191,7 +191,7 @@ auth_models.User = User
 
 
 class ThirdUser(models.Model):
-    mobile = models.CharField(max_length=20, db_index=True)
+    mobile = models.CharField(max_length=20, db_index=True, default=0)
     third_id = models.CharField(max_length=30)
     third_name = models.CharField(max_length=20)
 
@@ -207,3 +207,14 @@ class BanUser(models.Model):
 
     class Meta:
         db_table = "ban_user"
+
+
+class TempThirdUser(models.Model):
+    third_id = models.CharField(max_length=30)
+    third_name = models.CharField(max_length=20)
+    gender = models.SmallIntegerField(default=0)
+    nickname = models.CharField(max_length=20)
+    avatar = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = "temp_third_user"
