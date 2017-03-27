@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
 import datetime
+import django_rq
+
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseBadRequest, Http404, \
@@ -11,7 +14,7 @@ from corelib.weibo import Weibo
 from corelib.wechat import OAuth
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
-from user.models import User, ThirdUser, create_third_user, rename_nickname
+from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login
 
 
 @require_http_methods(["POST"])
@@ -99,7 +102,7 @@ def register(request):
     # 登录
     if _login(request, user):
         return JsonResponse({"user": user.basic_info()})
-    return JsonResponse(error=LoginError.NOT_LOGIN)
+    return JsonResponse(error=LoginError.REGISTER_ERROR)
 
 
 def wx_user_login(request):
@@ -108,7 +111,7 @@ def wx_user_login(request):
     if not user_info:
         return JsonResponse(error=LoginError.WX_LOGIN)
 
-    third_user = ThirdUser.objects.filter(third_id=third_id).exclude(mobile="").first()
+    third_user = ThirdUser.objects.filter(third_id=user_info["openid"]).first()
     if third_user:
         user = User.objects.filter(mobile=third_user.mobile).first()
         if user.disable_login:
@@ -118,6 +121,9 @@ def wx_user_login(request):
         if _login(request, user):
             return JsonResponse({"user": user.basic_info(), "is_new_user": False})
     else:
+        sex = int(user_info["sex"])
+        gender = 0 if sex == 2 else sex
+        user_info["gender"] = gender
         return JsonResponse({"user": user_info, "is_new_user": True})
 
 
@@ -128,7 +134,7 @@ def wb_user_login(request):
     if not (third_id and access_token):
         return HttpResponseBadRequest()
 
-    third_user = ThirdUser.objects.filter(third_id=third_id).exclude(mobile="").first()
+    third_user = ThirdUser.objects.filter(third_id=third_id).first()
     if third_user:
         user = User.objects.filter(mobile=third_user.mobile).first()
         if user.disable_login:
@@ -138,6 +144,14 @@ def wb_user_login(request):
         if _login(request, user):
             return JsonResponse({"user": user.basic_info(), "is_new_user": False})
     else:
+        try:
+            weibo = Weibo(access_token=access_token, uid=third_id)
+            user_info = weibo.get_user_info()
+            if not user_info:
+                return JsonResponse(error=LoginError.WB_LOGIN)
+        except:
+            return JsonResponse(error=LoginError.WB_LOGIN)
+
         return JsonResponse({"user": user_info, "is_new_user": True})
 
 
@@ -168,6 +182,7 @@ def third_verify_sms_code(request):
     nickname = request.POST.get("nickname")
     gender = request.POST.get("gender")
     mobile = request.POST.get("mobile", "")
+    avatar = request.POST.get("avatar", "")
     platform = request.POST.get("platform", "")
     version = request.POST.get("version", "")
 
@@ -188,6 +203,12 @@ def third_verify_sms_code(request):
                              mobile=mobile,
                              platform=platform,
                              version=version)
+
+    user.set_props_item("third_user_avatar", avatar)
+
+    # 异步队列更新头像
+    queue = django_rq.get_queue('avatar')
+    queue.enqueue(update_avatar_in_third_login, user.id)
 
     if user.disable_login:
         return JsonResponse(error=LoginError.DISABLE_LOGIN)

@@ -7,6 +7,7 @@ from django.contrib.auth import models as auth_models
 from django.contrib.auth.models import AbstractUser, UserManager as BaseUserManager
 
 # from corelib.memcache import mc, cache
+from corelib.qiniucloud import Qiniu
 from corelib.props import PropsMixin
 from corelib.weibo import Weibo
 
@@ -73,6 +74,19 @@ def create_third_user(third_id, third_name, nickname, avatar, gender, mobile, pl
     return user
 
 
+def update_avatar_in_third_login(user_id):
+    user = User.get(user_id)
+    avatar_url = user.get_props_item("third_user_avatar", "")
+    if not avatar_url:
+        return
+
+    qiniu = Qiniu()
+    avatar_name = qiniu.fetch(url=avatar_url)
+    if avatar_name:
+        user.avatar = avatar_name
+        user.save()
+
+
 class User(AbstractUser, PropsMixin):
     nickname = models.CharField(max_length=30)
     mobile = models.CharField(max_length=20, default="")
@@ -109,6 +123,10 @@ class User(AbstractUser, PropsMixin):
     def save(self, *args, **kwargs):
         # mc.delete(MC_USER_KEY % self.id)
         super(User, self).save(*args, **kwargs)
+
+    @classmethod
+    def get(cls, id):
+        return cls.objects.filter(id=id).first()
 
     @property
     def avatar_url(self):

@@ -29,8 +29,8 @@ class BaseError(metaclass=ErrorCodeMetaClass):
 
 class LoginError(BaseError):
     NOT_LOGIN = ErrorCodeField(10001, ugettext("未登录"))
-    REQUEST_SMS_CODE = ErrorCodeField(10002, ugettext("请求验证码错误"))
-    SMS_CODE_ERROR = ErrorCodeField(10003, ugettext("验证码不正确，请重新输入"))
+    REQUEST_SMS_CODE = ErrorCodeField(50013, ugettext("请求验证码错误"))
+    SMS_CODE_ERROR = ErrorCodeField(50014, ugettext("验证码不正确，请重新输入"))
     INVALID_NICKNAME = ErrorCodeField(10004, ugettext("昵称不可用"))
     INVALID_PHONE = ErrorCodeField(10005, ugettext("无效的手机号"))
     SEND_SMS_CODE = ErrorCodeField(10006, ugettext("发送验证码失败"))
@@ -39,3 +39,4 @@ class LoginError(BaseError):
     DISABLE_LOGIN = ErrorCodeField(10009, ugettext("账号已被封禁, 禁止登录"))
     BAND_ERROR = ErrorCodeField(10010, ugettext("绑定失败"))
     MOBILE_ALREADY_USED = ErrorCodeField(10011, ugettext("手机号已使用，请重新输入"))
+    REGISTER_ERROR = ErrorCodeField(10012, ugettext("注册失败"))
