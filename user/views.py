@@ -12,9 +12,10 @@ from corelib.http import JsonResponse
 from corelib.errors import LoginError
 from corelib.weibo import Weibo
 from corelib.wechat import OAuth
+from corelib.decorators import login_required_404
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
-from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login
+from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
 
 
 @require_http_methods(["POST"])
@@ -50,7 +51,7 @@ def verify_sms_code(request):
         user = User.objects.filter(mobile=mobile).first()
         user = authenticate(username=user.username, password=user.username)
         login(request, user)
-        return JsonResponse({"user": user.normal_info()})
+        return JsonResponse(user.normal_info())
 
     try:
         if is_universal_code:
@@ -69,7 +70,10 @@ def verify_sms_code(request):
                 login(request, user)
                 if request.user.disable_login:
                     return JsonResponse(error=LoginError.DISABLE_LOGIN)
-                return JsonResponse({"user": user.basic_info(), "is_new_user": False})
+
+                basic_info = user.basic_info()
+                basic_info["is_new_user"] = False
+                return JsonResponse(basic_info)
         return JsonResponse({"is_new_user": True})
     else:
         return JsonResponse(error=error_dict)
@@ -78,6 +82,7 @@ def verify_sms_code(request):
 @require_http_methods(["POST"])
 def register(request):
     nickname = request.POST.get("nickname", "")
+    mobile = request.POST.get("mobile", "")
     version = request.POST.get("version", "")
     platform = request.POST.get("platform", "")
 
@@ -101,7 +106,7 @@ def register(request):
 
     # 登录
     if _login(request, user):
-        return JsonResponse({"user": user.basic_info()})
+        return JsonResponse(user.basic_info())
     return JsonResponse(error=LoginError.REGISTER_ERROR)
 
 
@@ -119,7 +124,9 @@ def wx_user_login(request):
 
         # 登录
         if _login(request, user):
-            return JsonResponse({"user": user.basic_info(), "is_new_user": False})
+            basic_info = user.basic_info()
+            basic_info["is_new_user"] = False
+            return JsonResponse(basic_info)
     else:
         sex = int(user_info["sex"])
         gender = 0 if sex == 2 else sex
@@ -127,9 +134,10 @@ def wx_user_login(request):
                                                        third_name="wx",
                                                        gender=gender,
                                                        nickname=user_info["nickname"],
-                                                       avatar=user_info["avatar"])
+                                                       avatar=user_info["headimgurl"])
 
         return JsonResponse({"temp_third_id": temp_third_user.id, "is_new_user": True})
+    return JsonResponse(error=LoginError.WX_LOGIN)
 
 
 def wb_user_login(request):
@@ -147,7 +155,9 @@ def wb_user_login(request):
 
         # 登录
         if _login(request, user):
-            return JsonResponse({"user": user.basic_info(), "is_new_user": False})
+            basic_info = user.basic_info()
+            basic_info["is_new_user"] = False
+            return JsonResponse(basic_info)
     else:
         try:
             weibo = Weibo(access_token=access_token, uid=third_id)
@@ -242,6 +252,8 @@ def check_login(request):
 
     if request.user.disable_login:
         return JsonResponse(error=LoginError.DISABLE_LOGIN)
+
+    login(request, request.user)
     return JsonResponse({"user": request.user.basic_info()})
 
 
@@ -267,3 +279,85 @@ def binding_wechat(request):
     except:
         pass
     return JsonResponse()
+
+
+@login_required_404
+def add_user_contact(request):
+    contact = request.POST.get("contact")
+    contact_list = json.loads(contact)
+    UserContact.bulk_add(contact_list=contact_list, user_id=request.user.id)
+    user = User.get(request.user.id)
+    user.set_props_item("is_import_contact", 1)
+    return JsonResponseSuccess()
+
+
+@login_required_404
+def update_user_contact(request):
+    contact = request.POST.get("contact")
+    contact_list = json.loads(contact)
+    contact_list = UserContact.clean_contact(contact_list=contact_list)
+    my_all_contact = UserContact.get_all_contact(user_id=request.user.id)
+    new_contact_list = [o for o in contact_list  if o not in my_all_contact]
+    for uc in new_contact_list:
+        obj = UserContact.objects.filter(user_id=request.user.id, mobile=uc["mobile"]).first()
+        if obj:
+            obj.first_name = uc["first_name"]
+            obj.last_name = uc["last_name"]
+            obj.save()
+        else:
+            UserContact.objects.create(first_name=uc["first_name"],
+                                       last_name=uc["last_name"],
+                                       mobile=uc["mobile"],
+                                       user_id=request.user.id)
+    return JsonResponseSuccess()
+
+
+def profile(request):
+    apply_firends = Firend.get_apply_firends(user_id=request.user.id)
+    guess_know_user_ids = UserContact.guess_know_user_ids(user_id=request.user.id)
+    all_contact_list = UserContact.get_all_contact(user_id=request.user.id)
+
+
+def invite_firend(request):
+    firend_id = request.POST.get("firend_id")
+    is_success = Firend.invite(user_id=request.user.id, firend_id=firend_id)
+    if is_success:
+        message = "%s 邀请你加入好友" % request.user.nickname
+        LeanCloud.async_push(receive_id=firend_id, message=message)
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+def agree_firend(request):
+    firend_id = request.POST.get("firend_id")
+    is_success = Firend.agree(user_id=request.user.id, firend_id=firend_id)
+    if is_success:
+        message = "%s 同意了你的好友请求" % request.user.nickname
+        LeanCloud.async_push(receive_id=firend_id, message=message)
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+def ignore_firend(request):
+    id = request.POST.get("id")
+    firend = Firend.objects.filter(id=id).first()
+    if firend:
+        firend.ignore()
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+@login_required_404
+def recommend_users(request):
+    """新的查找页里面推荐用户接口"""
+    online_users = SuggestionUser.recommend_online_users(user_id=request.user.id)
+    results = {"users": online_users, "contact_list": [], "guess_know_users": [], "paginator": {}}
+
+    all_contact_list = UserContact.get_all_contact(user_id=request.user.id)
+    guess_know_user_ids = UserContact.guess_know_user_ids(user_id=request.user.id)
+    guess_know_users = [User.get(user_id).basic_info() for user_id in guess_know_user_ids \
+                                        if not FollowUser.is_followed(user_id, request.user.id)]
+    results["contact_list"] = all_contact_list
+    results["guess_know_users"] = guess_know_users
+
+    return JsonResponseSuccess(results)

@@ -17,6 +17,7 @@ from user.consts import MC_USER_KEY, EMOJI_LIST
 class UserManager(BaseUserManager):
 
     def _create_user(self, username, email, password, **extra_fields):
+        extra_fields.setdefault('nickname', '')
         user = self.model(
             nickname=extra_fields['nickname'],
             username=username,
@@ -128,6 +129,18 @@ class User(AbstractUser, PropsMixin):
     def get(cls, id):
         return cls.objects.filter(id=id).first()
 
+    def is_online(self):
+        last_login = timezone.now() - datetime.timedelta(hours=6)
+        return True if self.last_login >= last_login else False
+
+    @property
+    def localtime(self):
+        return timezone.localtime(self.last_login)
+
+    @property
+    def natural_time(self):
+        return time_format(self.localtime)
+
     @property
     def avatar_url(self):
         _avatar = "default_avatar"
@@ -214,7 +227,7 @@ class TempThirdUser(models.Model):
     third_name = models.CharField(max_length=20)
     gender = models.SmallIntegerField(default=0)
     nickname = models.CharField(max_length=20)
-    avatar = models.CharField(max_length=100)
+    avatar = models.CharField(max_length=255)
 
     class Meta:
         db_table = "temp_third_user"

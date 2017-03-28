@@ -4,8 +4,7 @@ import base64
 import json
 
 from django.conf import settings
-# from corelib.store import mc
-
+from corelib.redis import redis
 
 JSMS_ERROR_CODES = {
     50000: u"请求成功",
@@ -51,8 +50,7 @@ class JSMS(object):
 
     @property
     def msg_id(self):
-        return 149415
-        # return mc.get(MC_JSMS_MSG_ID_KEY % self.mobile)
+        return redis.get(MC_JSMS_MSG_ID_KEY % self.mobile) or ""
 
     def request_code(self):
         res = self._send(url=self.request_code_url,
@@ -64,8 +62,8 @@ class JSMS(object):
             return False, error_message
 
         msg_id = res.get("msg_id")
-        # if msg_id:
-        #     mc.set(MC_JSMS_MSG_ID_KEY % self.mobile, msg_id, self.expire)
+        if msg_id:
+            redis.set(MC_JSMS_MSG_ID_KEY % self.mobile, msg_id, self.expire)
 
         return True, None
 

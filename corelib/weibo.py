@@ -33,7 +33,7 @@ class Weibo(object):
         url = self.USER_INFO_URL % (self.API_HOST, self.access_token, self.uid)
         res = requests.get(url)
         obj = res.json() if res.text else {}
-        if not hasattr(obj, "error"):
+        if hasattr(obj, "error"):
             return
 
         return {

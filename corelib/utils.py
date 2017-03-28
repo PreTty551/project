@@ -8,6 +8,7 @@ def random_str(num=10):
     random_str = "".join(random.sample(num_list, num))
     return "%s%s" % (now_str, random_str)
 
+
 def dict_to_xml(arr):
     """ dict转xml """
     xml = ["<xml>"]
@@ -18,3 +19,9 @@ def dict_to_xml(arr):
             xml.append("<{0}><![CDATA[{1}]]></{0}>".format(k, v))
     xml.append("</xml>")
     return "".join(xml)
+
+
+def natural_time(localtime):
+    if localtime:
+        return arrow.get(localtime).humanize(locale='zh_CN')
+    return ''
