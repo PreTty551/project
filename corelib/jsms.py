@@ -50,7 +50,8 @@ class JSMS(object):
 
     @property
     def msg_id(self):
-        return redis.get(MC_JSMS_MSG_ID_KEY % self.mobile) or ""
+        msg_id = redis.get(MC_JSMS_MSG_ID_KEY % self.mobile)
+        return msg_id.decode() or ""
 
     def request_code(self):
         res = self._send(url=self.request_code_url,

@@ -35,16 +35,16 @@ class PropsMixin(object):
         self.props = props
 
     def get_props_item(self, key, default=""):
-        value = self.props.get(key)
+        value = self.props.get(key.encode(encoding="utf-8"))
         if value:
-            return json.loads(value)
+            return json.loads(value.decode())
         return default
 
     def delete_props_item(self, key):
-        redis.hdel(self._props_db_key, key)
+        redis.hdel(self._props_db_key, key.encode(encoding="utf-8"))
 
     def incr_props_item(self, key, amount=1):
-        redis.hincrby(self._props_db_key, key, amount)
+        redis.hincrby(self._props_db_key, key.encode(encoding="utf-8"), amount)
 
     def delete(self):
         redis.delete(self._props_db_key)

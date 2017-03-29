@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
+
 from django.http import HttpResponseBadRequest
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
 from corelib.decorators import login_required_404
-from corelib.utils import JsonResponseSuccess
 from corelib.agora import Agora
+from corelib.http import JsonResponse
 
 from livemedia.models import Channel, ChannelMember, GuessWord
-from user.models import User, FollowUser
-from log.models import ActiveUser
+from user.models import User, Firend
 
 
 @login_required_404
@@ -30,9 +30,9 @@ def livemedia_list(request):
                 basic_info["natural_time"] = user.natural_time
                 offline_firends.append(basic_info)
 
-    return JsonResponseSuccess({"channels": channels,
-                                "online_firends": online_firends,
-                                "offline_firends": offline_firends})
+    return JsonResponse({"channels": channels,
+                         "online_firends": online_firends,
+                         "offline_firends": offline_firends})
 
 
 @login_required_404
@@ -42,12 +42,12 @@ def create_channel(request):
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id.encode("utf8"))
 
-        user = ActiveUser.objects.filter(user_id=request.user.id).first()
+        user = User.get(id=request.user.id)
         if user:
-            user.date = timezone.now()
+            user.last_login = timezone.now()
             user.save()
 
-        return JsonResponseSuccess({"channel_id": channel.channel_id, "channel_key": channel_key})
+        return JsonResponse({"channel_id": channel.channel_id, "channel_key": channel_key})
 
 
 @require_http_methods(["POST"])
@@ -70,12 +70,12 @@ def join_channel(request):
         return HttpResponseBadRequest()
 
     if channel.is_lock:
-        return JsonResponseSuccess({"is_lock": True})
+        return JsonResponse({"is_lock": True})
 
     Channel.join_channel(channel_id=channel_id,
                          user_id=request.user.id,
                          in_channel_uids=in_channel_uids)
-    return JsonResponseSuccess({"channel_id": channel_id, "channel_key": channel_key})
+    return JsonResponse({"channel_id": channel_id, "channel_key": channel_key})
 
 
 @require_http_methods(["POST"])
@@ -85,7 +85,7 @@ def quit_channel(request):
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         channel.quit_channel(user_id=request.user.id)
-    return JsonResponseSuccess()
+    return JsonResponse()
 
 
 @require_http_methods(["POST"])
@@ -93,14 +93,14 @@ def quit_channel(request):
 def delete_channel(request):
     channel_id = request.POST.get("channel_id")
     Channel.delete_channel(channel_id=channel_id)
-    return JsonResponseSuccess()
+    return JsonResponse()
 
 
 @login_required_404
 def signaling_key(request):
     agora = Agora(user_id=request.user.id)
     signaling_key = agora.get_signaling_key()
-    return JsonResponseSuccess({"signaling_key": signaling_key})
+    return JsonResponse({"signaling_key": signaling_key})
 
 
 @require_http_methods(["POST"])
@@ -111,7 +111,7 @@ def user_online_callback(request):
     if not bool(is_online):
         ChannelMember.clear_channel(user_id=user_id)
 
-    return JsonResponseSuccess()
+    return JsonResponse()
 
 
 @require_http_methods(["POST"])
@@ -121,7 +121,7 @@ def lock_channel(request):
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         channel.lock()
-        return JsonResponseSuccess()
+        return JsonResponse()
     return HttpResponseBadRequest()
 
 
@@ -132,7 +132,7 @@ def unlock_channel(request):
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         channel.unlock()
-        return JsonResponseSuccess()
+        return JsonResponse()
     return HttpResponseBadRequest()
 
 
@@ -149,7 +149,7 @@ def guess_word(request):
 
     agora = Agora(user_id=request.user.id)
     agora.send_cannel_msg(channel_id=channel_id, **data)
-    return JsonResponseSuccess()
+    return JsonResponse()
 
 
 @require_http_methods(["POST"])
@@ -163,4 +163,4 @@ def close_guess_word(request):
 
     agora = Agora(user_id=request.user.id)
     agora.send_cannel_msg(channel_id=channel_id, **data)
-    return JsonResponseSuccess()
+    return JsonResponse()

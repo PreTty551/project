@@ -71,7 +71,7 @@ def create_third_user(third_id, third_name, nickname, avatar, gender, mobile, pl
         nickname = rename_nickname(nickname)
 
     user = User.objects.add_user(nickname=nickname, gender=gender, mobile=mobile, platform=platform, version=version)
-    ThirdUser.objects.create(user_id=user.id, third_id=third_id, third_name=third_name)
+    ThirdUser.objects.create(mobile=mobile, third_id=third_id, third_name=third_name)
     return user
 
 
@@ -113,7 +113,7 @@ class User(AbstractUser, PropsMixin):
             return ""
 
     def __str__(self):
-        return "<User(%s, %s)>" % (self.id, self.nickname)
+        return "<User(id=%s, nickname=%s)>" % (self.id, self.nickname)
 
     __repr__ = __str__
 

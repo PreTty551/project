@@ -198,6 +198,7 @@ def third_request_sms_code(request):
 def third_verify_sms_code(request):
     """1男0女"""
     temp_third_id = request.POST.get("temp_third_id")
+    code = request.POST.get("code")
     mobile = request.POST.get("mobile", "")
     platform = request.POST.get("platform", "")
     version = request.POST.get("version", "")
@@ -237,8 +238,8 @@ def third_verify_sms_code(request):
 
 
 def _login(request, user):
-    from live.models import ChannleMember
-    ChannleMember.objects.filter(user_id=user.id).delete()
+    from live.models import ChannelMember
+    ChannelMember.objects.filter(user_id=user.id).delete()
     user = authenticate(username=user.username, password=user.username)
     if user is not None:
         login(request, user)

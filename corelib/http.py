@@ -19,7 +19,6 @@ def JsonResponse(data={}, **kwargs):
 
         if isinstance(error_dict, dict):
             error_dict = list(error_dict.items())
-            print("error_dicterror_dicterror_dict", error_dict)
             response["error"] = {
                 "return_code": error_dict[0][0],
                 "return_msg": error_dict[0][1]
