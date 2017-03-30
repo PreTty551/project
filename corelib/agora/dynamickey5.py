@@ -9,6 +9,7 @@ from hashlib import sha1
 import ctypes
 import base64
 import struct
+import codecs
 
 # service type
 MEDIA_CHANNEL_SERVICE = 1
@@ -131,31 +132,33 @@ def generateDynamicKey(
         expiredTs,
         extra
     )
-    version = '{0:0>3}'.format(5)
+    version = '{0:0>3}'.format(5).encode()
     content = packUint16(servicetype) \
         + packString(signature)\
-        + packString(appID.decode('hex'))\
+        + packString(codecs.encode(appID.encode(), "hex_codec"))\
         + packUint32(unixTs) \
         + packUint32(randomInt) \
         + packUint32(expiredTs)\
         + packMap(extra)
-    return version + base64.b64encode(content)
+    return version + base64.b64encode(content.decode()).decode()
 
 
 def packUint16(x):
-    return struct.pack('<H', int(x))
+    return struct.pack('<H', int(x)).decode()
 
 
 def packUint32(x):
-    return struct.pack('<I', int(x))
+    return struct.pack('<I', int(x)).decode()
 
 
 def packInt32(x):
-    return struct.pack('<i', int(x))
+    return struct.pack('<i', int(x)).decode()
 
 
 def packString(string):
-    return packUint16(len(string)) + string
+    if isinstance(string, str):
+        string = string.encode()
+    return packUint16(len(string)).decode() + string
 
 
 def packMap(m):
@@ -177,12 +180,12 @@ def generateSignature(
         extra,
 ):
     content = packUint16(servicetype) \
-        + packString(appID.decode('hex'))\
+        + packString(codecs.encode(appID.encode(), "hex_codec"))\
         + packUint32(unixTs)  \
         + packInt32(randomInt)  \
         + packString(channelName) \
         + packUint32(uid)\
         + packUint32(expiredTs)\
         + packMap(extra)
-    signature = hmac.new(appCertificate.decode('hex'), content, sha1).hexdigest()
+    signature = hmac.new(codecs.encode(appCertificate.encode(), "hex_codec"), content, sha1).hexdigest()
     return signature.upper()

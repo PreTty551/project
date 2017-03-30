@@ -31,7 +31,7 @@ class Agora(object):
                                        int(time.time()),
                                        random.randint(100000000, 1000000000),
                                        self.user_id,
-                                       0)
+                                       0).decode()
 
     def get_signaling_key(self):
         return self._create_signaling_token()
@@ -44,7 +44,7 @@ class Agora(object):
         expired_time = int(time.mktime(t.timetuple()))
         _ = "%s%s%s%s" % (self.user_id, self.app_id, self.app_secret, expired_time)
         md5 = hashlib.md5()
-        md5.update(_)
+        md5.update(_.encode("utf8"))
         md5_str = md5.hexdigest()
         return "1:%s:%s:%s" % (self.app_id, expired_time, md5_str)
 
@@ -59,7 +59,7 @@ class Agora(object):
 
         keys = req.keys()
         keys.sort()
-        signstr = ''.join(k + unicode(req[k]).encode("utf8") for k in keys)
+        signstr = ''.join(k + req[k] for k in keys)
         signstr = signstr.lower()
         sign = hmac.new(self.app_secret, signstr, hashlib.sha1).hexdigest()
         req['_sign'] = sign
