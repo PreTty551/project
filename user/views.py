@@ -254,7 +254,8 @@ def check_login(request):
     if request.user.disable_login:
         return JsonResponse(error=LoginError.DISABLE_LOGIN)
 
-    login(request, request.user)
+    user = authenticate(username=request.user.username, password=request.user.username)
+    login(request, user)
     return JsonResponse(request.user.basic_info())
 
 
