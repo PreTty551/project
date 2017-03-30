@@ -65,6 +65,7 @@ class UserContact(models.Model):
 
     @classmethod
     def guess_know_user_ids(cls, user_id):
+        # 我所有的联系人
         all_mobile_list = list(cls.objects.filter(user_id=user_id).values_list("mobile", flat=True))
         user_mobile_ids = list(User.objects.filter(mobile__in=all_mobile_list).values_list("mobile", flat=True))
         all_mobile_list.extend(user_mobile_ids)
@@ -89,3 +90,30 @@ class UserContact(models.Model):
             "last_name": self.last_name,
             "mobile": self.mobile
         }
+
+
+def get_contact_in_say(owner_id):
+    all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
+    user_ids = list(User.objects.filter(mobile__in=all_mobile_list).values_list("user_id", flat=True))
+
+    result = []
+    for user_id in user_ids:
+        user = User.get(id=user_id)
+        basic_info = user.basic_info()
+        basic_info["firend_status"] = Firend.relation(user_id=owner_id, firend_id=user_id)
+        result.append(basic_info)
+    return result
+
+
+def get_contact_out_say(owner_id):
+    all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
+    mobile_ids = list(User.objects.filter(mobile__in=all_mobile_list).values_list("mobile", flat=True))
+
+    out_say_mobiles = set(mobile_ids) ^ set(all_mobile_list)
+    result = []
+    for mobile in out_say_mobiles:
+        user = User.objects.filter(mobile=mobile).first()
+        basic_info = user.basic_info()
+        basic_info["firend_status"] = Firend.relation(user_id=owner_id, firend_id=user_id)
+        result.append(basic_info)
+    return result
