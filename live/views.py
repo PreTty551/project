@@ -8,8 +8,8 @@ from corelib.decorators import login_required_404
 from corelib.agora import Agora
 from corelib.http import JsonResponse
 
-from livemedia.models import Channel, ChannelMember, GuessWord
-from user.models import User, Firend
+from live.models import Channel, ChannelMember, GuessWord
+from user.models import User, Firend, get_contact_in_say, two_degree_relation
 
 
 @login_required_404
@@ -30,9 +30,14 @@ def livemedia_list(request):
                 basic_info["natural_time"] = user.natural_time
                 offline_firends.append(basic_info)
 
+    two_degree_relation = two_degree_relation()
+
     return JsonResponse({"channels": channels,
                          "online_firends": online_firends,
-                         "offline_firends": offline_firends})
+                         "offline_firends": offline_firends,
+                         "contact_in_say": get_contact_in_say(),
+                         "contact_out_say": get_contact_out_say(),
+                         "two_degree_relation": two_degree_relation})
 
 
 @login_required_404
@@ -40,7 +45,7 @@ def create_channel(request):
     channel = Channel.create_channel(user_id=request.user.id)
     if channel:
         agora = Agora(user_id=request.user.id)
-        channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id.encode("utf8"))
+        channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
 
         user = User.get(id=request.user.id)
         if user:

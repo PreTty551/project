@@ -27,7 +27,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def add_user(self, nickname, gender=0, mobile="", version="", platform=""):
+    def add_user(self, nickname, gender=0, mobile="", version="", platform=0):
         try:
             name = str(uuid.uuid4())[:30]
             password = name
@@ -39,6 +39,7 @@ class UserManager(BaseUserManager):
             user.save()
             return user
         except Exception as e:
+            print(e)
             return None
 
     def filter_nickname(self, nickname):
@@ -66,9 +67,9 @@ def rename_nickname(nickname):
 
 def create_third_user(third_id, third_name, nickname, avatar, gender, mobile, platform, version):
     nickname = nickname.replace(" ", "").replace("#", "").replace("@", "")
-    has_samename_user = User.objects.filter_nickname(nickname=nickname) is not None
-    if has_samename_user:
-        nickname = rename_nickname(nickname)
+    # has_samename_user = User.objects.filter_nickname(nickname=nickname) is not None
+    # if has_samename_user:
+    #     nickname = rename_nickname(nickname)
 
     user = User.objects.add_user(nickname=nickname, gender=gender, mobile=mobile, platform=platform, version=version)
     ThirdUser.objects.create(mobile=mobile, third_id=third_id, third_name=third_name)

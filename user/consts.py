@@ -1,6 +1,7 @@
 from enum import Enum
 
 Gender = Enum("Gender", ("male", "female"))
+FirendEnum = Enum("FirendEnum", ("invite", "be_invite", "firend", "ignore"))
 
 # special mobile
 APPSTORE_MOBILE = "12345678901"
@@ -15,10 +16,3 @@ EMOJI_LIST = [u"😀", u"😁", u"😃", u"😄", u"😇", u"😉", u"😊", u"�
 
 # memcache keys
 MC_USER_KEY = "user:%s"
-
-
-# 好友
-F_INVITE = 1
-F_BE_INVITE = 2
-F_FIREND = 3
-F_IGNORE = 4

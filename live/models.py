@@ -50,10 +50,10 @@ class Channel(models.Model):
         if channel:
             ChannelMember.objects.filter(channel_id=channel_id).delete()
 
-            from answer.utils import send_msg
-            token = "78c21f9d53c94182867abe411804ba46ec353b7a7426df2f870a1437e9c79fe3"
-            msg = u"房间%s被清除" % channel_id
-            send_msg(msg, token)
+            # from answer.utils import send_msg
+            # token = "78c21f9d53c94182867abe411804ba46ec353b7a7426df2f870a1437e9c79fe3"
+            # msg = u"房间%s被清除" % channel_id
+            # send_msg(msg, token)
 
     @classmethod
     def join_channel(cls, channel_id, user_id, in_channel_uids=[]):
@@ -191,7 +191,7 @@ def add_member_after(sender, created, instance, **kwargs):
 @receiver(post_delete, sender=ChannelMember)
 def delete_member_after(sender, instance, **kwargs):
     LiveMediaLog.objects.filter(user_id=instance.user_id, channel_id=instance.channel_id, status=1) \
-                        .update({"end_date": timezone.now(), "status": 2})
+                        .update(end_date=timezone.now(), status=2)
     channel = Channel.get_channel(channel_id=instance.channel_id)
     if channel:
         channel.member_count = F("member_count") - 1
