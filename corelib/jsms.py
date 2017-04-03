@@ -32,6 +32,7 @@ class JSMS(object):
     master_secret = settings.JSMS_MASTER_SECRET
     request_code_url = "https://api.sms.jpush.cn/v1/codes"
     valid_code_url = "https://api.sms.jpush.cn/v1/codes/%s/valid"
+    request_voice_code_url = "https://api.sms.jpush.cn/v1/voice_codes"
     expire = 60 * 60
 
     def __init__(self, mobile, temp_id=10776):
@@ -58,6 +59,21 @@ class JSMS(object):
                          mobile=self.mobile,
                          temp_id=self.temp_id)
 
+        if res.get("error"):
+            error_message = self.error_message(res.get("error")["code"], u"请求验证码失败")
+            return False, error_message
+
+        msg_id = res.get("msg_id")
+        if msg_id:
+            redis.set(MC_JSMS_MSG_ID_KEY % self.mobile, msg_id, self.expire)
+
+        return True, None
+
+    def request_voice_code(self):
+        res = self._send(url=self.request_voice_code_url,
+                         mobile=self.mobile,
+                         temp_id=self.temp_id)
+        print(res)
         if res.get("error"):
             error_message = self.error_message(res.get("error")["code"], u"请求验证码失败")
             return False, error_message

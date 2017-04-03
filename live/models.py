@@ -21,13 +21,14 @@ class Channel(models.Model):
     channel_id = models.CharField(unique=True, max_length=50)
     member_count = models.SmallIntegerField(default=0)
     channel_type = models.SmallIntegerField(default=0)
+    invite_user_id = models.IntegerField(default=0)
     date = models.DateTimeField('date', auto_now_add=True)
     pid = models.IntegerField(default=0)
 
     @classmethod
     @transaction.atomic()
-    def _add(cls, channel_id, user_id):
-        obj = cls.objects.create(channel_id=channel_id)
+    def _add(cls, channel_id, user_id, invite_user_id=0):
+        obj = cls.objects.create(channel_id=channel_id, invite_user_id=invite_user_id)
         if obj:
             ChannelMember.add(channel_id=channel_id, user_id=user_id)
             ChannelMember.objects.exclude(channel_id=obj.channel_id).filter(user_id=user_id).delete()
@@ -42,6 +43,11 @@ class Channel(models.Model):
     @classmethod
     def get_channel(cls, channel_id):
         return cls.objects.filter(channel_id=channel_id).first()
+
+    @classmethod
+    def invite_channel(cls, user_id, invite_user_id):
+        channel_id = unique_channel_id(user_id=user_id)
+        return cls._add(channel_id=channel_id, user_id=user_id, invite_user_id=invite_user_id)
 
     @classmethod
     @transaction.atomic()
@@ -75,6 +81,9 @@ class Channel(models.Model):
     def unlock(self):
         self.channel_type = 0
         self.save()
+
+    def one_to_one(self):
+        pass
 
     def quit_channel(self, user_id):
         ChannelMember.objects.filter(user_id=user_id, channel_id=self.channel_id).delete()

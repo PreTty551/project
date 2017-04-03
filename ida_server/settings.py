@@ -39,7 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_rq',
     'user',
-    'live'
+    'live',
+    'gift',
+    'wallet'
 
 ]
 
@@ -165,7 +167,7 @@ LOGGING = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'
 
 TIME_ZONE = 'UTC'
 
@@ -196,6 +198,8 @@ AUTH_USER_MODEL = 'user.User'
 # 极光短信
 JSMS_APP_KEY = ""
 JSMS_MASTER_SECRET = ""
+JSMS_APP_KEY = "0503fd95fae12affa7d7b087"
+JSMS_MASTER_SECRET = "3af292e6f3300c5f7ce73a22"
 
 # 微博
 WEIBO_CLIENT_KEY = ""
@@ -205,6 +209,8 @@ WEIBO_CLIENT_SECRET = ""
 AGORA_KEY = ""
 AGORA_SECRET = ""
 
+RONGCLOUD_APP_KEY = 'cpj2xarljbr7n'
+RONGCLOUD_APP_SECRET = '8aVVrPbUmwl0k'
 
 try:
     from .local_settings import *

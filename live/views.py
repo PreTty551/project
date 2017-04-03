@@ -9,7 +9,7 @@ from corelib.agora import Agora
 from corelib.http import JsonResponse
 
 from live.models import Channel, ChannelMember, GuessWord
-from user.models import User, Firend, get_contact_in_say, two_degree_relation
+from user.models import User, Firend, get_contact_in_say, two_degree_relation, get_contact_out_say
 
 
 @login_required_404
@@ -30,19 +30,37 @@ def livemedia_list(request):
                 basic_info["natural_time"] = user.natural_time
                 offline_firends.append(basic_info)
 
-    two_degree_relation = two_degree_relation()
+    _two_degree_relation = two_degree_relation(user_id=request.user.id)
+    invited_channels = [channel.to_dict() for channel in Channel.objects.filter(user_id=request.user.id, invite_user_id__gt=0)]
 
     return JsonResponse({"channels": channels,
                          "online_firends": online_firends,
                          "offline_firends": offline_firends,
-                         "contact_in_say": get_contact_in_say(),
-                         "contact_out_say": get_contact_out_say(),
-                         "two_degree_relation": two_degree_relation})
+                         "contact_in_say": get_contact_in_say(owner_id=request.user.id),
+                         "contact_out_say": get_contact_out_say(owner_id=request.user.id),
+                         "two_degree_relation": _two_degree_relation,
+                         "invited_channels": invited_channels})
 
 
 @login_required_404
 def create_channel(request):
     channel = Channel.create_channel(user_id=request.user.id)
+    if channel:
+        agora = Agora(user_id=request.user.id)
+        channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
+
+        user = User.get(id=request.user.id)
+        if user:
+            user.last_login = timezone.now()
+            user.save()
+
+        return JsonResponse({"channel_id": channel.channel_id, "channel_key": channel_key})
+
+
+@login_required_404
+def invite_channel(request):
+    invite_user_id = request.POST.get("invite_user_id")
+    channel = Channel.invite_channel(user_id=request.user.id, invite_user_id=invite_user_id)
     if channel:
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)

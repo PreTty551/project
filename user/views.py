@@ -34,6 +34,21 @@ def request_sms_code(request):
         return JsonResponse(error=LoginError.REQUEST_SMS_CODE)
 
 
+def request_voice_code(request):
+    mobile = request.POST.get("mobile", "")
+    if not mobile:
+        return HttpResponseBadRequest()
+
+    try:
+        jsms = JSMS(mobile=mobile)
+        is_success, error_dict = jsms.request_voice_code()
+        if is_success:
+            return JsonResponse()
+        return JsonResponse(error=error_dict)
+    except Exception as e:
+        return JsonResponse(error=LoginError.REQUEST_SMS_CODE)
+
+
 @require_http_methods(["POST"])
 def verify_sms_code(request):
     code = request.POST.get('code', '')
@@ -349,17 +364,19 @@ def ignore_firend(request):
     return HttpResponseServerError()
 
 
-@login_required_404
-def recommend_users(request):
-    """新的查找页里面推荐用户接口"""
-    online_users = SuggestionUser.recommend_online_users(user_id=request.user.id)
-    results = {"users": online_users, "contact_list": [], "guess_know_users": [], "paginator": {}}
+def rong_token(request):
+    res = client.user_get_token(str(self.id), self.nickname, self.avatar_url)
+    self.rong_token = res['token']
+    self.save()
+    mc.delete(MC_USER_KEY % self.id)
+    return res['token']
 
-    all_contact_list = UserContact.get_all_contact(user_id=request.user.id)
-    guess_know_user_ids = UserContact.guess_know_user_ids(user_id=request.user.id)
-    guess_know_users = [User.get(user_id).basic_info() for user_id in guess_know_user_ids \
-                                        if not FollowUser.is_followed(user_id, request.user.id)]
-    results["contact_list"] = all_contact_list
-    results["guess_know_users"] = guess_know_users
 
-    return JsonResponseSuccess(results)
+def get_basic_user_info(request):
+    user_id = request.POST.get("user_id")
+    if user_id:
+        user = User.get(id=user_id)
+        if user:
+            return JsonResponse(user.basic_info())
+        return HttpResponseNotFound()
+    return HttpResponseBadRequest()

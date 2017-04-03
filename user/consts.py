@@ -16,3 +16,5 @@ EMOJI_LIST = [u"😀", u"😁", u"😃", u"😄", u"😇", u"😉", u"😊", u"�
 
 # memcache keys
 MC_USER_KEY = "user:%s"
+
+# 忽略类型

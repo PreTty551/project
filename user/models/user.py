@@ -157,6 +157,11 @@ class User(AbstractUser, PropsMixin):
     def disable_login(self):
         return self.id in list(BanUser.objects.values_list("user_id", flat=True))
 
+    def rong_token(self):
+        from corelib.rong import client
+        res = client.user_get_token(str(self.id), self.nickname, self.avatar_url)
+        return res['token']
+
     def to_dict(self):
         return {
             "id": self.id,

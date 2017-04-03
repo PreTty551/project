@@ -10,6 +10,6 @@ urlpatterns = [
     url(r'^user/login/wechat/$', views.wx_user_login, name='wx_user_login'),
     url(r'^user/check_login/$', views.check_login, name='check_login'),
     url(r'^user/third_login/sms_code/request/$', views.third_request_sms_code, name='third_request_sms_code'),
-    url(r'^user/third_login/sms_code/verify/$', views.third_verify_sms_code, name='third_verify_sms_code')
-
+    url(r'^user/third_login/sms_code/verify/$', views.third_verify_sms_code, name='third_verify_sms_code'),
+    url(r'^user/basic_info/$', views.get_basic_user_info, name='basic_user_info')
 ]
