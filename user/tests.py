@@ -2,7 +2,7 @@ import random
 
 from django.test import TestCase
 
-from user.models import User, Firend, two_degree_relation
+from user.models import User, Firend, InviteFirend, two_degree_relation
 
 
 class UsersTestCase(TestCase):
@@ -24,23 +24,23 @@ class UsersTestCase(TestCase):
             User.objects.add_user(nickname=user["nickname"], mobile=user["mobile"])
 
         for i in range(2, 5):
-            Firend.invite(user_id=1, firend_id=i)
-            Firend.agree(user_id=1, firend_id=i)
+            InviteFirend.add(user_id=1, invited_id=i)
+            InviteFirend.agree(user_id=1, invited_id=i)
 
-        Firend.invite(user_id=5, firend_id=2)
-        Firend.agree(user_id=5, firend_id=2)
+        InviteFirend.add(user_id=5, invited_id=2)
+        InviteFirend.agree(user_id=5, invited_id=2)
 
-        Firend.invite(user_id=6, firend_id=3)
-        Firend.agree(user_id=6, firend_id=3)
+        InviteFirend.add(user_id=6, invited_id=3)
+        InviteFirend.agree(user_id=6, invited_id=3)
 
-        Firend.invite(user_id=7, firend_id=1)
-        Firend.agree(user_id=7, firend_id=1)
+        InviteFirend.add(user_id=7, invited_id=1)
+        InviteFirend.agree(user_id=7, invited_id=1)
 
         f = Firend.objects.filter(user_id=7).first()
-        Firend.invite(user_id=7, firend_id=5)
-        Firend.agree(user_id=7, firend_id=5)
-        Firend.invite(user_id=7, firend_id=6)
-        Firend.agree(user_id=7, firend_id=6)
+        InviteFirend.add(user_id=7, invited_id=5)
+        InviteFirend.agree(user_id=7, invited_id=5)
+        InviteFirend.add(user_id=7, invited_id=6)
+        InviteFirend.agree(user_id=7, invited_id=6)
 
     def test_degree_firend(self):
         """
@@ -54,11 +54,11 @@ class UsersTestCase(TestCase):
 
         degree_user_list = two_degree_relation(7)
 
-        degree_user_list[0]["id"] == 2
-        degree_user_list[0]["mutual_firend"] == ['ida', 'ss']
+        assert degree_user_list[0]["id"] == 2
+        assert degree_user_list[0]["mutual_firend"] == ['ida', 'ss']
 
-        degree_user_list[0]["id"] == 3
-        degree_user_list[0]["mutual_firend"] == ['ida', 'gd']
+        assert degree_user_list[1]["id"] == 3
+        assert degree_user_list[1]["mutual_firend"] == ['ida', 'gd']
 
-        degree_user_list[0]["id"] == 4
-        degree_user_list[0]["mutual_firend"] == ['ida']
+        assert degree_user_list[2]["id"] == 4
+        assert degree_user_list[2]["mutual_firend"] == ['ida']

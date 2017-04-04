@@ -17,7 +17,8 @@ from corelib.decorators import login_required_404
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
 
-from user.models import UserContact, ContactError
+from user.models import UserContact, InviteFirend, Firend, ContactError
+
 
 @require_http_methods(["POST"])
 def request_sms_code(request):
@@ -305,35 +306,6 @@ def profile(request):
     all_contact_list = UserContact.get_all_contact(user_id=request.user.id)
 
 
-def invite_firend(request):
-    firend_id = request.POST.get("firend_id")
-    is_success = Firend.invite(user_id=request.user.id, firend_id=firend_id)
-    if is_success:
-        # message = "%s 邀请你加入好友" % request.user.nickname
-        # LeanCloud.async_push(receive_id=firend_id, message=message)
-        return JsonResponse()
-    return HttpResponseServerError()
-
-
-def agree_firend(request):
-    firend_id = request.POST.get("firend_id")
-    is_success = Firend.agree(user_id=request.user.id, firend_id=firend_id)
-    if is_success:
-        # message = "%s 同意了你的好友请求" % request.user.nickname
-        # LeanCloud.async_push(receive_id=firend_id, message=message)
-        return JsonResponse()
-    return HttpResponseServerError()
-
-
-def ignore_firend(request):
-    id = request.POST.get("id")
-    firend = Firend.objects.filter(id=id).first()
-    if firend:
-        firend.ignore()
-        return JsonResponse()
-    return HttpResponseServerError()
-
-
 def rong_token(request):
     res = client.user_get_token(str(self.id), self.nickname, self.avatar_url)
     self.rong_token = res['token']
@@ -398,3 +370,38 @@ def update_user_contact(request):
                                        mobile=uc["mobile"],
                                        user_id=request.user.id)
     return JsonResponse()
+
+
+def invite_firend(request):
+    invited_id = request.POST.get("invited_id")
+    is_success = InviteFirend.add(user_id=request.user.id, invited_id=invited_id)
+    if is_success:
+        # message = "%s 邀请你加入好友" % request.user.nickname
+        # LeanCloud.async_push(receive_id=invited_id, message=message)
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+def agree_firend(request):
+    invited_id = request.POST.get("invited_id")
+    is_success = InviteFirend.agree(user_id=request.user.id, invited_id=invited_id)
+    if is_success:
+        # message = "%s 同意了你的好友请求" % request.user.nickname
+        # LeanCloud.async_push(receive_id=invited_id, message=message)
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+def ignore(request):
+    user_id = request.POST.get("user_id")
+    ignore_type = request.POST.get("ignore_type")
+    ignore = Ignore.add(owner_id=request.user.id, user_id=user_id, ignore_type=ignore_type)
+    if ignore:
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+def get_firends(request):
+    firend_ids = Firend.get_firend_ids(user_id=request.user.id)
+    firend_list = [User.get(user_id=firend_id).to_dict() for firend_id in firend_ids]
+    return JsonResponse(firend_list)

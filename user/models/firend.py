@@ -5,22 +5,45 @@ from corelib.utils import natural_time
 from user.models import User
 
 
-class Firend(models.Model):
+class InviteFirend(models.Model):
     user_id = models.IntegerField()
-    firend_id = models.IntegerField()
-    status = models.SmallIntegerField()
+    invited_id = models.IntegerField()
+    status = models.SmallIntegerField(default=0)
     date = models.DateTimeField(auto_now_add=True)
 
     @classmethod
-    def invite(cls, user_id, firend_id):
-        return cls.objects.create(user_id=user_id, firend_id=firend_id)
+    def add(cls, user_id, invited_id):
+        return cls.objects.create(user_id=user_id, invited_id=invited_id)
 
     @classmethod
-    def agree(cls, user_id, firend_id):
-        return cls.objects.filter(user_id=firend_id, firend_id=user_id).update(status=1)
+    def agree(cls, user_id, invited_id):
+        cls.objects.filter(user_id=user_id, invited_id=invited_id).update(status=1)
+        Firend.add(user_id=user_id, firend_id=invited_id)
 
-    def get_apply_firends(cls, user_id):
-        return cls.objects.filter(firend_id=user_id)
+    @classmethod
+    def ignore(cls, id):
+        cls.objects.filter(id=id).update(status=2)
+
+    @classmethod
+    def count(cls, user_id):
+        return cls.objects.filter(invited_id=user_id).count()
+
+    @classmethod
+    def get_add_firend_request_list(cls, user_id):
+        return list(cls.objects.filter(firend_id=user_id, status=0).values_list("user_id", flat=True))
+
+
+class Firend(models.Model):
+    user_id = models.IntegerField()
+    firend_id = models.IntegerField()
+    date = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    @transaction.atomic()
+    def add(cls, user_id, firend_id):
+        Firend.objects.create(user_id=user_id, firend_id=firend_id)
+        Firend.objects.create(user_id=firend_id, firend_id=user_id)
+        return True
 
     @property
     def localtime(self):
@@ -30,13 +53,18 @@ class Firend(models.Model):
     def natural_time(self):
         return time_format(self.localtime)
 
-    def invite_count(cls, owner_id):
-        return cls.objects.create(user_id=user_id, firend_id=firend_id).count()
+    @classmethod
+    @transaction.atomic()
+    def cancel(cls, user_id, firend_id):
+        cls.objects.filter(user_id=user_id, firend_id=firend_id).delete()
+        cls.objects.filter(user_id=firend_id, firend_id=user_id).delete()
+        return True
 
     @classmethod
-    def get_firends(cls, user_id):
-        return cls.objects.filter(user_id=user_id, status=1)
+    def get_firend_ids(cls, user_id):
+        return list(cls.objects.filter(user_id=user_id).values_list("firend_id", flat=True))
 
+    @classmethod
     def is_invited_user(cls, user_id, firend_id):
         return True if cls.objects.filter(user_id=firend_id, firend_id=user_id).first() else False
 
@@ -51,9 +79,9 @@ class Firend(models.Model):
 
 
 def two_degree_relation(user_id):
-    firend_ids = list(Firend.objects.filter(user_id=user_id, status=1)
+    firend_ids = list(Firend.objects.filter(user_id=user_id)
                                     .values_list("firend_id", flat=True))
-    second_firend_list = list(Firend.objects.filter(user_id__in=firend_ids, status=1)
+    second_firend_list = list(Firend.objects.filter(user_id__in=firend_ids)
                                             .exclude(firend_id=user_id)
                                             .values_list("user_id", "firend_id"))
 

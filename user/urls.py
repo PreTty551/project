@@ -17,4 +17,10 @@ urlpatterns = [
     url(r'^user/contact/out_app/$', views.get_contacts_out_app, name='get_contacts_out_app'),
     url(r'^user/contact/add/$', views.add_user_contact, name='add_user_contact'),
     url(r'^user/contact/update/$', views.update_user_contact, name='update_user_contact'),
+
+    url(r'^user/firend/invite/$', views.invite_firend, name='invite_firend'),
+    url(r'^user/firend/agree/$', views.agree_firend, name='agree_firend'),
+    url(r'^user/firend/$', views.get_firends, name='get_firends'),
+    url(r'^user/ignore/$', views.ignore, name='ignore'),
+
 ]
