@@ -67,11 +67,9 @@ def rename_nickname(nickname):
 
 def create_third_user(third_id, third_name, nickname, avatar, gender, mobile, platform, version):
     nickname = nickname.replace(" ", "").replace("#", "").replace("@", "")
-    # has_samename_user = User.objects.filter_nickname(nickname=nickname) is not None
-    # if has_samename_user:
-    #     nickname = rename_nickname(nickname)
-
-    user = User.objects.add_user(nickname=nickname, gender=gender, mobile=mobile, platform=platform, version=version)
+    user = User.objects.filter(mobile=mobile).first()
+    if not user:
+        user = User.objects.add_user(nickname=nickname, gender=gender, mobile=mobile, platform=platform, version=version)
     ThirdUser.objects.create(mobile=mobile, third_id=third_id, third_name=third_name)
     return user
 
