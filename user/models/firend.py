@@ -2,8 +2,7 @@
 from django.db import models, transaction
 
 from corelib.utils import natural_time
-from user.models import User, Ignore
-# from user.consts import FirendEnum
+from user.models import User
 
 
 class Firend(models.Model):
@@ -39,7 +38,7 @@ class Firend(models.Model):
         return cls.objects.filter(user_id=user_id, status=1)
 
     def is_invited_user(cls, user_id, firend_id):
-        return cls.objects.filter(user_id=firend_id, firend_id=user_id).first() or 0
+        return True if cls.objects.filter(user_id=firend_id, firend_id=user_id).first() else False
 
     def to_dict(self):
         user = User.get(self.user_id)

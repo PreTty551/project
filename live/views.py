@@ -31,8 +31,8 @@ def livemedia_list(request):
                 offline_firends.append(basic_info)
 
     _two_degree_relation = two_degree_relation(user_id=request.user.id)
-    invited_channels = [channel.to_dict() for channel in Channel.objects.filter(user_id=request.user.id, invite_user_id__gt=0)]
-
+    # invited_channels = [channel.to_dict() for channel in Channel.objects.filter(user_id=request.user.id, invite_user_id__gt=0)]
+    invited_channels = []
     return JsonResponse({"channels": channels,
                          "online_firends": online_firends,
                          "offline_firends": offline_firends,
