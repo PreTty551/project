@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 import random
+
 from django.db import models
 from django.conf import settings
+from django.utils.translation import ugettext
 
-from user.models import Ignore, User, Firend
+from corelib.errors import BaseError, ErrorCodeField
+
+from .user import User
+from .ignore import Ignore
+from .firend import Firend
 
 
 class UserContact(models.Model):
@@ -33,6 +39,7 @@ class UserContact(models.Model):
 
         if results:
             UserContact.objects.bulk_create(results)
+            return True
 
     @classmethod
     def clean_contact(cls, contact_list):
@@ -67,17 +74,38 @@ class UserContact(models.Model):
     def get_all_contact(cls, user_id):
         return [contact.contact_dict() for contact in cls.objects.filter(user_id=user_id)]
 
-    # @classmethod
-    # def guess_know_user_ids(cls, user_id):
-    #     # 我所有的联系人
-    #     all_mobile_list = list(cls.objects.filter(user_id=user_id).values_list("mobile", flat=True))
-    #     user_mobile_ids = list(User.objects.filter(mobile__in=all_mobile_list).values_list("mobile", flat=True))
-    #     all_mobile_list.extend(user_mobile_ids)
-    #     filter_mobile_list = set(all_mobile_list)
-    #     return list(cls.objects.filter(mobile__in=filter_mobile_list)
-    #                            .exclude(user_id=user_id)
-    #                            .values_list("user_id", flat=True)
-    #                            .distinct())
+    @classmethod
+    def get_contacts_in_app(cls, owner_id):
+        ignore_user_ids = Ignore.get_contacts_in_say(owner_id=owner_id)
+        all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
+        user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
+                                    .exclude(id__in=ignore_user_ids)
+                                    .values_list("id", flat=True))
+
+        result = []
+        for user_id in user_ids:
+            user = User.get(id=user_id)
+            basic_info = user.basic_info()
+            is_invited_user = Firend.is_invited_user(user_id=owner_id, firend_id=user_id)
+            basic_info["is_invited_user"] = is_invited_user
+            result.append(basic_info)
+        return result
+
+    @classmethod
+    def get_contacts_out_app(cls, owner_id):
+        ignore_user_ids = Ignore.get_contacts_out_say(owner_id=owner_id)
+        all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
+        mobile_ids = list(User.objects.filter(mobile__in=all_mobile_list)
+                                      .exclude(id__in=ignore_user_ids)
+                                      .values_list("mobile", flat=True))
+
+        out_say_mobiles = set(mobile_ids) ^ set(all_mobile_list)
+        result = []
+        for mobile in out_say_mobiles:
+            user = User.objects.filter(mobile=mobile).first()
+            basic_info = user.basic_info()
+            result.append(basic_info)
+        return result
 
     def contact_dict(self):
         return {
@@ -96,35 +124,5 @@ class UserContact(models.Model):
         }
 
 
-def get_contact_in_say(owner_id):
-    ignore_user_ids = Ignore.get_contacts_in_say(owner_id=owner_id)
-    all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
-    user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
-                                .exclude(id__in=ignore_user_ids)
-                                .values_list("id", flat=True))
-
-    ignore_user_ids = Ignore.get_invite_firends(owner_id=owner_id)
-    result = []
-    for user_id in user_ids:
-        user = User.get(id=user_id)
-        basic_info = user.basic_info()
-        is_invited_user = Firend.is_invited_user(user_id=owner_id, firend_id=user_id)
-        basic_info["is_invited_user"] = is_invited_user
-        result.append(basic_info)
-    return result
-
-
-def get_contact_out_say(owner_id):
-    ignore_user_ids = Ignore.get_contacts_out_say(owner_id=owner_id)
-    all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
-    mobile_ids = list(User.objects.filter(mobile__in=all_mobile_list)
-                                  .exclude(id__in=ignore_user_ids)
-                                  .values_list("mobile", flat=True))
-
-    out_say_mobiles = set(mobile_ids) ^ set(all_mobile_list)
-    result = []
-    for mobile in out_say_mobiles:
-        user = User.objects.filter(mobile=mobile).first()
-        basic_info = user.basic_info()
-        result.append(basic_info)
-    return result
+class ContactError(BaseError):
+    IMPORT_ERROR = ErrorCodeField(30001, ugettext("导入通讯录失败"))

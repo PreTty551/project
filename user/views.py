@@ -17,6 +17,7 @@ from corelib.decorators import login_required_404
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
 
+from user.models import UserContact, ContactError
 
 @require_http_methods(["POST"])
 def request_sms_code(request):
@@ -298,14 +299,84 @@ def binding_wechat(request):
     return JsonResponse()
 
 
+def profile(request):
+    apply_firends = Firend.get_apply_firends(user_id=request.user.id)
+    guess_know_user_ids = UserContact.guess_know_user_ids(user_id=request.user.id)
+    all_contact_list = UserContact.get_all_contact(user_id=request.user.id)
+
+
+def invite_firend(request):
+    firend_id = request.POST.get("firend_id")
+    is_success = Firend.invite(user_id=request.user.id, firend_id=firend_id)
+    if is_success:
+        # message = "%s 邀请你加入好友" % request.user.nickname
+        # LeanCloud.async_push(receive_id=firend_id, message=message)
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+def agree_firend(request):
+    firend_id = request.POST.get("firend_id")
+    is_success = Firend.agree(user_id=request.user.id, firend_id=firend_id)
+    if is_success:
+        # message = "%s 同意了你的好友请求" % request.user.nickname
+        # LeanCloud.async_push(receive_id=firend_id, message=message)
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+def ignore_firend(request):
+    id = request.POST.get("id")
+    firend = Firend.objects.filter(id=id).first()
+    if firend:
+        firend.ignore()
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+def rong_token(request):
+    res = client.user_get_token(str(self.id), self.nickname, self.avatar_url)
+    self.rong_token = res['token']
+    self.save()
+    mc.delete(MC_USER_KEY % self.id)
+    return JsonResponse({"token": res['token']})
+
+
+def get_basic_user_info(request):
+    user_id = request.POST.get("user_id")
+    if user_id:
+        user = User.get(id=user_id)
+        if user:
+            return JsonResponse(user.basic_info())
+        return HttpResponseNotFound()
+    return HttpResponseBadRequest()
+
+
+def get_contacts(request):
+    contact_list = UserContact.get_all_contact(user_id=request.user.id)
+    return JsonResponse(contact_list)
+
+
+def get_contacts_in_app(request):
+    contact_list = UserContact.get_contacts_in_app(owner_id=request.user.id)
+    return JsonResponse(contact_list)
+
+
+def get_contacts_out_app(request):
+    contact_list = UserContact.get_contacts_out_app(owner_id=request.user.id)
+    return JsonResponse(contact_list)
+
+
 @login_required_404
 def add_user_contact(request):
     contact = request.POST.get("contact")
     contact_list = json.loads(contact)
-    UserContact.bulk_add(contact_list=contact_list, user_id=request.user.id)
-    user = User.get(request.user.id)
-    user.set_props_item("is_import_contact", 1)
-    return JsonResponseSuccess()
+    is_success = UserContact.bulk_add(contact_list=contact_list, user_id=request.user.id)
+    if is_success:
+        user = User.get(request.user.id)
+        user.set_props_item("is_import_contact", 1)
+        return JsonResponse()
+    return HttpResponseServerError()
 
 
 @login_required_404
@@ -326,57 +397,4 @@ def update_user_contact(request):
                                        last_name=uc["last_name"],
                                        mobile=uc["mobile"],
                                        user_id=request.user.id)
-    return JsonResponseSuccess()
-
-
-def profile(request):
-    apply_firends = Firend.get_apply_firends(user_id=request.user.id)
-    guess_know_user_ids = UserContact.guess_know_user_ids(user_id=request.user.id)
-    all_contact_list = UserContact.get_all_contact(user_id=request.user.id)
-
-
-def invite_firend(request):
-    firend_id = request.POST.get("firend_id")
-    is_success = Firend.invite(user_id=request.user.id, firend_id=firend_id)
-    if is_success:
-        message = "%s 邀请你加入好友" % request.user.nickname
-        LeanCloud.async_push(receive_id=firend_id, message=message)
-        return JsonResponse()
-    return HttpResponseServerError()
-
-
-def agree_firend(request):
-    firend_id = request.POST.get("firend_id")
-    is_success = Firend.agree(user_id=request.user.id, firend_id=firend_id)
-    if is_success:
-        message = "%s 同意了你的好友请求" % request.user.nickname
-        LeanCloud.async_push(receive_id=firend_id, message=message)
-        return JsonResponse()
-    return HttpResponseServerError()
-
-
-def ignore_firend(request):
-    id = request.POST.get("id")
-    firend = Firend.objects.filter(id=id).first()
-    if firend:
-        firend.ignore()
-        return JsonResponse()
-    return HttpResponseServerError()
-
-
-def rong_token(request):
-    res = client.user_get_token(str(self.id), self.nickname, self.avatar_url)
-    self.rong_token = res['token']
-    self.save()
-    mc.delete(MC_USER_KEY % self.id)
-    return res['token']
-
-
-def get_basic_user_info(request):
-    user_id = request.POST.get("user_id")
-    if user_id:
-        user = User.get(id=user_id)
-        if user:
-            return JsonResponse(user.basic_info())
-        return HttpResponseNotFound()
-    return HttpResponseBadRequest()
+    return JsonResponse()

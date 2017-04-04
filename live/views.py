@@ -9,13 +9,13 @@ from corelib.agora import Agora
 from corelib.http import JsonResponse
 
 from live.models import Channel, ChannelMember, GuessWord
-from user.models import User, Firend, get_contact_in_say, two_degree_relation, get_contact_out_say
+from user.models import User, Firend, UserContact, two_degree_relation
 
 
 @login_required_404
 def livemedia_list(request):
     channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
-    firends = Firend.get_firends(owner_id=request.user.id)
+    firends = Firend.get_firends(user_id=request.user.id)
     online_firends = []
     offline_firends = []
     for firend in firends:
@@ -36,8 +36,8 @@ def livemedia_list(request):
     return JsonResponse({"channels": channels,
                          "online_firends": online_firends,
                          "offline_firends": offline_firends,
-                         "contact_in_say": get_contact_in_say(owner_id=request.user.id),
-                         "contact_out_say": get_contact_out_say(owner_id=request.user.id),
+                         "contact_in_say": UserContact.get_contacts_in_app(owner_id=request.user.id),
+                         "contact_out_say": UserContact.get_contacts_out_app(owner_id=request.user.id),
                          "two_degree_relation": _two_degree_relation,
                          "invited_channels": invited_channels})
 
