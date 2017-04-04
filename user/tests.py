@@ -1,11 +1,11 @@
 import random
 
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 
 from user.models import User, Firend, InviteFirend, two_degree_relation
 
 
-class UsersTestCase(TestCase):
+class UsersTestCase(TransactionTestCase):
     def setUp(self):
         pass
 
@@ -13,10 +13,10 @@ class UsersTestCase(TestCase):
         pass
 
     def _init_data(self):
-        mobile = random.randint(13000000000, 14000000000)
         names = ["ida", "dark", "qingfeng", "mengwei", "ss", "gd", "jh"]
         user_list = []
         for name in names:
+            mobile = random.randint(13000000000, 14000000000)
             _ = {"nickname": name, "mobile": mobile}
             user_list.append(_)
 
