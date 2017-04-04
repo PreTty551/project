@@ -15,7 +15,7 @@ from user.models import User, Firend, UserContact, two_degree_relation
 @login_required_404
 def livemedia_list(request):
     channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
-    firends = Firend.get_firends(user_id=request.user.id)
+    firends = Firend.get_firend_ids(user_id=request.user.id)
     online_firends = []
     offline_firends = []
     for firend in firends:

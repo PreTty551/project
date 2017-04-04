@@ -91,11 +91,13 @@ def update_avatar_in_third_login(user_id):
 
 class User(AbstractUser, PropsMixin):
     nickname = models.CharField(max_length=30)
-    mobile = models.CharField(max_length=20, default="")
+    mobile = models.CharField(max_length=20, unique=True, default="")
     avatar = models.CharField(max_length=20, default="")
     gender = models.SmallIntegerField(default=0)
     intro = models.CharField(max_length=100, default="")
     country = models.CharField(max_length=20, default="")
+    country_code = models.CharField(max_length=10, default="")
+    is_import_contact = models.BooleanField(default=False)
     platform = models.SmallIntegerField(default=0)
     version = models.CharField(max_length=10, default="")
 
@@ -103,7 +105,6 @@ class User(AbstractUser, PropsMixin):
 
     class Meta:
         db_table = "user"
-        unique_together = ('nickname',)
         verbose_name = u'用户'
         verbose_name_plural = u'用户列表'
 
@@ -181,29 +182,14 @@ class User(AbstractUser, PropsMixin):
     def say_id(self):
         return self.get_say_account()
 
-    # @property
-    # def livemedia_text(self):
-    #     from livemedia.models import Channel, ChannelMember
-    #     member = ChannelMember.objects.filter(user_id=self.id).first()
-    #     if not member:
-    #         return ""
-    #
-    #     channel = Channel.get_channel(channel_id=member.channel_id)
-    #     duration_time = channel.duration_time
-    #     if channel:
-    #         return "正在视频party, %s" % duration_time
-    #     return ""
-    #
-    # def gift_count(self):
-    #     return redis.get(REDIS_GIFT_COUNT % self.id) or 0
-
     def basic_info(self):
         return {
             "id": self.id,
             "nickname": self.nickname,
             "avatar_url": self.avatar_url,
             "gender": self.gender,
-            "intro": self.intro or ""
+            "intro": self.intro or "",
+            "is_import_contact": self.is_import_contact
         }
 
 auth_models.User = User
