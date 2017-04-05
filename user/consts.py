@@ -1,7 +1,7 @@
 from enum import Enum
 
 Gender = Enum("Gender", ("male", "female"))
-FirendEnum = Enum("FirendEnum", ("invite", "be_invite", "firend", "ignore"))
+FriendEnum = Enum("FriendEnum", ("invite", "be_invite", "friend", "ignore"))
 
 # special mobile
 APPSTORE_MOBILE = "12345678901"

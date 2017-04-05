@@ -104,8 +104,13 @@ class Channel(models.Model):
         if self.name:
             return self.name
 
+        nicknames = []
         user_ids = self.get_channel_member()
-        nicknames = [User.get(user_id).nickname for user_id in user_ids]
+        for user_id in user_ids:
+            user = User.get(user_id)
+            if not user:
+                continue
+            nicknames.append(user.nickname)
         title = ",".join(nicknames)
         return "%s%s" % ("", title)
 
@@ -119,7 +124,9 @@ class Channel(models.Model):
     def icon(self):
         member = ChannelMember.objects.filter(channel_id=self.channel_id).first()
         if member:
-            return User.get(member.user_id).avatar_url
+            user = User.get(member.user_id)
+            if user:
+                return user.avatar_url
         return ""
 
     def to_dict(self):

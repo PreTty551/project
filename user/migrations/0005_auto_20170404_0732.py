@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='InviteFirend',
+            name='InviteFriend',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('user_id', models.IntegerField()),
@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.RemoveField(
-            model_name='firend',
+            model_name='friend',
             name='status',
         ),
     ]

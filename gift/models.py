@@ -2,7 +2,7 @@
 from django.db import models, transaction
 
 from wallet.models import Wallet, WalletRecord
-from wallet.consts import GIFT_CATGORY
+from wallet.consts import GIFT_CATEGORY
 
 
 class Gift(models.Model):
@@ -74,7 +74,7 @@ def send_gift(owner_id, to_user_id, gift_id, amount, record_msg="礼物"):
                                         user_id=to_user_id,
                                         order_id=order.id,
                                         amount=amount,
-                                        category=GIFT_CATGORY,
+                                        category=GIFT_CATEGORY,
                                         type=1,
                                         desc=record_msg)
 
@@ -82,7 +82,7 @@ def send_gift(owner_id, to_user_id, gift_id, amount, record_msg="礼物"):
                                         user_id=owner_id,
                                         order_id=order.id,
                                         amount=amount,
-                                        category=GIFT_CATGORY,
+                                        category=GIFT_CATEGORY,
                                         type=2,
                                         desc=record_msg)
 

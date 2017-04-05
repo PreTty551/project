@@ -4,7 +4,7 @@ import json
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
-from user.models import User, Firend
+from user.models import User, Friend
 from gift.models import Gift, GiftOrder
 from wallet.models import Wallet, WalletRecord
 from wallet.consts import GIFT_CATGORY

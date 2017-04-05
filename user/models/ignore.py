@@ -22,7 +22,7 @@ class Ignore(models.Model):
         return cls.objects.filter(owner_id=owner_id, user_id=user_id, type=type)
 
     @classmethod
-    def get_degree_firends(cls, owner_id):
+    def get_degree_friends(cls, owner_id):
         return list(cls.objects.filter(owner_id=owner_id, type=IgnoreType.DEGREE_FIREND.value)
                                .values_list("user_id", flat=True))
 

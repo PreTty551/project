@@ -72,8 +72,8 @@ class JSMS(object):
     def request_voice_code(self):
         res = self._send(url=self.request_voice_code_url,
                          mobile=self.mobile,
-                         temp_id=self.temp_id)
-        print(res)
+                         temp_id=self.temp_id,
+                         ttl=600)
         if res.get("error"):
             error_message = self.error_message(res.get("error")["code"], u"请求验证码失败")
             return False, error_message

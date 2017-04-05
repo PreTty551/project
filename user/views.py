@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import datetime
 import django_rq
 
@@ -17,7 +18,7 @@ from corelib.decorators import login_required_404
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
 
-from user.models import UserContact, InviteFirend, Firend, ContactError
+from user.models import UserContact, InviteFriend, Friend, ContactError
 
 
 @require_http_methods(["POST"])
@@ -301,7 +302,7 @@ def binding_wechat(request):
 
 
 def profile(request):
-    apply_firends = Firend.get_apply_firends(user_id=request.user.id)
+    apply_friends = Friend.get_apply_friends(user_id=request.user.id)
     guess_know_user_ids = UserContact.guess_know_user_ids(user_id=request.user.id)
     all_contact_list = UserContact.get_all_contact(user_id=request.user.id)
 
@@ -372,9 +373,9 @@ def update_user_contact(request):
     return JsonResponse()
 
 
-def invite_firend(request):
+def invite_friend(request):
     invited_id = request.POST.get("invited_id")
-    is_success = InviteFirend.add(user_id=request.user.id, invited_id=invited_id)
+    is_success = InviteFriend.add(user_id=request.user.id, invited_id=invited_id)
     if is_success:
         # message = "%s 邀请你加入好友" % request.user.nickname
         # LeanCloud.async_push(receive_id=invited_id, message=message)
@@ -382,9 +383,9 @@ def invite_firend(request):
     return HttpResponseServerError()
 
 
-def agree_firend(request):
+def agree_friend(request):
     invited_id = request.POST.get("invited_id")
-    is_success = InviteFirend.agree(user_id=request.user.id, invited_id=invited_id)
+    is_success = InviteFriend.agree(user_id=request.user.id, invited_id=invited_id)
     if is_success:
         # message = "%s 同意了你的好友请求" % request.user.nickname
         # LeanCloud.async_push(receive_id=invited_id, message=message)
@@ -401,7 +402,7 @@ def ignore(request):
     return HttpResponseServerError()
 
 
-def get_firends(request):
-    firend_ids = Firend.get_firend_ids(user_id=request.user.id)
-    firend_list = [User.get(user_id=firend_id).to_dict() for firend_id in firend_ids]
-    return JsonResponse(firend_list)
+def get_friends(request):
+    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    friend_list = [User.get(user_id=friend_id).to_dict() for friend_id in friend_ids]
+    return JsonResponse(friend_list)

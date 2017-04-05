@@ -13,11 +13,11 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Firend',
+            name='Friend',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('user_id', models.IntegerField()),
-                ('firend_id', models.IntegerField()),
+                ('friend_id', models.IntegerField()),
                 ('status', models.SmallIntegerField()),
                 ('date', models.DateTimeField(auto_now_add=True)),
             ],

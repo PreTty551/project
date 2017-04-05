@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import uuid
-from itertools import permutations
+import datetime
 
+from itertools import permutations
+from django.utils import timezone
 from django.db import models
 from django.contrib.auth import models as auth_models
 from django.contrib.auth.models import AbstractUser, UserManager as BaseUserManager
@@ -10,18 +12,20 @@ from django.contrib.auth.models import AbstractUser, UserManager as BaseUserMana
 from corelib.qiniucloud import Qiniu
 from corelib.props import PropsMixin
 from corelib.weibo import Weibo
+from corelib.utils import natural_time as time_format
 
 from user.consts import MC_USER_KEY, EMOJI_LIST
 
 
 class UserManager(BaseUserManager):
 
-    def _create_user(self, username, email, password, **extra_fields):
+    def _create_user(self, username, email, password, mobile, **extra_fields):
         extra_fields.setdefault('nickname', '')
         user = self.model(
             nickname=extra_fields['nickname'],
             username=username,
             email=BaseUserManager.normalize_email(email),
+            mobile=mobile
         )
         user.set_password(password)
         user.save(using=self._db)
@@ -32,7 +36,7 @@ class UserManager(BaseUserManager):
             name = str(uuid.uuid4())[:30]
             password = name
             email = "%s@%s.com" % (name, name)
-            user = self._create_user(username=name, email=email, password=password, nickname=nickname)
+            user = self._create_user(username=name, email=email, password=password, nickname=nickname, mobile=mobile)
             user.mobile = mobile
             user.gender = gender
             user.platform = platform
@@ -130,6 +134,8 @@ class User(AbstractUser, PropsMixin):
         return cls.objects.filter(id=id).first()
 
     def is_online(self):
+        if not self.last_login:
+            return False
         last_login = timezone.now() - datetime.timedelta(hours=6)
         return True if self.last_login >= last_login else False
 

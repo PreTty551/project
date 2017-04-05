@@ -9,13 +9,12 @@ from corelib.errors import BaseError, ErrorCodeField
 
 from .user import User
 from .ignore import Ignore
-from .firend import Firend
+from .friend import Friend
 
 
 class UserContact(models.Model):
     user_id = models.IntegerField(db_index=True)
-    first_name = models.CharField(max_length=20, default="")
-    last_name = models.CharField(max_length=20, default="")
+    name = models.CharField(max_length=20, default="")
     mobile = models.CharField(max_length=20)
 
     class Meta:
@@ -27,8 +26,7 @@ class UserContact(models.Model):
         results = []
         for contact in contact_list:
             _ = cls(user_id=user_id,
-                    first_name=contact["first_name"],
-                    last_name=contact["last_name"],
+                    name=contact["name"],
                     mobile=contact["mobile"])
             results.append(_)
 
@@ -45,7 +43,7 @@ class UserContact(models.Model):
     def clean_contact(cls, contact_list):
         new_contact_list = []
         for contact in contact_list:
-            if not (contact["first_name"] or contact["last_name"]):
+            if contact["name"]:
                 continue
 
             phones = contact.get("phones", [])
@@ -62,8 +60,7 @@ class UserContact(models.Model):
                     continue
 
                 _ = {
-                    "first_name": contact["first_name"],
-                    "last_name": contact["last_name"],
+                    "name": contact["name"],
                     "mobile": str(mobile)
                 }
                 new_contact_list.append(_)
@@ -86,7 +83,7 @@ class UserContact(models.Model):
         for user_id in user_ids:
             user = User.get(id=user_id)
             basic_info = user.basic_info()
-            is_invited_user = Firend.is_invited_user(user_id=owner_id, firend_id=user_id)
+            is_invited_user = Friend.is_invited_user(user_id=owner_id, friend_id=user_id)
             basic_info["is_invited_user"] = is_invited_user
             result.append(basic_info)
         return result

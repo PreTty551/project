@@ -9,33 +9,33 @@ from corelib.agora import Agora
 from corelib.http import JsonResponse
 
 from live.models import Channel, ChannelMember, GuessWord
-from user.models import User, Firend, UserContact, two_degree_relation
+from user.models import User, Friend, UserContact, two_degree_relation
 
 
 @login_required_404
 def livemedia_list(request):
     channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
-    firends = Firend.get_firend_ids(user_id=request.user.id)
-    online_firends = []
-    offline_firends = []
-    for firend in firends:
-        user = User.get(id=firend.user_id)
+    friends = Friend.get_friend_ids(user_id=request.user.id)
+    online_friends = []
+    offline_friends = []
+    for friend in friends:
+        user = User.get(id=friend.user_id)
         if user:
             basic_info = user.basic_info()
             if user.is_online():
                 basic_info["is_online"] = True
-                online_firends.append(basic_info)
+                online_friends.append(basic_info)
             else:
                 basic_info["is_online"] = False
                 basic_info["natural_time"] = user.natural_time
-                offline_firends.append(basic_info)
+                offline_friends.append(basic_info)
 
     _two_degree_relation = two_degree_relation(user_id=request.user.id)
     # invited_channels = [channel.to_dict() for channel in Channel.objects.filter(user_id=request.user.id, invite_user_id__gt=0)]
     invited_channels = []
     return JsonResponse({"channels": channels,
-                         "online_firends": online_firends,
-                         "offline_firends": offline_firends,
+                         "online_friends": online_friends,
+                         "offline_friends": offline_friends,
                          "contact_in_say": UserContact.get_contacts_in_app(owner_id=request.user.id),
                          "contact_out_say": UserContact.get_contacts_out_app(owner_id=request.user.id),
                          "two_degree_relation": _two_degree_relation,

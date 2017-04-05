@@ -36,10 +36,18 @@ class JSSDK(object):
 
 class OAuth(object):
 
-    @classmethod
-    def get_user_info(cls, code):
+    def __init__(self, appid="", secret=""):
+        self.appid = appid,
+        self.secret = secret
+
+        if not appid:
+            self.appid = settings.WECHAT_OPEN_APP_ID
+        if not secret:
+            self.secret = settings.WECHAT_OPEN_APP_SECRET
+
+    def get_user_info(self, code):
         try:
-            wechat = WeChatOAuth(settings.WECHAT_OPEN_APP_ID, settings.WECHAT_OPEN_APP_SECRET, '')
+            wechat = WeChatOAuth(self.appid, self.secret, redirect_uri="", scope="snsapi_userinfo")
             res = wechat.fetch_access_token(code=code)
             return wechat.get_user_info(openid=res["openid"], access_token=res["access_token"])
         except:

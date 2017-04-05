@@ -18,9 +18,9 @@ urlpatterns = [
     url(r'^user/contact/add/$', views.add_user_contact, name='add_user_contact'),
     url(r'^user/contact/update/$', views.update_user_contact, name='update_user_contact'),
 
-    url(r'^user/firend/invite/$', views.invite_firend, name='invite_firend'),
-    url(r'^user/firend/agree/$', views.agree_firend, name='agree_firend'),
-    url(r'^user/firend/$', views.get_firends, name='get_firends'),
+    url(r'^user/friend/invite/$', views.invite_friend, name='invite_friend'),
+    url(r'^user/friend/agree/$', views.agree_friend, name='agree_friend'),
+    url(r'^user/friend/$', views.get_friends, name='get_friends'),
     url(r'^user/ignore/$', views.ignore, name='ignore'),
 
 ]

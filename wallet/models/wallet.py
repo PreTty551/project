@@ -9,6 +9,7 @@ from decimal import Decimal
 from wallet.consts import MIN_TRANSFER_AMOUNT, MAX_TRANSFER_AMOUNT
 from wallet.consts import MIN_WITHDRAWALS_AMOUNT, MAX_WITHDRAWALS_AMOUNT
 from wallet.consts import WITHDRAWAL_APPLY, WITHDRAWAL_SUCCESS, WITHDRAWAL_FAIL
+from wallet.consts import RECHARGE_CATEGORY
 from wallet.error_handle import WalletError
 
 
@@ -42,15 +43,15 @@ class Wallet(models.Model):
     def withdrawals_validate(self, amount):
         amount = Decimal(amount)
         if amount < Decimal(str(MIN_WITHDRAWALS_AMOUNT)):
-            return u"提现金额不能小于%s元" % MIN_WITHDRAWALS_AMOUNT
+            return WalletError.MIN_WITHDRAWAL
         elif amount > Decimal(str(MAX_WITHDRAWALS_AMOUNT)):
-            return u"提现金额不能大于%s元" % MAX_WITHDRAWALS_AMOUNT
+            return WalletError.MAX_WITHDRAWAL
         elif self.amount - amount * 100 < 0:
-            return u"账户余额不足"
+            return WalletError.AMOUNT_ERROR
 
         withdrawal = Withdrawals.objects.filter(user_id=self.user_id, status=WITHDRAWAL_APPLY).first()
         if withdrawal:
-            return u"上次提现尚未完成，请稍后再次操作"
+            return WalletError.DUPLICATE_WITHDRAWAL
 
     def plus(self, amount):
         self.amount = F("amount") + Decimal(amount)
@@ -72,15 +73,16 @@ class Wallet(models.Model):
         to_user.plus(amount=amount)
         return True
 
-    @transaction.atomic()
     def recharge(self, amount):
         return self.plus(amount=amount)
 
+    def enterprise_pay(self):
+        pass
 
 class WalletRecord(models.Model):
     owner_id = models.IntegerField(default=0)
     user_id = models.IntegerField()
-    order_id = models.CharField(max_length=50)
+    out_trade_no = models.CharField(max_length=50)
     amount = models.DecimalField(max_digits=11, decimal_places=2)
     category = models.SmallIntegerField(default=0)
     type = models.SmallIntegerField()
@@ -108,14 +110,23 @@ class WalletRecharge(models.Model):
         return self.status == 1
 
     @classmethod
+    @transaction.atomic()
     def recharge_callback(cls, out_trade_no):
-        wr = cls.objects.filter(out_trade_no=out_trade_no)
+        wr = cls.objects.filter(out_trade_no=out_trade_no).first()
         if wr and not wr.is_pay_success:
             wallet = Wallet.get(user_id=wr.user_id)
             is_success = wallet.recharge(amount=wr.amount)
             if is_success:
-                wr.status = ORDER_SUCCESS
+                wr.status = 1
                 wr.save()
+
+                WalletRecord.objects.create(owner_id=wr.user_id,
+                                            user_id=wr.user_id,
+                                            out_trade_no=out_trade_no,
+                                            amount=wr.amount,
+                                            category=RECHARGE_CATEGORY,
+                                            type=1,
+                                            desc="充值")
                 return True
 
 
@@ -133,10 +144,11 @@ class Withdrawals(models.Model):
 
     @classmethod
     def apply(cls, openid, user_id, amount):
-        return cls.objects.create(openid=openid,
-                                  user_id=user_id,
-                                  amount=amount)
+        cls.objects.create(openid=openid,
+                           user_id=user_id,
+                           amount=amount)
 
+    @classmethod
     def withdrawal(cls):
         withdrawal_recodes = cls.objects.filter(status=0)
         for wr in withdrawal_recodes:
@@ -149,3 +161,11 @@ class Withdrawals(models.Model):
                 wr.status = 2
                 wr.wechat_recode = res["err_code"]
                 wr.save()
+
+
+def get_related_amount(amount):
+    """ 得到格式化并减去手续费后的金额 """
+    amount = str(Decimal(str(amount)) * 100)
+    if amount.find(".") != -1:
+        amount = amount.rstrip("0").rstrip(".")
+    return Decimal(amount)
