@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 from django.shortcuts import render
-from django.http import HttpResponseBadRequest, Http404, \
-        HttpResponseServerError, HttpResponseNotFound
+from django.http import HttpResponseBadRequest, HttpResponseServerError, \
+        HttpResponseNotFound
 
 from corelib.http import JsonResponse
 from corelib.wechat import WechatSDK
@@ -8,7 +9,11 @@ from corelib.utils import random_str
 from wallet.models import WalletRecharge, get_related_amount
 
 
-@login_required_404
+def wallet(request):
+    wallet = Wallet.get(user_id=request.user.id).first()
+    return JsonResponse(wallet.to_dict())
+
+
 def wechat_recharge(request):
     """ 微信充值 """
     amount = request.POST.get("amount")
@@ -17,7 +22,7 @@ def wechat_recharge(request):
         return HttpResponseBadRequest()
 
     try:
-        notify_url = "http://api.gouhuoapp.com/"
+        notify_url = "http://api.gouhuoapp.com/wallet/wechat_recharge_callback/"
         out_trade_no = random_str()
         wechat = WechatSDK()
         appapi_params = wechat.create_order(body="充值",

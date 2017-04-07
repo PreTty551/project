@@ -73,11 +73,12 @@ class Wallet(models.Model):
         to_user.plus(amount=amount)
         return True
 
-    def recharge(self, amount):
-        return self.plus(amount=amount)
+    def to_dict(self):
+        return {
+            "user_id": self.user_id,
+            "amount": yuan(self.amount)
+        }
 
-    def enterprise_pay(self):
-        pass
 
 class WalletRecord(models.Model):
     owner_id = models.IntegerField(default=0)
@@ -115,7 +116,7 @@ class WalletRecharge(models.Model):
         wr = cls.objects.filter(out_trade_no=out_trade_no).first()
         if wr and not wr.is_pay_success:
             wallet = Wallet.get(user_id=wr.user_id)
-            is_success = wallet.recharge(amount=wr.amount)
+            is_success = wallet.plus(amount=wr.amount)
             if is_success:
                 wr.status = 1
                 wr.save()
@@ -147,20 +148,31 @@ class Withdrawals(models.Model):
         cls.objects.create(openid=openid,
                            user_id=user_id,
                            amount=amount)
+        return True
+
+    @classmethod
+    def enterprise_pay(cls, openid, amount):
+        recode = wechat_pay.transfer.transfer(user_id=obj.openid,
+                                              amount=wechat_amount,
+                                              desc="账户提现",
+                                              check_name="NO_CHECK")
+
+        if recode["return_code"] == "SUCCESS" and recode["result_code"] == "SUCCESS":
+            return True, recode
+        else:
+            return False, recode
 
     @classmethod
     def withdrawal(cls):
-        withdrawal_recodes = cls.objects.filter(status=0)
+        withdrawal_recodes = cls.objects.filter(status=WITHDRAWAL_APPLY)
         for wr in withdrawal_recodes:
-            wallet = Wallet.get(user_id=wr.user_id)
-            is_success, res = wallet.enterprise_pay(openid=wr.openid, amount=wr.amount, desc="提现")
+            is_success, recode = cls.enterprise_pay(openid=wr.openid, amount=wr.amount)
             if is_success:
-                wr.status = 1
-                wr.save()
+                Withdrawals.objects.filter(user_id=obj.user_id).update(status=WITHDRAWAL_SUCCESS)
+                wallet = Wallet.get(user_id=wr.user_id)
+                wallet.minus(amount=wr.amount)
             else:
-                wr.status = 2
-                wr.wechat_recode = res["err_code"]
-                wr.save()
+                Withdrawals.objects.filter(user_id=obj.user_id).update(wechat_recode=recode["err_code"], status=WITHDRAWAL_FAIL)
 
 
 def get_related_amount(amount):
