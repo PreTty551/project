@@ -23,11 +23,11 @@ class Gift(models.Model):
 
     def to_dict(self):
         return {
+            "id": self.id,
             "name": self.name,
             "amount": self.amount,
             "size": self.size,
-            "icon": self.icon,
-            "date": self.date
+            "icon": self.id,
         }
 
     class Meta:
