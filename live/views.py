@@ -7,6 +7,7 @@ from django.utils import timezone
 from corelib.decorators import login_required_404
 from corelib.agora import Agora
 from corelib.http import JsonResponse
+from corelib.websocket import Websocket
 
 from live.models import Channel, ChannelMember, GuessWord
 from user.models import User, Friend, UserContact, two_degree_relation
@@ -16,30 +17,19 @@ from user.models import User, Friend, UserContact, two_degree_relation
 def livemedia_list(request):
     channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
     friends = Friend.get_friend_ids(user_id=request.user.id)
-    online_friends = []
-    offline_friends = []
+    friend_list = []
     for friend in friends:
         user = User.get(id=friend.user_id)
         if user:
             basic_info = user.basic_info()
-            if user.is_online():
-                basic_info["is_online"] = True
-                online_friends.append(basic_info)
-            else:
-                basic_info["is_online"] = False
-                basic_info["natural_time"] = user.natural_time
-                offline_friends.append(basic_info)
+            friend_list.append(basic_info)
 
-    _two_degree_relation = two_degree_relation(user_id=request.user.id)
-    # invited_channels = [channel.to_dict() for channel in Channel.objects.filter(user_id=request.user.id, invite_user_id__gt=0)]
-    invited_channels = []
+    two_degree_friends = two_degree_relation(user_id=request.user.id)
     return JsonResponse({"channels": channels,
-                         "online_friends": online_friends,
-                         "offline_friends": offline_friends,
-                         "contact_in_say": UserContact.get_contacts_in_app(owner_id=request.user.id),
-                         "contact_out_say": UserContact.get_contacts_out_app(owner_id=request.user.id),
-                         "two_degree_relation": _two_degree_relation,
-                         "invited_channels": invited_channels})
+                         "friends": friend_list,
+                         "contacts_in_say": UserContact.get_contacts_in_app(owner_id=request.user.id),
+                         "contacts_out_say": UserContact.get_contacts_out_app(owner_id=request.user.id),
+                         "two_degree_friends": two_degree_friends})
 
 
 @login_required_404
@@ -187,3 +177,29 @@ def close_guess_word(request):
     agora = Agora(user_id=request.user.id)
     agora.send_cannel_msg(channel_id=channel_id, **data)
     return JsonResponse()
+
+
+def push_to_user(request):
+    receiver_id = request.POST.get("receiver_id")
+
+    max_number = 20
+    push_number = mc.get("push_number:u:%s:r:%s" % (request.user.id, receiver_id)) or 0
+    if push_number > max_number:
+        return JsonResponseSuccess()
+
+    icon = ""
+    message = u"👉 %s邀请你来开Party" % request.user.nickname
+    for i in range(push_number):
+        icon += u"👉"
+
+    message = u"%s%s" % (icon, message)
+    websocket = Websocket(receiver_id=receiver_id)
+    websocket.push(message=message)
+
+    member = ChannelMember.objects.filter(user_id=request.user.id).first()
+    if member:
+        push_number += 1
+        LeanCloudIOS.async_push(receive_id=receiver_id, message=message, msg_type=8, channel_id=member.channel_id)
+        mc.set("push_number:u:%s:r:%s" % (request.user.id, receiver_id), push_number, 60)
+
+    return JsonResponseSuccess()

@@ -9,8 +9,8 @@ from django.conf import settings
 
 class LeanCloud(object):
     headers = {
-        'X-AVOSCloud-Application-Id': settings.YI_AVOS_APPLICATION_ID,
-        'X-AVOSCloud-Application-Key': settings.YI_AVOS_APPLICATION_KEY,
+        'X-AVOSCloud-Application-Id': settings.AVOS_APPLICATION_ID,
+        'X-AVOSCloud-Application-Key': settings.AVOS_APPLICATION_KEY,
         'Content-Type': 'application/json',
     }
     leancloud_url = 'https://api.leancloud.cn/1.1/'
