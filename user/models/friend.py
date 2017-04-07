@@ -4,6 +4,7 @@ from django.db import models, transaction
 from corelib.utils import natural_time as time_format
 
 from user.models import User
+from user.consts import UserEnum
 
 
 class InviteFriend(models.Model):
@@ -30,13 +31,30 @@ class InviteFriend(models.Model):
         return cls.objects.filter(invited_id=user_id).count()
 
     @classmethod
-    def get_friend_invites(cls, user_id, user_ranges=[]):
+    def get_invite_friend_ids(cls, user_id, user_ranges=[]):
         if not user_ranges:
             return list(cls.objects.filter(invited_id=user_id,
                                            status=0).values_list("user_id", flat=True))
         return list(cls.objects.filter(invited_id=user_id,
                                        status=0,
                                        user_id__in=user_ranges).values_list("user_id", flat=True))
+
+    @classmethod
+    def get_invite_friends(cls, user_id, user_ranges=[]):
+        invite_friend_ids = cls.get_invite_friend_ids(user_id=user_id,
+                                                      user_ranges=user_ranges)
+
+        results = []
+        for friend_id in invite_friend_ids:
+            user = User.get(id=friend_id)
+            if not user:
+                continue
+
+            basic_info = user.basic_info()
+            basic_info["user_relation"] = UserEnum.contact_in_app.value
+            results.append(basic_info)
+
+        return results
 
 
 class Friend(models.Model):

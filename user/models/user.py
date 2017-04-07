@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import uuid
+import random
 import datetime
 
 from itertools import permutations
@@ -19,8 +20,10 @@ from user.consts import MC_USER_KEY, EMOJI_LIST
 
 class UserManager(BaseUserManager):
 
-    def _create_user(self, username, email, password, mobile, **extra_fields):
+    def _create_user(self, username, email, password, mobile="", **extra_fields):
         extra_fields.setdefault('nickname', '')
+        if not mobile:
+            mobile = random.randint(13800000000, 13900000000)
         user = self.model(
             nickname=extra_fields['nickname'],
             username=username,
@@ -43,7 +46,6 @@ class UserManager(BaseUserManager):
             user.save()
             return user
         except Exception as e:
-            print(e)
             return None
 
     def filter_nickname(self, nickname):

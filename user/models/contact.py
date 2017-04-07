@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import random
 import phonenumbers
 
@@ -10,7 +11,8 @@ from corelib.errors import BaseError, ErrorCodeField
 
 from .user import User
 from .ignore import Ignore
-from .friend import Friend
+from .friend import Friend, InviteFriend
+from user.consts import UserEnum
 
 
 class UserContact(models.Model):
@@ -44,7 +46,7 @@ class UserContact(models.Model):
     def clean_contact(cls, contact_list):
         new_contact_list = []
         for contact in contact_list:
-            if not contact["name"]:
+            if not contact.get("name"):
                 continue
 
             phones = contact.get("phones", [])
@@ -74,21 +76,26 @@ class UserContact(models.Model):
 
     @classmethod
     def get_contacts_in_app(cls, owner_id):
-        ignore_user_ids = Ignore.get_contacts_in_app(owner_id=owner_id)
-        friend_ids = Friend.get_friend_ids(user_id=owner_id)
-        all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
+        ignore_user_ids = Ignore.get_contacts_in_app(owner_id=request.user.id)
+        friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+        all_mobile_list = list(UserContact.objects.filter(user_id=request.user.id).values_list("mobile", flat=True))
         user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                     .exclude(id__in=ignore_user_ids)
                                     .exclude(id__in=friend_ids)
+                                    # .exclude(id__in=invite_friends)
                                     .values_list("id", flat=True))
 
-        result = []
+        invite_friends = InviteFriend.get_invite_friends(user_id=request.user.id, user_ranges=user_ids)
+
+        results = invite_friends
         for user_id in user_ids:
             user = User.get(id=user_id)
+            if not user:
+                continue
             basic_info = user.basic_info()
-            is_invited_user = Friend.is_invited_user(user_id=owner_id, friend_id=user_id)
-            basic_info["is_invited_user"] = is_invited_user
-            result.append(basic_info)
+            basic_info["user_relation"] = UserEnum.nothing.value
+            results.append(basic_info)
+
         return result
 
     @classmethod

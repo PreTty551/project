@@ -183,14 +183,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-REDIS_CONFIG = {
-    'default': {
-        'HOST': '127.0.0.1',
-        'PORT': 6379,
-        'DB': 0,
-    }
-}
-
 TESTING = True
 
 AUTH_USER_MODEL = 'user.User'

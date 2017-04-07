@@ -129,7 +129,7 @@ def register(request):
 
 def wx_user_login(request):
     code = request.POST.get("code")
-    user_info = OAuth.get_user_info(code=code)
+    user_info = OAuth().get_user_info(code=code)
     if not user_info:
         return JsonResponse(error=LoginError.WX_LOGIN)
 
