@@ -19,7 +19,7 @@ class InviteFriend(models.Model):
     @classmethod
     def agree(cls, user_id, invited_id):
         cls.objects.filter(user_id=user_id, invited_id=invited_id).update(status=1)
-        Friend.add(user_id=user_id, friend_id=invited_id)
+        return Friend.add(user_id=user_id, friend_id=invited_id)
 
     @classmethod
     def ignore(cls, id):
@@ -30,8 +30,13 @@ class InviteFriend(models.Model):
         return cls.objects.filter(invited_id=user_id).count()
 
     @classmethod
-    def get_add_friend_request_list(cls, user_id):
-        return list(cls.objects.filter(friend_id=user_id, status=0).values_list("user_id", flat=True))
+    def get_friend_invites(cls, user_id, user_ranges=[]):
+        if not user_ranges:
+            return list(cls.objects.filter(invited_id=user_id,
+                                           status=0).values_list("user_id", flat=True))
+        return list(cls.objects.filter(invited_id=user_id,
+                                       status=0,
+                                       user_id__in=user_ranges).values_list("user_id", flat=True))
 
 
 class Friend(models.Model):
@@ -54,6 +59,10 @@ class Friend(models.Model):
     @property
     def natural_time(self):
         return time_format(self.localtime)
+
+    @classmethod
+    def count(cls, user_id):
+        return cls.objects.filter(user_id=user_id).count()
 
     @classmethod
     @transaction.atomic()

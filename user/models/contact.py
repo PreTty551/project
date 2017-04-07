@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import random
+import phonenumbers
 
 from django.db import models
 from django.conf import settings
@@ -43,7 +44,7 @@ class UserContact(models.Model):
     def clean_contact(cls, contact_list):
         new_contact_list = []
         for contact in contact_list:
-            if contact["name"]:
+            if not contact["name"]:
                 continue
 
             phones = contact.get("phones", [])
@@ -74,9 +75,11 @@ class UserContact(models.Model):
     @classmethod
     def get_contacts_in_app(cls, owner_id):
         ignore_user_ids = Ignore.get_contacts_in_app(owner_id=owner_id)
+        friend_ids = Friend.get_friend_ids(user_id=owner_id)
         all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
         user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                     .exclude(id__in=ignore_user_ids)
+                                    .exclude(id__in=friend_ids)
                                     .values_list("id", flat=True))
 
         result = []
@@ -99,25 +102,24 @@ class UserContact(models.Model):
         out_say_mobiles = set(mobile_ids) ^ set(all_mobile_list)
         result = []
         for mobile in out_say_mobiles:
-            user = User.objects.filter(mobile=mobile).first()
-            basic_info = user.basic_info()
-            result.append(basic_info)
+            uc = UserContact.objects.filter(user_id=owner_id, mobile=mobile).first()
+            if uc:
+                _ = {"nickname": uc.name, "mobile": mobile}
+                result.append(_)
         return result
 
     def contact_dict(self):
         return {
-            "first_name": self.first_name,
-            "last_name": self.last_name,
+            "name": self.name,
             "mobile": self.mobile,
             "avatar_url": "%scontact_avatar_%s@3x-min.png" % (settings.MEDIA_URL, random.randint(1, 9))
         }
 
     def to_dict(self):
         return {
+            "name": self.name,
+            "mobile": self.mobile,
             "user_id": self.user_id,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "mobile": self.mobile
         }
 
 
