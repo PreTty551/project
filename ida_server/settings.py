@@ -207,6 +207,9 @@ RONGCLOUD_APP_SECRET = '8aVVrPbUmwl0k'
 AVOS_APPLICATION_ID = ""
 AVOS_APPLICATION_KEY = ""
 
+KS3_KEY = ""
+KS3_SECRET = ""
+
 try:
     from .local_settings import *
 except ImportError:
