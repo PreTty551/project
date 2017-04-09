@@ -181,3 +181,8 @@ def get_related_amount(amount):
     if amount.find(".") != -1:
         amount = amount.rstrip("0").rstrip(".")
     return Decimal(amount)
+
+
+def yuan(amount):
+    """金额(元)"""
+    return (Decimal(amount) / Decimal("100")).quantize(Decimal('0.00'))

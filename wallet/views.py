@@ -4,13 +4,13 @@ from django.http import HttpResponseBadRequest, HttpResponseServerError, \
         HttpResponseNotFound
 
 from corelib.http import JsonResponse
-from corelib.wechat import WechatSDK
 from corelib.utils import random_str
-from wallet.models import WalletRecharge, get_related_amount
+from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount
+from wallet.error_handle import WalletError
 
 
 def wallet(request):
-    wallet = Wallet.get(user_id=request.user.id).first()
+    wallet = Wallet.get(user_id=request.user.id)
     return JsonResponse(wallet.to_dict())
 
 
@@ -22,9 +22,10 @@ def wechat_recharge(request):
         return HttpResponseBadRequest()
 
     try:
-        notify_url = "http://api.gouhuoapp.com/wallet/wechat_recharge_callback/"
+        notify_url = "http://api1.gouhuoapp.com/wallet/wechat_recharge_callback/"
         out_trade_no = random_str()
         wechat = WechatSDK()
+        amount = get_related_amount(amount)
         appapi_params = wechat.create_order(body="充值",
                                             amount=amount,
                                             out_trade_no=out_trade_no,
@@ -37,15 +38,23 @@ def wechat_recharge(request):
             return JsonResponse({"return_code": "SUCCESS",
                                  "appapi_params": appapi_params,
                                  "out_trade_no": out_trade_no})
-        return JsonResponse({"return_code": "FAIL", "return_msg": u"充值失败"})
+        return JsonResponse(error=WalletError.RECHARGE_FAIL)
     except:
-        return JsonResponse({"return_code": "FAIL", "return_msg": u"充值失败"})
+        return JsonResponse(error=WalletError.RECHARGE_FAIL)
 
 
 def wechat_recharge_callback(request):
     wechat = WechatSDK()
     wechat.transfer_callback(request_body=request.body,
                              func=WalletRecharge.recharge_callback)
+
+
+def client_recharge_callback(request):
+    out_trade_no = request.POST.get("out_trade_no")
+    is_success = WalletRecharge.recharge_callback(out_trade_no=out_trade_no)
+    if is_success:
+        return JsonResponse()
+    return HttpResponseServerError()
 
 
 def apply_withdrawal_to_wechat(request):
@@ -67,7 +76,7 @@ def apply_withdrawal_to_wechat(request):
                                        user_id=request.user.id,
                                        amount=amount)
         if is_success:
-            return JsonResponse(error=WalletError.WITHDRAWAL_SUCCESS)
+            return JsonResponse({"message": "提现成功, 系统正在进行结算, 您的提现金额将在24小时之内到账"})
     except Exception as e:
         if hasattr(e, "errcode"):
             if e.errcode in ["NOTENOUGH", "SYSTEMERROR", "AMOUNT_LIMIT"]:
