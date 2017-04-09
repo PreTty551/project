@@ -117,7 +117,7 @@ class Channel(models.Model):
     @property
     def duration_time(self):
         timedelta = timezone.now() - self.date
-        minute = (timedelta.seconds / 60) + timedelta.days * 24 * 60
+        minute = int((timedelta.seconds / 60) + timedelta.days * 24 * 60)
         return "当前%s人, 进行了%s分钟" % (self.member_count, minute)
 
     @property
