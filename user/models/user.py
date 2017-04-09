@@ -86,8 +86,8 @@ def update_avatar_in_third_login(user_id):
     if not avatar_url:
         return
 
-    qiniu = Qiniu()
-    avatar_name = qiniu.fetch(url=avatar_url)
+    from corelib.kingsoft.ks3 import KS3
+    avatar_name = KS3().fetch_avatar(url=avatar_url, user_id=request.user.id)
     if avatar_name:
         user.avatar = avatar_name
         user.save()
