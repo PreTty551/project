@@ -243,7 +243,7 @@ def third_verify_sms_code(request):
 
     # 异步队列更新头像
     queue = django_rq.get_queue('avatar')
-    queue.enqueue(update_avatar_in_third_login, user.id)
+    # queue.enqueue(update_avatar_in_third_login, user.id)
 
     if user.disable_login:
         return JsonResponse(error=LoginError.DISABLE_LOGIN)

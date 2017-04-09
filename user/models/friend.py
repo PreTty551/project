@@ -51,7 +51,7 @@ class InviteFriend(models.Model):
                 continue
 
             basic_info = user.basic_info()
-            basic_info["user_relation"] = UserEnum.contact_in_app.value
+            basic_info["user_relation"] = UserEnum.be_invite.value
             results.append(basic_info)
 
         return results
