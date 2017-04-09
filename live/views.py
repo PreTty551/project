@@ -16,10 +16,10 @@ from user.models import User, Friend, UserContact, two_degree_relation
 @login_required_404
 def livemedia_list(request):
     channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
-    friends = Friend.get_friend_ids(user_id=request.user.id)
+    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
     friend_list = []
-    for friend in friends:
-        user = User.get(id=friend.user_id)
+    for friend_id in friend_ids:
+        user = User.get(id=friend_id)
         if user:
             basic_info = user.basic_info()
             friend_list.append(basic_info)
