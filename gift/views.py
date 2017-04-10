@@ -3,6 +3,7 @@ from django.shortcuts import render
 
 from corelib.http import JsonResponse
 from gift.models import Gift, send_gift
+from gift.error_handle import GiftError
 from wallet.models import Wallet
 
 
@@ -13,13 +14,10 @@ def gift_list(request):
 
 
 def gift_transfer(request):
-    user_id = request.POST.get("user_id")
     to_user_id = request.POST.get("to_user_id")
     gift_id = request.POST.get("gift_id")
-    order_id = request.POST.get("order_id")
-    amount = request.POST.get("amount")
 
-    wallet = Wallet.get(user_id=user_id)
+    wallet = Wallet.get(user_id=request.user.id)
     valid = wallet.validate(amount=amount)
     if valid is not None:
         return JsonResponse(error=valid)
@@ -30,4 +28,4 @@ def gift_transfer(request):
                            amount=amount)
     if is_success:
         return JsonResponse()
-    return JsonResponse("交易失败")
+    return JsonResponse(error=GiftError.TRANSFER_GIFT_ERROR)
