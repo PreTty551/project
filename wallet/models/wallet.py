@@ -144,10 +144,13 @@ class Withdrawals(models.Model):
         db_table = "wallet_withdrawal"
 
     @classmethod
+    @transaction.atomic()
     def apply(cls, openid, user_id, amount):
         cls.objects.create(openid=openid,
                            user_id=user_id,
                            amount=amount)
+        wallet = Wallet.get(user_id=user_id)
+        wallet.minus(amount=amount)
         return True
 
     @classmethod
@@ -172,7 +175,8 @@ class Withdrawals(models.Model):
                 wallet = Wallet.get(user_id=wr.user_id)
                 wallet.minus(amount=wr.amount)
             else:
-                Withdrawals.objects.filter(user_id=obj.user_id).update(wechat_recode=recode["err_code"], status=WITHDRAWAL_FAIL)
+                Withdrawals.objects.filter(user_id=obj.user_id).update(wechat_recode=recode["err_code"],
+                                                                       status=WITHDRAWAL_FAIL)
 
 
 def get_related_amount(amount):

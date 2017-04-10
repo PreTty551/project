@@ -5,7 +5,9 @@ from django.http import HttpResponseBadRequest, HttpResponseServerError, \
 
 from corelib.http import JsonResponse
 from corelib.utils import random_str
-from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount
+from corelib.wechat import OAuth
+
+from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount, Withdrawals
 from wallet.error_handle import WalletError
 
 
