@@ -31,5 +31,18 @@ def init_data_to_user(user_id):
         InviteFriend.add(user_id=user.id, invited_id=user_id)
 
 
+def init_gift():
+    from gift.models import Gift
+    Gift.objects.create(name="拍巴掌", amount=1, size="m", icon="", order=1)
+    Gift.objects.create(name="比心心", amount=1, size="m", icon="", order=2)
+    Gift.objects.create(name="甜甜圈", amount=1, size="m", icon="", order=3)
+    Gift.objects.create(name="么么哒", amount=1, size="m", icon="", order=4)
+    Gift.objects.create(name="666", amount=1, size="m", icon="", order=5)
+    Gift.objects.create(name="鸡年大吉", amount=1, size="m", icon="", order=6)
+    Gift.objects.create(name="熊宝宝", amount=1, size="m", icon="", order=7)
+    Gift.objects.create(name="宝石皇冠", amount=1, size="l", icon="", order=8)
+
+
+
 if __name__ =="__main__":
     init_data_to_user(1)
