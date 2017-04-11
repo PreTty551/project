@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
+import time
+import json
+
 from django.db import models, transaction
+from decimal import Decimal
+
+from corelib.redis import redis
 
 from wallet.models import Wallet, WalletRecord
 from wallet.consts import GIFT_CATEGORY
+from user.models import User
 
 
 class Gift(models.Model):
@@ -11,6 +18,7 @@ class Gift(models.Model):
     size = models.CharField(max_length=4)
     icon = models.CharField(max_length=50)
     order = models.SmallIntegerField()
+    message = models.CharField(max_length=50, default="")
     date = models.DateTimeField(auto_now_add=True)
 
     @classmethod
@@ -58,9 +66,9 @@ class GiftOrder(models.Model):
 
 
 @transaction.atomic()
-def send_gift(owner_id, to_user_id, gift_id, amount, record_msg="礼物"):
+def send_gift(owner_id, to_user_id, gift_id, amount, channel_id, record_msg="礼物"):
     order = GiftOrder.add_order(user_id=owner_id,
-                                to_user_id=to_user_id,
+                                to_user_id=int(to_user_id),
                                 gift_id=gift_id,
                                 amount=amount)
 
@@ -72,7 +80,7 @@ def send_gift(owner_id, to_user_id, gift_id, amount, record_msg="礼物"):
         if is_success:
             WalletRecord.objects.create(owner_id=owner_id,
                                         user_id=to_user_id,
-                                        order_id=order.id,
+                                        out_trade_no=order.id,
                                         amount=amount,
                                         category=GIFT_CATEGORY,
                                         type=1,
@@ -80,30 +88,30 @@ def send_gift(owner_id, to_user_id, gift_id, amount, record_msg="礼物"):
 
             WalletRecord.objects.create(owner_id=to_user_id,
                                         user_id=owner_id,
-                                        order_id=order.id,
+                                        out_trade_no=order.id,
                                         amount=amount,
                                         category=GIFT_CATEGORY,
                                         type=2,
                                         desc=record_msg)
 
-        #     data = {
-        #         "from": order.user_id,
-        #         "subtitle": "￥%s" % (order.amount / Decimal(100.0)),
-        #         # "title": GIFTS_NOTIFY.get(gift_type) % to_user.nickname,
-        #         "to": order.to_user_id,
-        #         "type": 1,
-        #         "time": int(time.time() * 1000),
-        #         "gift_type": gift_type,
-        #         "gift_size": GIFTS_SIZE.get(gift_type),
-        #         "avatar_url": user.avatar_url
-        #     }
-        #
-        # if int(gift_type) == 1:
-        #     data["title"] = GIFTS_NOTIFY.get(gift_type) % (user.nickname, to_user.nickname)
-        # else:
-        #     data["title"] = GIFTS_NOTIFY.get(gift_type) % to_user.nickname
-        # redis.rpush("channel:%s:gitf_queue" % channel_name, json.dumps(data))
-        # redis.publish("sub:channel:%s" % channel_name, "1")
 
-            return True
+            gift = Gift.get(gift_id)
+            user = User.get(owner_id)
+            to_user = User.get(to_user_id)
+            data = {
+                "from": order.user_id,
+                "subtitle": "￥%s" % (order.amount / Decimal(100.0)),
+                # "title": gift.message % to_user.nickname,
+                "title": "送礼物啊啊啊啊",
+                "to": order.to_user_id,
+                "type": 1,
+                "time": int(time.time() * 1000),
+                "gift_size": gift.size,
+                "avatar_url": user.avatar_url,
+                "icon": 1
+            }
+
+        redis.rpush("channel:%s:gitf_queue" % channel_name, json.dumps(data))
+        redis.publish("sub:channel:%s" % channel_name, "1")
+        return True
     return False
