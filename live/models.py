@@ -10,6 +10,7 @@ from django.db.models import F, Sum
 from django.utils import timezone
 
 from user.models import User
+from .consts import ChannelType
 
 
 REDIS_CHANNEL_MEMBER_KEY = "agora:channel:%s:uids"
@@ -21,14 +22,14 @@ class Channel(models.Model):
     channel_id = models.CharField(unique=True, max_length=50)
     member_count = models.SmallIntegerField(default=0)
     channel_type = models.SmallIntegerField(default=0)
-    invite_user_id = models.IntegerField(default=0)
+    is_lock = models.BooleanField(default=False)
     date = models.DateTimeField('date', auto_now_add=True)
     pid = models.IntegerField(default=0)
 
     @classmethod
     @transaction.atomic()
-    def _add(cls, channel_id, user_id, invite_user_id=0):
-        obj = cls.objects.create(channel_id=channel_id, invite_user_id=invite_user_id)
+    def _add(cls, channel_id, user_id, channel_type):
+        obj = cls.objects.create(channel_id=channel_id, channel_type=channel_type)
         if obj:
             ChannelMember.add(channel_id=channel_id, user_id=user_id)
             ChannelMember.objects.exclude(channel_id=obj.channel_id).filter(user_id=user_id).delete()
@@ -36,18 +37,19 @@ class Channel(models.Model):
         return None
 
     @classmethod
-    def create_channel(cls, user_id):
+    def create_channel(cls, user_id, channel_type):
         channel_id = unique_channel_id(user_id=user_id)
-        return cls._add(channel_id=channel_id, user_id=user_id)
+        return cls._add(channel_id=channel_id,
+                        user_id=user_id,
+                        channel_type=channel_type)
 
     @classmethod
     def get_channel(cls, channel_id):
-        return cls.objects.filter(channel_id=channel_id).first()
+        return cls.objects.filter(channel_id=channel_id, status=ChannelType.normal.value).first()
 
     @classmethod
     def invite_channel(cls, user_id, invite_user_id):
-        channel_id = unique_channel_id(user_id=user_id)
-        return cls._add(channel_id=channel_id, user_id=user_id, invite_user_id=invite_user_id)
+        pass
 
     @classmethod
     @transaction.atomic()
@@ -62,7 +64,7 @@ class Channel(models.Model):
             # send_msg(msg, token)
 
     @classmethod
-    def join_channel(cls, channel_id, user_id, in_channel_uids=[]):
+    def join_channel(cls, channel_id, user_id):
         channel = cls.objects.filter(channel_id=channel_id).first()
         if channel:
             ChannelMember.add(channel_id=channel_id, user_id=user_id)
@@ -70,20 +72,13 @@ class Channel(models.Model):
             return True
         return False
 
-    @property
-    def is_lock(self):
-        return self.channel_type == 1
-
     def lock(self):
-        self.channel_type = 1
+        self.is_lock = True
         self.save()
 
     def unlock(self):
-        self.channel_type = 0
+        self.is_lock = False
         self.save()
-
-    def one_to_one(self):
-        pass
 
     def quit_channel(self, user_id):
         ChannelMember.objects.filter(user_id=user_id, channel_id=self.channel_id).delete()
@@ -141,6 +136,20 @@ class Channel(models.Model):
         }
 
 
+class InviteChannel(models.Model):
+    user_id = models.IntegerField()
+    to_user_id = models.IntegerField()
+    channel_id = models.CharField(max_length=50)
+    status = models.SmallIntegerField()
+    date = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    def add(cls, user_id, to_user_id, channel_id):
+        return cls.objects.create(user_id=user_id,
+                                  to_user_id=to_user_id,
+                                  channel_id=channel_id)
+
+
 class ChannelMember(models.Model):
     channel_id = models.CharField(max_length=50)
     user_id = models.IntegerField()
@@ -148,6 +157,10 @@ class ChannelMember(models.Model):
 
     class Meta:
         unique_together = (('channel_id', 'user_id'))
+
+    @classmethod
+    def get_channel(cls, user_id):
+        return cls.objects.filter(user_id=user_id).first()
 
     @classmethod
     def get_channel_member(cls, channel_id):

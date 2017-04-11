@@ -9,13 +9,22 @@ from corelib.agora import Agora
 from corelib.http import JsonResponse
 from corelib.websocket import Websocket
 
-from live.models import Channel, ChannelMember, GuessWord
-from user.models import User, Friend, UserContact, two_degree_relation
+from live.models import Channel, ChannelMember, GuessWord, InviteChannel
+from live.consts import ChannelType
+from user.models import User, Friend, UserContact, two_degree_relation, Place
+
+
+TEST_USER_IDS = []
 
 
 @login_required_404
 def livemedia_list(request):
-    channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
+    if request.user.id in TEST_USER_IDS:
+        res = request.get("https://gouhuoapp.com/api/v2/livemedia/list/")
+        res = res.json()
+        channels = res["channels"]
+
+    # channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
     friend_list = []
     for friend_id in friend_ids:
@@ -32,9 +41,54 @@ def livemedia_list(request):
                          "two_degree_friends": two_degree_friends})
 
 
+def near_channel_list(request):
+    """
+    这里有两种实现方式, 后续可以根据需求或数据量调整
+    1. 先查找所有附近类型的房间，再查这些房间用户，算附近排序(现在使用中)
+    2. 先直接查找附近n距离内的用户，再根据这些用户找到房间
+    """
+    channel_ids = Channel.objects.filter(channel_type=ChannelType.near.value).values_list("id", flat=True)
+    user_ids = ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True)
+    place = Place.get(user_id=request.user.id)
+    if not place:
+        return JsonResponse({"channels": []})
+
+    user_locations = Place.get_multi_user_dis(user_ids=user_ids)
+    sorted_user_ids = sorted(user_locations.items(), key=lambda item: item[1])
+
+    channels = []
+    for user_id in sorted_user_ids:
+        channel_id = ChannelMember.objects.filter(channel_type=1, user_id=user_id).values_list("channel_id", flat=True)
+        channel = Channel.get_channel(channel_id=channel_id)
+        if not channel:
+            continue
+
+        channels.append(channel.to_dict())
+    return JsonResponse({"channels": channels})
+
+
+def private_channel_list(request):
+    channel_ids = InviteChannel.objects.filter(to_user_id=request.user.id).values_list("channel_id", flat=True)
+    channels = [Channel.get_channel(channel_id=channel_id).to_dict() for channel_id in channel_ids]
+    return JsonResponse({"channels": channels})
+
+
 @login_required_404
 def create_channel(request):
-    channel = Channel.create_channel(user_id=request.user.id)
+    channel_type = int(request.POST.get("channel_type", ChannelType.normal.value))
+
+    try:
+        ChannelType(channel_type)
+    except ValueError:
+        return HttpResponseBadRequest()
+
+    if request.user.id in TEST_USER_IDS:
+        res = requests.post("https://gouhuoapp.com/api/v2/livemedia/channel/create/")
+        res = res.json()
+        return JsonResponse({"channel_id": res["channel_id"],
+                             "channel_key": res["hannel_key"]})
+
+    Channel.create_channel(user_id=request.user.id, channel_type=channel_type)
     if channel:
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
@@ -67,13 +121,16 @@ def invite_channel(request):
 @login_required_404
 def join_channel(request):
     channel_id = request.POST.get("channel_id")
-    in_channel_uids = request.POST.get("in_channel_uids", [])
 
     if not channel_id:
         return HttpResponseBadRequest()
 
-    if in_channel_uids:
-        in_channel_uids = [channel_uid for channel_uid in in_channel_uids.split(" ")]
+    if request.user.id in TEST_USER_IDS:
+        res = request.get("https://gouhuoapp.com/api/v2/livemedia/channel/join/", data={"channel_id": channel_id})
+
+        agora = Agora(user_id=request.user.id)
+        channel_key = agora.get_channel_madia_key(channel_name=channel_id.encode("utf8"))
+        return JsonResponse({"channel_id": channel_id, "channel_key": channel_key})
 
     agora = Agora(user_id=request.user.id)
     channel_key = agora.get_channel_madia_key(channel_name=channel_id.encode("utf8"))

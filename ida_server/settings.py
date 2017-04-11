@@ -87,6 +87,15 @@ DATABASES = {
     }
 }
 
+MONGO_CONFIG = {
+    'master': {
+        'HOST': '127.0.0.1',
+        'PORT': 27017,
+        'DB': 'test',
+        'USERNAME': '',
+        'PASSWORD': ''
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
