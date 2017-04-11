@@ -1,10 +1,12 @@
 import os
 import sys
 
-from .user import User
+from .user import User, TempThirdUser
 from .friend import InviteFriend, Friend
 from .contact import UserContact
 import random
+from django.db import connection, connections
+
 
 
 def init_data(user_id=None):
@@ -42,6 +44,68 @@ def init_gift():
     Gift.objects.create(name="熊宝宝", amount=1, size="m", icon="", order=7)
     Gift.objects.create(name="宝石皇冠", amount=1, size="l", icon="", order=8)
 
+
+def import_user():
+    with connections["gouhuo"].cursor() as cursor:
+        cursor.execute("SELECT * FROM ogow_user limit 1")
+        for row in cursor.fetchall():
+            user = User()
+            user.id = row[0]
+            user.password = row[1]
+            user.last_login = row[2]
+            user.is_superuser = row[3]
+            user.username = row[4]
+            user.first_name = row[5]
+            user.last_name = row[6]
+            user.email = row[7]
+            user.is_staff = row[8]
+            user.is_active = row[9]
+            user.date_joined = row[10]
+            user.mobile = row[11]
+            user.nickname = row[12]
+            avatar = row[13]
+            user.avatar = avatar[:20] if len(avatar) > 19 else avatar
+            user.gender = row[14]
+            user.intro = row[16] or ""
+            user.country = ""
+            user.country_code = "86"
+            user.is_import_contact = False
+            user.platform = 0
+            user.version = ""
+            user.save()
+
+
+def import_thirduser():
+    cursor = connections['gouhuo'].cursor()
+    cursor1 = connections['gouhuo'].cursor()
+
+    cursor.execute("SELECT * FROM ogow_thirduserid")
+    for row in cursor.fetchall():
+        cursor1.execute("SELECT nickname, gender FROM ogow_user where id=%s" % row[0])
+        r = cursor1.fetchone()
+        platform = int(row[3])
+        if platform == 1:
+            ttu = TempThirdUser()
+            ttu.mobile = ""
+            ttu.avatar = ""
+            ttu.third_id = row[4] if int(row[3]) == 1 else row[1]
+            ttu.third_name = "wx"
+            ttu.wx_unionid = row[1].replace("wx_", "")
+            ttu.nickname = r[0] if r else ""
+            ttu.user_id = row[0]
+            ttu.gender = r[1]
+            ttu.save()
+        elif platform == 2:
+            ttu = TempThirdUser()
+            ttu.mobile = ""
+            ttu.avatar = ""
+            ttu.third_id = row[1].replace("wb_", "")
+            ttu.third_name = "wb"
+            ttu.wx_unionid = ""
+            ttu.nickname = r[0] if r else ""
+            ttu.user_id = row[0]
+            ttu.gender = r[1]
+            ttu.save()
 
 
 if __name__ =="__main__":
