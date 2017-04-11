@@ -206,6 +206,7 @@ class ThirdUser(models.Model):
     third_id = models.CharField(max_length=30)
     third_name = models.CharField(max_length=20)
 
+
     class Meta:
         db_table = "third_user"
 
@@ -226,6 +227,8 @@ class TempThirdUser(models.Model):
     gender = models.SmallIntegerField(default=0)
     nickname = models.CharField(max_length=20)
     avatar = models.CharField(max_length=255)
+    wx_unionid = models.CharField(max_length=50, default="")
+    user_id = models.IntegerField(default=0)
 
     class Meta:
         db_table = "temp_third_user"

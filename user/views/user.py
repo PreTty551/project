@@ -133,6 +133,13 @@ def wx_user_login(request):
     if not user_info:
         return JsonResponse(error=LoginError.WX_LOGIN)
 
+    old_user = TempThirdUser.objects.filter(third_id="", wx_unionid=user_info["unionid"]).first()
+    if old_user:
+        old_user.third_id = user_info["openid"]
+        old_user.wx_unionid = user_info["unionid"]
+        old_user.save()
+        return JsonResponse({"temp_third_id": old_user.id, "is_new_user": True})
+
     third_user = ThirdUser.objects.filter(third_id=user_info["openid"]).first()
     if third_user:
         user = User.objects.filter(mobile=third_user.mobile).first()
@@ -230,23 +237,30 @@ def third_verify_sms_code(request):
         return JsonResponse(error=error_dict)
 
     temp_user = TempThirdUser.objects.filter(id=temp_third_id).first()
-    user = create_third_user(third_id=temp_user.third_id,
-                             third_name=temp_user.third_name,
-                             nickname=temp_user.nickname,
-                             avatar="",
-                             gender=temp_user.gender,
-                             mobile=mobile,
-                             platform=platform,
-                             version=version)
+    # 老用户
+    user_id = temp_user.user_id
+    if user_id:
+        User.objects.filter(id=user_id).update(mobile=mobile, platform=platform, version=version)
+        ThirdUser.objects.create(mobile=mobile, third_id=temp_user.third_id, third_name=temp_user.third_name)
+        user = User.objects.filter(id=user_id).first()
+    else:
+        user = create_third_user(third_id=temp_user.third_id,
+                                 third_name=temp_user.third_name,
+                                 nickname=temp_user.nickname,
+                                 avatar="",
+                                 gender=temp_user.gender,
+                                 mobile=mobile,
+                                 platform=platform,
+                                 version=version)
 
-    user.set_props_item("third_user_avatar", temp_user.avatar)
+        user.set_props_item("third_user_avatar", temp_user.avatar)
 
-    # 异步队列更新头像
-    queue = django_rq.get_queue('avatar')
-    # queue.enqueue(update_avatar_in_third_login, user.id)
+        # 异步队列更新头像
+        queue = django_rq.get_queue('avatar')
+        # queue.enqueue(update_avatar_in_third_login, user.id)
 
-    if user.disable_login:
-        return JsonResponse(error=LoginError.DISABLE_LOGIN)
+        if user.disable_login:
+            return JsonResponse(error=LoginError.DISABLE_LOGIN)
 
     # 登录
     if _login(request, user):
@@ -278,16 +292,17 @@ def check_login(request):
 
 def get_profile(request):
     user = User.get(id=request.user.id)
-    invite_friends = InviteFriend.get_friend_invites(user_id=request.user.id)
+    invite_friends = InviteFriend.get_invite_friends(user_id=request.user.id)
     two_degree = two_degree_relation(user_id=request.user.id)
     out_app_contacts = UserContact.get_contacts_out_app(owner_id=request.user.id)
 
     results = {}
     results["user"] = user.basic_info()
-    results["friend_count"] = Friend.count()
-    results["friend_invite_count"] = InviteFriend.count()
+    results["friend_count"] = Friend.count(user_id=request.user.id)
+    results["friend_invite_count"] = InviteFriend.count(user_id=request.user.id)
     results["two_degree"] = two_degree
     results["out_app_contacts"] = out_app_contacts
+    results["invite_friends"] = invite_friends
     return JsonResponse(results)
 
 
