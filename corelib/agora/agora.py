@@ -58,10 +58,10 @@ class Agora(object):
         req.update(kargs)
 
         keys = req.keys()
-        keys.sort()
+        keys = sorted(keys)
         signstr = ''.join(k + req[k] for k in keys)
         signstr = signstr.lower()
-        sign = hmac.new(self.app_secret, signstr, hashlib.sha1).hexdigest()
+        sign = hmac.new(self.app_secret.encode(), signstr.encode(), hashlib.sha1).hexdigest()
         req['_sign'] = sign
 
         resp = requests.post(self.url, data=json.dumps(req))
@@ -72,8 +72,8 @@ class Agora(object):
         return "%s%s" % (int(time.time()), self.user_id)
 
     def send_cannel_msg(self, channel_id, **kwargs):
-        msg = base64.b64encode(json.dumps(kwargs))
-        _ = {"name": str(channel_id), "msg": msg}
+        msg = base64.b64encode(json.dumps(kwargs).encode())
+        _ = {"name": str(channel_id), "msg": msg.decode()}
         self._call("channel_sendmsg", account=str(self.user_id), kargs=json.dumps(_))
 
     def subscribe_online(self):
