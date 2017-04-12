@@ -81,8 +81,12 @@ def import_thirduser():
 
     cursor.execute("SELECT * FROM ogow_thirduserid")
     for row in cursor.fetchall():
-        cursor1.execute("SELECT nickname, gender FROM ogow_user where id=%s" % row[0])
+        cursor1.execute("SELECT nickname, gender FROM ogow_user where id=%s" % row[2])
         r = cursor1.fetchone()
+        if not r:
+            continue
+
+        nickname = r[0] if r else ""
         platform = int(row[3])
         if platform == 1:
             ttu = TempThirdUser()
@@ -91,8 +95,8 @@ def import_thirduser():
             ttu.third_id = row[4] if int(row[3]) == 1 else row[1]
             ttu.third_name = "wx"
             ttu.wx_unionid = row[1].replace("wx_", "")
-            ttu.nickname = r[0] if r else ""
-            ttu.user_id = row[0]
+            ttu.nickname = nickname[:20]
+            ttu.user_id = row[2]
             ttu.gender = r[1]
             ttu.save()
         elif platform == 2:
@@ -102,10 +106,16 @@ def import_thirduser():
             ttu.third_id = row[1].replace("wb_", "")
             ttu.third_name = "wb"
             ttu.wx_unionid = ""
-            ttu.nickname = r[0] if r else ""
-            ttu.user_id = row[0]
+            ttu.nickname = nickname[:20]
+            ttu.user_id = row[2]
             ttu.gender = r[1]
             ttu.save()
+
+
+def import_s():
+    pass
+
+
 
 
 if __name__ =="__main__":
