@@ -10,3 +10,4 @@ django_rq==0.9.5
 raven==6.0.0
 pymongo==3.4.0
 git+git://github.com/rongcloud/server-sdk-python#egg=rongcloud
+xpinyin==0.5.5

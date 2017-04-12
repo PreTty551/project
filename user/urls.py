@@ -24,4 +24,6 @@ urlpatterns = [
     url(r'^user/friend/$', views.get_friends, name='get_friends'),
     url(r'^user/ignore/$', views.ignore, name='ignore'),
     url(r'^user/rong_token/$', views.rong_token, name='rong_token'),
+    url(r'^user/friend/pinyin/$', views.get_friends_order_by_pinyin, name='get_friends_order_by_pinyin'),
+    url(r'^user/friend/memo/update/$', views.update_user_memo, name='update_user_memo'),
 ]

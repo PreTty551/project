@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models, transaction
-
+from xpinyin import Pinyin
 from corelib.utils import natural_time as time_format
 
 from user.models import User
@@ -61,7 +61,12 @@ class Friend(models.Model):
     user_id = models.IntegerField()
     friend_id = models.IntegerField()
     notify_switch = models.BooleanField(default=True)
+    memo = models.CharField(max_length=100, default="")
     date = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    def get(cls, friend_id):
+        return cls.objects.filter(id=friend_id).first()
 
     @classmethod
     @transaction.atomic()
@@ -96,6 +101,30 @@ class Friend(models.Model):
     @classmethod
     def is_invited_user(cls, user_id, friend_id):
         return True if cls.objects.filter(user_id=friend_id, friend_id=user_id).first() else False
+
+    @classmethod
+    def get_friend_id_and_nicknames(cls, user_id):
+        friend_ids = cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True)
+        firends = []
+        for friend_id in Friend_ids:
+            user = User.get(id=friend_id)
+            firends.append((user.id, user.nickname))
+
+        return firends
+
+    @classmethod
+    def get_friends_order_by_pinyin(cls, user_id):
+        cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True)
+        firends = cls.get_friend_id_and_nicknames(user_id=user_id)
+
+        results = {}
+        for user_id, nickname in firends:
+            pinyin = Pinyin().get_pinyin(nickname, "")
+            ll = results.setdefault(pinyin[0], [])
+            ll.append(user_id, nickname)
+
+        return results
+
 
     def to_dict(self):
         user = User.get(self.user_id)

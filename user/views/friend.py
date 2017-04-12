@@ -48,5 +48,10 @@ def get_friends(request):
     return JsonResponse(friend_list)
 
 
+def get_friends_order_by_pinyin(request):
+    friend_list = Friend.get_friends_order_by_pinyin(user_id=request.user.id)
+    return JsonResponse(friend_list)
+
+
 def get_friend_invites(request):
     pass

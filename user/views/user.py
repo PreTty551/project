@@ -338,6 +338,18 @@ def get_basic_user_info(request):
     return HttpResponseBadRequest()
 
 
+def update_user_memo(request):
+    friend_id = request.POST.get("friend_id")
+    memo = request.POST.get("memo")
+
+    friend = Friend.objects.filter(user_id=request.user.id, friend_id=friend_id).first()
+    if friend:
+        friend.memo = memo
+        friend.save()
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
 def binding_wechat(request):
     code = request.POST.get("code")
     user_info = OAuth.get_user_info(code=code)

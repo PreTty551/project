@@ -169,6 +169,13 @@ class User(AbstractUser, PropsMixin):
         res = client.user_get_token(str(self.id), self.nickname, self.avatar_url)
         return res['token']
 
+    @property
+    def memo(self):
+        friend = Friend.get(friend_id=self.id)
+        if friend:
+            return friend.memo
+        return ""
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -189,9 +196,11 @@ class User(AbstractUser, PropsMixin):
         return self.get_say_account()
 
     def basic_info(self):
+        memo = self.memo
         return {
             "id": self.id,
-            "nickname": self.nickname,
+            "nickname": memo if memo else self.nickname,
+            "related_nickname": self.nickname,
             "avatar_url": self.avatar_url,
             "gender": self.gender,
             "intro": self.intro or "",
