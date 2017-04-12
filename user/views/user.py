@@ -133,13 +133,6 @@ def wx_user_login(request):
     if not user_info:
         return JsonResponse(error=LoginError.WX_LOGIN)
 
-    old_user = TempThirdUser.objects.filter(third_id="", wx_unionid=user_info["unionid"]).first()
-    if old_user:
-        old_user.third_id = user_info["openid"]
-        old_user.wx_unionid = user_info["unionid"]
-        old_user.save()
-        return JsonResponse({"temp_third_id": old_user.id, "is_new_user": True})
-
     third_user = ThirdUser.objects.filter(third_id=user_info["openid"]).first()
     if third_user:
         user = User.objects.filter(mobile=third_user.mobile).first()
@@ -152,6 +145,13 @@ def wx_user_login(request):
             basic_info["is_new_user"] = False
             return JsonResponse(basic_info)
     else:
+        old_user = TempThirdUser.objects.filter(wx_unionid=user_info["unionid"]).first()
+        if old_user:
+            old_user.third_id = user_info["openid"]
+            old_user.wx_unionid = user_info["unionid"]
+            old_user.save()
+            return JsonResponse({"temp_third_id": old_user.id, "is_new_user": True})
+
         sex = int(user_info["sex"])
         gender = 0 if sex == 2 else sex
         temp_third_user = TempThirdUser.objects.create(third_id=user_info["openid"],
@@ -183,20 +183,27 @@ def wb_user_login(request):
             basic_info["is_new_user"] = False
             return JsonResponse(basic_info)
     else:
-        try:
-            weibo = Weibo(access_token=access_token, uid=third_id)
-            user_info = weibo.get_user_info()
-            if not user_info:
+        old_user = TempThirdUser.objects.filter(third_id=third_id).first()
+        if old_user:
+            old_user.third_id = user_info["uid"]
+            old_user.save()
+            return JsonResponse({"temp_third_id": old_user.id, "is_new_user": True})
+        else:
+            try:
+                weibo = Weibo(access_token=access_token, uid=third_id)
+                user_info = weibo.get_user_info()
+                if not user_info:
+                    return JsonResponse(error=LoginError.WB_LOGIN)
+            except:
                 return JsonResponse(error=LoginError.WB_LOGIN)
-        except:
-            return JsonResponse(error=LoginError.WB_LOGIN)
 
-        temp_third_user = TempThirdUser.objects.create(third_id=user_info["uid"],
-                                                       third_name="wb",
-                                                       gender=user_info["gender"],
-                                                       nickname=user_info["nickname"],
-                                                       avatar=user_info["avatar"])
-        return JsonResponse({"temp_third_id": temp_third_user.id, "is_new_user": True})
+            temp_third_user = TempThirdUser.objects.create(third_id=user_info["uid"],
+                                                           third_name="wb",
+                                                           gender=user_info["gender"],
+                                                           nickname=user_info["nickname"],
+                                                           avatar=user_info["avatar"])
+            return JsonResponse({"temp_third_id": temp_third_user.id, "is_new_user": True})
+    return JsonResponse(error=LoginError.WB_LOGIN)
 
 
 def third_request_sms_code(request):
@@ -240,9 +247,19 @@ def third_verify_sms_code(request):
     # 老用户
     user_id = temp_user.user_id
     if user_id:
-        User.objects.filter(id=user_id).update(mobile=mobile, platform=platform, version=version)
-        ThirdUser.objects.create(mobile=mobile, third_id=temp_user.third_id, third_name=temp_user.third_name)
-        user = User.objects.filter(id=user_id).first()
+        user = User.objects.filter(mobile=mobile).first()
+        if not user:
+            user = User.objects.filter(id=user_id).first()
+
+        if not user:
+            return JsonResponse(error=LoginError.REGISTER_ERROR)
+
+        user.platform = platform
+        user.version = version
+        user.save()
+        ThirdUser.objects.create(mobile=mobile,
+                                 third_id=temp_user.third_id,
+                                 third_name=temp_user.third_name)
     else:
         user = create_third_user(third_id=temp_user.third_id,
                                  third_name=temp_user.third_name,
@@ -253,14 +270,14 @@ def third_verify_sms_code(request):
                                  platform=platform,
                                  version=version)
 
-        user.set_props_item("third_user_avatar", temp_user.avatar)
+    user.set_props_item("third_user_avatar", temp_user.avatar)
 
-        # 异步队列更新头像
-        queue = django_rq.get_queue('avatar')
-        # queue.enqueue(update_avatar_in_third_login, user.id)
+    # 异步队列更新头像
+    queue = django_rq.get_queue('avatar')
+    # queue.enqueue(update_avatar_in_third_login, user.id)
 
-        if user.disable_login:
-            return JsonResponse(error=LoginError.DISABLE_LOGIN)
+    if user.disable_login:
+        return JsonResponse(error=LoginError.DISABLE_LOGIN)
 
     # 登录
     if _login(request, user):
