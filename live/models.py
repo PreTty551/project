@@ -45,7 +45,7 @@ class Channel(models.Model):
 
     @classmethod
     def get_channel(cls, channel_id):
-        return cls.objects.filter(channel_id=channel_id, status=ChannelType.normal.value).first()
+        return cls.objects.filter(channel_id=channel_id, channel_type=ChannelType.normal.value).first()
 
     @classmethod
     def invite_channel(cls, user_id, invite_user_id):

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import requests
 
 from django.http import HttpResponseBadRequest
 from django.views.decorators.http import require_http_methods
@@ -14,13 +15,14 @@ from live.consts import ChannelType
 from user.models import User, Friend, UserContact, two_degree_relation, Place
 
 
-TEST_USER_IDS = []
+TEST_USER_IDS = [72240]
 
 
 @login_required_404
 def livemedia_list(request):
+    channels = []
     if request.user.id in TEST_USER_IDS:
-        res = request.get("https://gouhuoapp.com/api/v2/livemedia/list/")
+        res = requests.get("https://gouhuoapp.com/api/v2/livemedia/list/")
         res = res.json()
         channels = res["channels"]
 
@@ -88,7 +90,7 @@ def create_channel(request):
         return JsonResponse({"channel_id": res["channel_id"],
                              "channel_key": res["hannel_key"]})
 
-    Channel.create_channel(user_id=request.user.id, channel_type=channel_type)
+    channel = Channel.create_channel(user_id=request.user.id, channel_type=channel_type)
     if channel:
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
@@ -126,7 +128,7 @@ def join_channel(request):
         return HttpResponseBadRequest()
 
     if request.user.id in TEST_USER_IDS:
-        res = request.get("https://gouhuoapp.com/api/v2/livemedia/channel/join/", data={"channel_id": channel_id})
+        res = requests.get("https://gouhuoapp.com/api/v2/livemedia/channel/join/", data={"channel_id": channel_id})
 
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel_id.encode("utf8"))
