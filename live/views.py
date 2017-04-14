@@ -25,8 +25,9 @@ def livemedia_list(request):
         res = requests.get("https://gouhuoapp.com/api/v2/livemedia/list/")
         res = res.json()
         channels = res["channels"]
+    else:
+        channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
 
-    # channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
     friend_list = []
     for friend_id in friend_ids:
@@ -85,7 +86,7 @@ def create_channel(request):
         return HttpResponseBadRequest()
 
     if request.user.id in TEST_USER_IDS:
-        res = requests.post("https://gouhuoapp.com/api/v2/livemedia/channel/create/")
+        res = requests.post("https://gouhuoapp.com/api/v2/livemedia/channel/create/", data={"qingfeng": 72240})
         res = res.json()
         return JsonResponse({"channel_id": res["channel_id"],
                              "channel_key": res["hannel_key"]})
@@ -145,8 +146,7 @@ def join_channel(request):
         return JsonResponse({"is_lock": True})
 
     Channel.join_channel(channel_id=channel_id,
-                         user_id=request.user.id,
-                         in_channel_uids=in_channel_uids)
+                         user_id=request.user.id)
     return JsonResponse({"channel_id": channel_id, "channel_key": channel_key})
 
 
