@@ -11,7 +11,9 @@ urlpatterns = [
     url(r'^user/third_login/sms_code/request/$', views.third_request_sms_code, name='third_request_sms_code'),
     url(r'^user/third_login/sms_code/verify/$', views.third_verify_sms_code, name='third_verify_sms_code'),
     url(r'^user/basic_info/$', views.get_basic_user_info, name='basic_user_info'),
+    url(r'^user/detail_info/$', views.detail_user_info, name='detail_user_info'),
     url(r'^user/profile/$', views.get_profile, name='get_profile'),
+    url(r'^user/paid/update/$', views.update_paid, name='update_paid'),
 
     url(r'^user/contact/$', views.get_contacts, name='get_contacts'),
     url(r'^user/contact/in_app/$', views.get_contacts_in_app, name='get_contacts_in_app'),
@@ -26,4 +28,5 @@ urlpatterns = [
     url(r'^user/rong_token/$', views.rong_token, name='rong_token'),
     url(r'^user/friend/pinyin/$', views.get_friends_order_by_pinyin, name='get_friends_order_by_pinyin'),
     url(r'^user/friend/memo/update/$', views.update_user_memo, name='update_user_memo'),
+    url(r'^user/search/$', views.search, name='search'),
 ]

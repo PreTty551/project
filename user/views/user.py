@@ -14,6 +14,7 @@ from corelib.errors import LoginError
 from corelib.weibo import Weibo
 from corelib.wechat import OAuth
 from corelib.decorators import login_required_404
+from corelib.paginator import paginator
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
@@ -329,25 +330,13 @@ def rong_token(request):
 
 
 def get_basic_user_info(request):
-    user_id = request.POST.get("user_id")
+    user_id = request.GET.get("user_id")
     if user_id:
         user = User.get(id=user_id)
         if user:
             return JsonResponse(user.basic_info())
         return HttpResponseNotFound()
     return HttpResponseBadRequest()
-
-
-def update_user_memo(request):
-    friend_id = request.POST.get("friend_id")
-    memo = request.POST.get("memo")
-
-    friend = Friend.objects.filter(user_id=request.user.id, friend_id=friend_id).first()
-    if friend:
-        friend.memo = memo
-        friend.save()
-        return JsonResponse()
-    return HttpResponseServerError()
 
 
 def binding_wechat(request):
@@ -372,3 +361,35 @@ def binding_wechat(request):
     except:
         pass
     return JsonResponse()
+
+
+def update_paid(request):
+    paid = request.POST.get("paid")
+    User.objects.filter(id=request.user.id).update(paid=paid)
+    return JsonResponse()
+
+
+def search(request):
+    content = request.GET.get("content")
+    user_list = list(User.objects.filter(paid=content))
+    if not user_list:
+        user_list = User.objects.filter(nickname__startswith=content)
+
+    results = {"user_list": [], "paginator": {}}
+    user_list, paginator_dict = parse_paginator(user_list, page, 30)
+    results["paginator"] = paginator_dict
+    results["user_list"] = user_list
+
+    return JsonResponse(results)
+
+
+def detail_user_info(request):
+    user_id = request.GET.get("user_id")
+
+    user = User.get(id=user_id)
+    if request.user.id == user_id:
+        detail_info = user.detail_info()
+    else:
+        detail_info = user.detail_info(user_id=user_id)
+
+    return JsonResponse(detail_info)

@@ -4,6 +4,8 @@ import random
 import datetime
 
 from itertools import permutations
+from xpinyin import Pinyin
+
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth import models as auth_models
@@ -16,6 +18,7 @@ from corelib.weibo import Weibo
 from corelib.utils import natural_time as time_format
 
 from user.consts import MC_USER_KEY, EMOJI_LIST
+from .place import Places
 
 
 class UserManager(BaseUserManager):
@@ -37,12 +40,14 @@ class UserManager(BaseUserManager):
     def add_user(self, nickname, gender=0, mobile="", version="", platform=0):
         try:
             name = str(uuid.uuid4())[:30]
+            pinyin = Pinyin().get_pinyin(nickname, "")
             password = name
             email = "%s@%s.com" % (name, name)
             user = self._create_user(username=name, email=email, password=password, nickname=nickname, mobile=mobile)
             user.mobile = mobile
             user.gender = gender
             user.platform = platform
+            user.pinyin = pinyin
             user.save()
             return user
         except Exception as e:
@@ -50,10 +55,6 @@ class UserManager(BaseUserManager):
 
     def filter_nickname(self, nickname):
         return super(UserManager, self).get_queryset().filter(nickname=nickname).first()
-
-    # @cache(MC_USER_KEY % '{id}')
-    # def get(self, user_id):
-    #     return super(UserManager, self).get_queryset().filter(id=user_id).first()
 
 
 def rename_nickname(nickname):
@@ -94,6 +95,7 @@ def update_avatar_in_third_login(user_id):
 
 
 class User(AbstractUser, PropsMixin):
+    paid = models.CharField(max_length=50, default="", db_index=True)
     nickname = models.CharField(max_length=30)
     mobile = models.CharField(max_length=20, unique=True, default="")
     avatar = models.CharField(max_length=20, default="")
@@ -104,6 +106,7 @@ class User(AbstractUser, PropsMixin):
     is_import_contact = models.BooleanField(default=False)
     platform = models.SmallIntegerField(default=0)
     version = models.CharField(max_length=10, default="")
+    pinyin = models.CharField(max_length=30, default="")
 
     objects = UserManager()
 
@@ -171,41 +174,50 @@ class User(AbstractUser, PropsMixin):
 
     @property
     def memo(self):
+        from .friend import Friend
         friend = Friend.get(friend_id=self.id)
         if friend:
             return friend.memo
         return ""
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "username": self.username,
-            "nickname": self.nickname,
-            "email": self.email,
-            "gender": self.gender,
-            "avatar": self.avatar,
-            "intro": self.intro or '',
-            "mobile": self.mobile,
-        }
-
-    def get_say_account(self):
-        return (11000000 + self.id)
-
-    @property
-    def say_id(self):
-        return self.get_say_account()
+    def check_friend_relation(self, user_id):
+        from .friend import Friend, InviteFriend
+        is_friend = Friend.is_friend(user_id=self.id, friend_id=user_id)
+        if is_friend:
+            return UserEnum.friend.value
+        elif InviteFriend.is_invited_user(user_id=self.id, friend_id=user_id):
+            return UserEnum.be_invite.value
+        return UserEnum.nothing.value
 
     def basic_info(self):
         memo = self.memo
         return {
             "id": self.id,
-            "nickname": memo if memo else self.nickname,
-            "related_nickname": self.nickname,
+            "display_nickname": memo if memo else self.nickname,
+            "nickname": self.nickname,
             "avatar_url": self.avatar_url,
             "gender": self.gender,
             "intro": self.intro or "",
             "is_import_contact": self.is_import_contact
         }
+
+    def detail_info(self, user_id=None):
+        detail_info = {
+            "id": self.id,
+            "display_nickname": memo if memo else self.nickname,
+            "nickname": self.nickname,
+            "avatar_url": self.avatar_url,
+            "gender": self.gender,
+            "intro": self.intro or "",
+            "is_import_contact": self.is_import_contact,
+        }
+        if user_id:
+            detail_info["friend_relation"] = self.check_friend_relation(user_id=user_id)
+            place = Places.get(user_id=self.id)
+            if place:
+                dis = place.get_dis(to_user_id=user_id)
+                if dis:
+                    detail_info["location"] = u"%s公里" % dis
 
 auth_models.User = User
 
