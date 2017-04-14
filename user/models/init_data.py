@@ -37,14 +37,14 @@ def init_data_to_user(user_id):
 
 def init_gift():
     from gift.models import Gift
-    Gift.objects.create(name="拍巴掌", amount=1, size="m", icon="", order=1)
-    Gift.objects.create(name="比心心", amount=1, size="m", icon="", order=2)
-    Gift.objects.create(name="甜甜圈", amount=1, size="m", icon="", order=3)
-    Gift.objects.create(name="么么哒", amount=1, size="m", icon="", order=4)
-    Gift.objects.create(name="666", amount=1, size="m", icon="", order=5)
-    Gift.objects.create(name="鸡年大吉", amount=1, size="m", icon="", order=6)
-    Gift.objects.create(name="熊宝宝", amount=1, size="m", icon="", order=7)
-    Gift.objects.create(name="宝石皇冠", amount=1, size="l", icon="", order=8)
+    Gift.objects.create(name="拍巴掌", amount=1, size="m", icon="", order=1, message="送给 %s 拍巴掌")
+    Gift.objects.create(name="比心心", amount=1, size="m", icon="", order=2, message="送给 %s 比心心")
+    Gift.objects.create(name="甜甜圈", amount=1, size="m", icon="", order=3, message="送给 %s 甜甜圈")
+    Gift.objects.create(name="么么哒", amount=1, size="m", icon="", order=4, message="送给 %s 么么哒")
+    Gift.objects.create(name="666", amount=1, size="m", icon="", order=5, message="送给 %s 666")
+    Gift.objects.create(name="鸡年大吉", amount=1, size="m", icon="", order=6, message="送给 %s 鸡年大吉")
+    Gift.objects.create(name="熊宝宝", amount=1, size="m", icon="", order=7, message="送给 %s 熊宝宝")
+    Gift.objects.create(name="宝石皇冠", amount=1, size="l", icon="", order=8, message="送给 %s 宝石皇冠")
 
 
 def import_user():

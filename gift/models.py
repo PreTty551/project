@@ -101,8 +101,7 @@ def send_gift(owner_id, to_user_id, gift_id, amount, channel_id, record_msg="礼
             data = {
                 "from": order.user_id,
                 "subtitle": "￥%s" % (order.amount / Decimal(100.0)),
-                # "title": gift.message % to_user.nickname,
-                "title": "送礼物啊啊啊啊",
+                "title": gift.message % to_user.nickname,
                 "to": order.to_user_id,
                 "type": 1,
                 "time": int(time.time() * 1000),
