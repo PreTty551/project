@@ -50,7 +50,25 @@ def get_friends(request):
 
 def get_friends_order_by_pinyin(request):
     friend_list = Friend.get_friends_order_by_pinyin(user_id=request.user.id)
-    return JsonResponse(friend_list)
+    keys = list(friend_list.keys())
+    if "#" in keys:
+        keys.remove("#")
+
+    keys = sorted(keys)
+    keys.append("#")
+    return JsonResponse({"friend_list": friend_list, "keys": keys})
+
+
+def update_user_memo(request):
+    friend_id = request.POST.get("friend_id")
+    memo = request.POST.get("memo")
+
+    friend = Friend.objects.filter(user_id=request.user.id, friend_id=friend_id).first()
+    if friend:
+        friend.memo = memo
+        friend.save()
+        return JsonResponse()
+    return HttpResponseServerError()
 
 
 def get_friend_invites(request):

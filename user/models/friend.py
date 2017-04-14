@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models, transaction
-from xpinyin import Pinyin
+
 from corelib.utils import natural_time as time_format
 
 from user.models import User
@@ -19,8 +19,8 @@ class InviteFriend(models.Model):
 
     @classmethod
     def agree(cls, user_id, invited_id):
-        cls.objects.filter(user_id=user_id, invited_id=invited_id).update(status=1)
-        return Friend.add(user_id=user_id, friend_id=invited_id)
+        cls.objects.filter(user_id=invited_id, invited_id=user_id).update(status=1)
+        return Friend.add(user_id=invited_id, friend_id=user_id)
 
     @classmethod
     def ignore(cls, id):
@@ -29,6 +29,10 @@ class InviteFriend(models.Model):
     @classmethod
     def count(cls, user_id):
         return cls.objects.filter(invited_id=user_id).count()
+
+    @classmethod
+    def is_invited_user(cls, user_id, friend_id):
+        return True if cls.objects.filter(user_id=friend_id, friend_id=user_id).first() else False
 
     @classmethod
     def get_invite_friend_ids(cls, user_id, user_ranges=[]):
@@ -99,32 +103,36 @@ class Friend(models.Model):
         return list(cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True))
 
     @classmethod
-    def is_invited_user(cls, user_id, friend_id):
-        return True if cls.objects.filter(user_id=friend_id, friend_id=user_id).first() else False
+    def is_friend(cls, user_id, friend_id):
+        return True if cls.objects.filter(user_id=user_id, friend_id=friend_id).first() else False
 
     @classmethod
-    def get_friend_id_and_nicknames(cls, user_id):
+    def get_friends(cls, user_id):
         friend_ids = cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True)
         firends = []
-        for friend_id in Friend_ids:
+        for friend_id in friend_ids:
             user = User.get(id=friend_id)
-            firends.append((user.id, user.nickname))
+            firends.append(user)
 
         return firends
 
     @classmethod
     def get_friends_order_by_pinyin(cls, user_id):
-        cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True)
-        firends = cls.get_friend_id_and_nicknames(user_id=user_id)
-
+        friends = cls.get_friends(user_id=user_id)
         results = {}
-        for user_id, nickname in firends:
-            pinyin = Pinyin().get_pinyin(nickname, "")
-            ll = results.setdefault(pinyin[0], [])
-            ll.append(user_id, nickname)
+
+        for friend in friends:
+            if not friend:
+                continue
+
+            pinyin = friend.pinyin
+            if pinyin[0].isalpha():
+                ll = results.setdefault(pinyin[0], [])
+                ll.append(friend.basic_info())
+            else:
+                results["#"].append(friend.basic_info())
 
         return results
-
 
     def to_dict(self):
         user = User.get(self.user_id)
@@ -154,7 +162,13 @@ def two_degree_relation(user_id):
 
     result = []
     for user_id, mutual_friend_ids in _dict.items():
+        if len(mutual_friend_ids) < 2:
+            continue
+
         user = User.get(id=user_id)
+        if not user:
+            continue
+
         basic_info = user.basic_info()
         mutual_friend = [User.get(friend_id).nickname for friend_id in mutual_friend_ids]
         basic_info["mutual_friend"] = mutual_friend
