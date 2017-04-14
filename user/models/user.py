@@ -18,7 +18,7 @@ from corelib.weibo import Weibo
 from corelib.utils import natural_time as time_format
 
 from user.consts import MC_USER_KEY, EMOJI_LIST
-from .place import Places
+from .place import Place
 
 
 class UserManager(BaseUserManager):
@@ -213,7 +213,7 @@ class User(AbstractUser, PropsMixin):
         }
         if user_id:
             detail_info["friend_relation"] = self.check_friend_relation(user_id=user_id)
-            place = Places.get(user_id=self.id)
+            place = Place.get(user_id=self.id)
             if place:
                 dis = place.get_dis(to_user_id=user_id)
                 if dis:
