@@ -1,12 +1,14 @@
 import os
 import sys
+import random
+
+from xpinyin import Pinyin
+
+from django.db import connection, connections
 
 from .user import User, TempThirdUser
 from .friend import InviteFriend, Friend
 from .contact import UserContact
-import random
-from django.db import connection, connections
-
 
 
 def init_data(user_id=None):
@@ -47,7 +49,7 @@ def init_gift():
 
 def import_user():
     with connections["gouhuo"].cursor() as cursor:
-        cursor.execute("SELECT * FROM ogow_user limit 1")
+        cursor.execute("SELECT * FROM ogow_user where from_to=yi")
         for row in cursor.fetchall():
             user = User()
             user.id = row[0]
@@ -72,6 +74,9 @@ def import_user():
             user.is_import_contact = False
             user.platform = 0
             user.version = ""
+
+            pinyin = Pinyin().get_pinyin(nickname, "")
+            user.pinyin = pinyin
             user.save()
 
 
@@ -112,9 +117,16 @@ def import_thirduser():
             ttu.save()
 
 
-def import_s():
-    pass
-
+def import_friend():
+    user_ids = User.objects.values_list("id", flat=True)
+    cursor = connections['gouhuo'].cursor()
+    for user_id in user_ids:
+        cursor.execute("SELECT followed_user_id FROM yi_followuser where user_id=%s" % user_id)
+        follow_ids = [c[0] for c in cursor.fetchall()]
+        sql = "SELECT user_id FROM yi_followuser where followed_user_id=%s and user_id in %s" % (user_id, tuple(follow_ids))
+        cursor.execute(sql)
+        for r in cursor.fetchall():
+            Friend.add(user_id=user_id, friend_id=r[0])
 
 
 
