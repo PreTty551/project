@@ -32,7 +32,7 @@ urlpatterns = [
     url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends'),
 
     url(r'^user/search/$', views.search, name='search'),
-    url(r'^user/poke/$', views.push_to_user, name='push_to_user'),
+    url(r'^user/poke/$', views.invite_party, name='invite_party'),
     url(r'^user/party_push/$', views.party_push, name='party_push'),
     url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends')
 ]

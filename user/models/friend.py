@@ -6,7 +6,7 @@ from corelib.utils import natural_time as time_format
 
 from user.models import User
 from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY
-from corelib.mc import hash_cache
+from corelib.mc import hlcache
 
 
 class InviteFriend(models.Model):

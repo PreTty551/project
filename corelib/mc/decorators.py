@@ -105,4 +105,4 @@ def create_decorators(redis):
     def _hlcache(key_pattern, edis=redis):
         return hlcache(key_pattern, redis)
 
-    return dict(cache=_cache, hash_cache=_hlcache)
+    return dict(cache=_cache, hlcache=_hlcache)
