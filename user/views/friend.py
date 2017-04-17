@@ -33,6 +33,14 @@ def agree_friend(request):
     return HttpResponseServerError()
 
 
+def delete_friend(request):
+    friend_id = request.POST.get("friend_id")
+    is_success = Friend.delete_friend(owner_id=request.user.id, friend_id=friend_id)
+    if is_success:
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
 def ignore(request):
     user_id = request.POST.get("user_id")
     ignore_type = request.POST.get("ignore_type")
@@ -65,11 +73,19 @@ def update_user_memo(request):
 
     friend = Friend.objects.filter(user_id=request.user.id, friend_id=friend_id).first()
     if friend:
-        friend.memo = memo
-        friend.save()
-        return JsonResponse()
+        is_success = friend.update_memo(friend_id=friend_id, memo=memo)
+        if is_success:
+            return JsonResponse()
     return HttpResponseServerError()
 
 
 def get_friend_invites(request):
     pass
+
+
+def who_is_friends(request):
+    friend_ids = request.GET.get("friend_ids", "")
+    friend_ids = friend_ids.split(",")
+
+    friend_ids = Friend.who_is_friends(owner_id=request.user.id, friend_ids=friend_ids)
+    return JsonResponse({"friend_ids": friend_ids})

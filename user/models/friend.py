@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+import time
 from django.db import models, transaction
 
 from corelib.utils import natural_time as time_format
 
 from user.models import User
-from user.consts import UserEnum
+from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY
+from corelib.mc import hash_cache
 
 
 class InviteFriend(models.Model):
@@ -32,7 +34,7 @@ class InviteFriend(models.Model):
 
     @classmethod
     def is_invited_user(cls, user_id, friend_id):
-        return True if cls.objects.filter(user_id=friend_id, friend_id=user_id).first() else False
+        return True if cls.objects.filter(user_id=friend_id, invited_id=user_id).first() else False
 
     @classmethod
     def get_invite_friend_ids(cls, user_id, user_ranges=[]):
@@ -69,14 +71,47 @@ class Friend(models.Model):
     date = models.DateTimeField(auto_now_add=True)
 
     @classmethod
-    def get(cls, friend_id):
-        return cls.objects.filter(id=friend_id).first()
+    def is_friend(cls, owner_id, friend_id):
+        is_friend = redis.hget(MC_FRIEND_IDS_KEY % owner_id, owner_id)
+        if not is_friend:
+            friend = cls.objects.filter(user_id=owner_id, friend_id=friend_id).first()
+            return True if friend else False
+        return True
+
+    @classmethod
+    @hlcache(MC_FRIEND_IDS_KEY % '{owner_id}')
+    def get_friend_ids(cls, owner_id):
+        return list(cls.objects.filter(user_id=owner_id).values_list("friend_id", flat=True))
+
+    @classmethod
+    def who_is_friends(cls, owner_id, friend_ids):
+        quertset = Friend.objects.filter(user_id=owner_id, friend_id__in=friend_ids)
+        return list(quertset.values_list("friend_id", flat=True))
 
     @classmethod
     @transaction.atomic()
     def add(cls, user_id, friend_id):
         Friend.objects.create(user_id=user_id, friend_id=friend_id)
         Friend.objects.create(user_id=friend_id, friend_id=user_id)
+        return True
+
+    @classmethod
+    @transaction.atomic()
+    def delete_friend(cls, owner_id, friend_id):
+        cls.objects.filter(user_id=owner_id, friend_id=friend_id).delete()
+        cls.objects.filter(user_id=friend_id, friend_id=owner_id).delete()
+        redis.hdel(MC_FRIEND_IDS_KEY % owner_id, friend_id)
+        redis.hdel(MC_FRIEND_IDS_KEY % friend_id, owner_id)
+        return True
+
+    @classmethod
+    def get_memo(cls, owner_id, friend_id):
+        return redis.hget(REDIS_MEMOS_KEY % owner_id, friend_id)
+
+    def update_memo(self, memo):
+        self.memo = memo
+        self.save()
+        redis.hset(REDIS_MEMOS_KEY % self.user_id, self.user_id, memo)
         return True
 
     @property
@@ -99,14 +134,6 @@ class Friend(models.Model):
         return True
 
     @classmethod
-    def get_friend_ids(cls, user_id):
-        return list(cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True))
-
-    @classmethod
-    def is_friend(cls, user_id, friend_id):
-        return True if cls.objects.filter(user_id=user_id, friend_id=friend_id).first() else False
-
-    @classmethod
     def get_friends(cls, user_id):
         friend_ids = cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True)
         firends = []
@@ -119,7 +146,7 @@ class Friend(models.Model):
     @classmethod
     def get_friends_order_by_pinyin(cls, user_id):
         friends = cls.get_friends(user_id=user_id)
-        results = {}
+        results = {"#": []}
 
         for friend in friends:
             if not friend:
@@ -127,7 +154,7 @@ class Friend(models.Model):
 
             pinyin = friend.pinyin
             if pinyin[0].isalpha():
-                ll = results.setdefault(pinyin[0], [])
+                ll = results.setdefault(pinyin[0].upper(), [])
                 ll.append(friend.basic_info())
             else:
                 results["#"].append(friend.basic_info())
@@ -149,6 +176,7 @@ def two_degree_relation(user_id):
                                     .values_list("friend_id", flat=True))
     second_friend_list = list(Friend.objects.filter(user_id__in=friend_ids)
                                             .exclude(friend_id=user_id)
+                                            .exclude(friend_id__in=friend_ids)
                                             .values_list("user_id", "friend_id"))
 
     obj = []
@@ -159,18 +187,30 @@ def two_degree_relation(user_id):
     for uid, fid in obj:
         _ = _dict.setdefault(fid, [])
         _.append(uid)
-
     result = []
+
+    uids = []
     for user_id, mutual_friend_ids in _dict.items():
-        if len(mutual_friend_ids) < 2:
-            continue
+        if len(mutual_friend_ids) >= 2:
+            uids.append(user_id)
 
-        user = User.get(id=user_id)
-        if not user:
-            continue
+        #user = User.get(id=user_id)
+        #if not user:
+        #    continue
 
-        basic_info = user.basic_info()
-        mutual_friend = [User.get(friend_id).nickname for friend_id in mutual_friend_ids]
-        basic_info["mutual_friend"] = mutual_friend
-        result.append(basic_info)
+        #basic_info = user.basic_info()
+        #mutual_friend = [User.get(friend_id).nickname for friend_id in mutual_friend_ids if User.get(friend_id)]
+        #basic_info["mutual_friend"] = mutual_friend_ids
+        #result.append({})
+
+    users = User.objects.filter(id__in=uids)
+    result = [u.basic_info() for u in users]
     return result
+
+
+def common_friend(user_id, to_user_id):
+    user_ids = Friend.get_friend_ids(user_id)
+    to_user_id = Friend.get_friend_ids(to_user_id)
+
+    u_ids = set(user_ids) & set(to_user_id)
+    return [User.get(uid).nickname for uid in u_ids if User.get(uid)]

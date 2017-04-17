@@ -16,6 +16,7 @@ from corelib.qiniucloud import Qiniu
 from corelib.props import PropsMixin
 from corelib.weibo import Weibo
 from corelib.utils import natural_time as time_format
+from corelib.mc import cache
 
 from user.consts import MC_USER_KEY, EMOJI_LIST
 from .place import Place
@@ -135,7 +136,9 @@ class User(AbstractUser, PropsMixin):
         super(User, self).save(*args, **kwargs)
 
     @classmethod
+    @cache("user:%s" % '{id}')
     def get(cls, id):
+        print("cls", cls)
         return cls.objects.filter(id=id).first()
 
     def is_online(self):
@@ -172,14 +175,6 @@ class User(AbstractUser, PropsMixin):
         res = client.user_get_token(str(self.id), self.nickname, self.avatar_url)
         return res['token']
 
-    @property
-    def memo(self):
-        from .friend import Friend
-        friend = Friend.get(friend_id=self.id)
-        if friend:
-            return friend.memo
-        return ""
-
     def check_friend_relation(self, user_id):
         from .friend import Friend, InviteFriend
         is_friend = Friend.is_friend(user_id=self.id, friend_id=user_id)
@@ -189,11 +184,14 @@ class User(AbstractUser, PropsMixin):
             return UserEnum.be_invite.value
         return UserEnum.nothing.value
 
-    def basic_info(self):
-        memo = self.memo
+    def basic_info(self, user_id=None):
+        if user_id:
+            memo = Friend.get_memo(user_id=self.id, friend_id=user_id)
+        else:
+            memo = self.nickname
         return {
             "id": self.id,
-            "display_nickname": memo if memo else self.nickname,
+            "display_nickname": memo,
             "nickname": self.nickname,
             "avatar_url": self.avatar_url,
             "gender": self.gender,
@@ -202,15 +200,11 @@ class User(AbstractUser, PropsMixin):
         }
 
     def detail_info(self, user_id=None):
-        detail_info = {
-            "id": self.id,
-            "display_nickname": memo if memo else self.nickname,
-            "nickname": self.nickname,
-            "avatar_url": self.avatar_url,
-            "gender": self.gender,
-            "intro": self.intro or "",
-            "is_import_contact": self.is_import_contact,
-        }
+        from .friend import common_friend
+        common_friends = common_friend(self.id, user_id)
+        common_friends = ",".join(common_friends)
+        detail_info = self.basic_info()
+        detail_info["common_friends"] = common_friends if common_friends else ""
         if user_id:
             detail_info["friend_relation"] = self.check_friend_relation(user_id=user_id)
             place = Place.get(user_id=self.id)
@@ -219,6 +213,8 @@ class User(AbstractUser, PropsMixin):
                 if dis:
                     detail_info["location"] = u"%s公里" % dis
 
+        return detail_info
+
 auth_models.User = User
 
 
@@ -226,7 +222,6 @@ class ThirdUser(models.Model):
     mobile = models.CharField(max_length=20, db_index=True, default=0)
     third_id = models.CharField(max_length=30)
     third_name = models.CharField(max_length=20)
-
 
     class Meta:
         db_table = "third_user"
@@ -253,3 +248,13 @@ class TempThirdUser(models.Model):
 
     class Meta:
         db_table = "temp_third_user"
+
+
+class PokeLog(models.Model):
+    user_id = models.IntegerField()
+    to_user_id = models.IntegerField()
+    status = models.SmallIntegerField()
+    date = models.DateTimeField('date', auto_now_add=True)
+
+    class Meta:
+        db_table = "poke_log"

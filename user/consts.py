@@ -14,7 +14,8 @@ EMOJI_LIST = [u"😀", u"😁", u"😃", u"😄", u"😇", u"😉", u"😊", u"�
               u"✨", u"🍎", u"🍓", u"🍍", u"🍒", u"🌽", u"🍔", u"🍟", u"⚽️", u"🏀",
               u"🏈", u"🏐", u"🎱", u"🚗", u"🚕", u"🚙", u"🚀", u"🎇", u"🌠", u"🎀"]
 
-# memcache keys
-MC_USER_KEY = "user:%s"
-
-# 忽略类型
+# cache keys
+MC_USER_KEY = "u:%s"
+MC_IS_FRIEND_KEY = "u:%s:f:%s"
+MC_FRIEND_IDS_KEY = "u:%s:fs"
+REDIS_MEMOS_KEY = 'u:%s:memo'

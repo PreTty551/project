@@ -2,7 +2,9 @@
 import json
 import datetime
 import django_rq
+import requests
 
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseBadRequest, Http404, \
@@ -15,10 +17,13 @@ from corelib.weibo import Weibo
 from corelib.wechat import OAuth
 from corelib.decorators import login_required_404
 from corelib.paginator import paginator
+from corelib.leancloud import LeanCloudDev
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
-from user.models import UserContact, InviteFriend, Friend, ContactError, two_degree_relation
+from user.models import UserContact, InviteFriend, Friend, ContactError, two_degree_relation, PokeLog
+from local_push import LocalPush
+
 
 
 @require_http_methods(["POST"])
@@ -255,6 +260,7 @@ def third_verify_sms_code(request):
         if not user:
             return JsonResponse(error=LoginError.REGISTER_ERROR)
 
+        user.mobile = mobile
         user.platform = platform
         user.version = version
         user.save()
@@ -370,15 +376,18 @@ def update_paid(request):
 
 
 def search(request):
-    content = request.GET.get("content")
+    content = request.POST.get("content")
+    page = request.POST.get("page", 1)
+
     user_list = list(User.objects.filter(paid=content))
     if not user_list:
         user_list = User.objects.filter(nickname__startswith=content)
 
     results = {"user_list": [], "paginator": {}}
-    user_list, paginator_dict = parse_paginator(user_list, page, 30)
+    user_list, paginator_dict = paginator(user_list, page, 30)
+    user_list = [user.basic_info() for user in user_list]
     results["paginator"] = paginator_dict
-    results["user_list"] = user_list
+    results["friends"] = user_list
 
     return JsonResponse(results)
 
@@ -393,3 +402,65 @@ def detail_user_info(request):
         detail_info = user.detail_info(user_id=user_id)
 
     return JsonResponse(detail_info)
+
+
+def party_push(request):
+    """
+    1. 一周内开party的用户
+    """
+    bulk_ids = []
+    ids = []
+    i = 0
+
+    friend_ids = Friend.get_friend_ids(user_id=user_id)
+    pre_week = timezone.now() - datetime.timedelta(days=7)
+    party_user_ids_in_week = list(LiveMediaLog.objects.filter(data__gte=pre_week, user_id__in=friend_ids)
+                                                      .values_list("user_id", flat=True).distinct())
+    bulk_user_ids = set(party_user_ids_in_week) ^ set(friend_ids)
+
+    from corelib.leancloud import LeanCloudDev
+    message = "%s 正在开party" % request.user.nickname
+    LeanCloudDev.async_batch_push(receive_ids=bulk_user_ids, message=message)
+
+    for friend_id in party_user_ids_in_week:
+        if i < 11:
+            fids = Friend.get_friend_ids(user_id=friend_id)
+            party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
+            nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
+            nicknames = ",".join(nicknames)
+            message = "%s 正在开party" % nicknames
+            LeanCloudDev.async_push(receive_id=friend_id, message=message)
+            i += 1
+    return JsonResponse()
+
+
+def invite_party(request):
+    receiver_id = request.POST.get("receiver_id")
+
+    push_number = 20
+    icon = ""
+    message = u"👉 %s邀请你来开Party" % request.user.nickname
+    for i in range(push_number):
+        icon += u"👉"
+
+    message = u"%s%s" % (icon, message)
+
+    # url = "https://gouhuoapp.com/amumu/server_to_client/"
+    # _ = {"path": "/amumu/websocket/%s/" % receiver_id, "message": message, "tpye": 1}
+    # data = {"data": json.dumps(_)}
+    # requests.post(url, data=data)
+
+    PokeLog.objects.create(user_id=request.user.id, to_user_id=receiver_id)
+    LocalPush.invite_party(user_id=request.user.id,
+                           to_user_id=receiver_id,
+                           message=message)
+
+    member = ChannelMember.objects.filter(user_id=request.user.id).first()
+    if member:
+        push_number += 1
+        LeanCloudDev.async_push(receive_id=receiver_id,
+                                message=message,
+                                msg_type=8,
+                                channel_id=member.channel_id)
+
+    return JsonResponse()

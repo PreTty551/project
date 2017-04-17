@@ -6,7 +6,7 @@ from xpinyin import Pinyin
 
 from django.db import connection, connections
 
-from .user import User, TempThirdUser
+from .user import User, TempThirdUser, ThirdUser
 from .friend import InviteFriend, Friend
 from .contact import UserContact
 
@@ -37,19 +37,19 @@ def init_data_to_user(user_id):
 
 def init_gift():
     from gift.models import Gift
-    Gift.objects.create(name="拍巴掌", amount=1, size="m", icon="", order=1, message="送给 %s 拍巴掌")
-    Gift.objects.create(name="比心心", amount=1, size="m", icon="", order=2, message="送给 %s 比心心")
-    Gift.objects.create(name="甜甜圈", amount=1, size="m", icon="", order=3, message="送给 %s 甜甜圈")
-    Gift.objects.create(name="么么哒", amount=1, size="m", icon="", order=4, message="送给 %s 么么哒")
-    Gift.objects.create(name="666", amount=1, size="m", icon="", order=5, message="送给 %s 666")
-    Gift.objects.create(name="鸡年大吉", amount=1, size="m", icon="", order=6, message="送给 %s 鸡年大吉")
-    Gift.objects.create(name="熊宝宝", amount=1, size="m", icon="", order=7, message="送给 %s 熊宝宝")
-    Gift.objects.create(name="宝石皇冠", amount=1, size="l", icon="", order=8, message="送给 %s 宝石皇冠")
+    Gift.objects.create(id=1, name="拍巴掌", amount=1, size="m", icon="1", order=1, message="送给 %s 拍巴掌")
+    Gift.objects.create(id=2, name="比心心", amount=1, size="m", icon="2", order=2, message="送给 %s 比心心")
+    Gift.objects.create(id=3, name="甜甜圈", amount=1, size="m", icon="3", order=3, message="送给 %s 甜甜圈")
+    Gift.objects.create(id=4, name="么么哒", amount=1, size="m", icon="4", order=4, message="送给 %s 么么哒")
+    Gift.objects.create(id=5, name="666", amount=1, size="m", icon="5", order=5, message="送给 %s 666")
+    Gift.objects.create(id=6, name="鸡年大吉", amount=1, size="m", icon="6", order=6, message="送给 %s 鸡年大吉")
+    Gift.objects.create(id=7, name="熊宝宝", amount=1, size="m", icon="7", order=7, message="送给 %s 熊宝宝")
+    Gift.objects.create(id=8, name="宝石皇冠", amount=1, size="l", icon="8", order=8, message="送给 %s 宝石皇冠")
 
 
 def import_user():
     with connections["gouhuo"].cursor() as cursor:
-        cursor.execute("SELECT * FROM ogow_user where from_to=yi")
+        cursor.execute("SELECT * FROM ogow_user where from_to='yi'")
         for row in cursor.fetchall():
             user = User()
             user.id = row[0]
@@ -75,8 +75,8 @@ def import_user():
             user.platform = 0
             user.version = ""
 
-            pinyin = Pinyin().get_pinyin(nickname, "")
-            user.pinyin = pinyin
+            pinyin = Pinyin().get_pinyin(user.nickname, "")
+            user.pinyin = pinyin[:30]
             user.save()
 
 
@@ -127,8 +127,3 @@ def import_friend():
         cursor.execute(sql)
         for r in cursor.fetchall():
             Friend.add(user_id=user_id, friend_id=r[0])
-
-
-
-if __name__ =="__main__":
-    init_data_to_user(1)

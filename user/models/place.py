@@ -21,7 +21,7 @@ class Place(object):
     @classmethod
     def _get_cursor(cls):
         client = pymongo.MongoClient(HOST, PORT)
-        db = client.say
+        db = client
         db.authenticate(USERNAME, PASSWORD, DB)
         return db
 
@@ -30,9 +30,9 @@ class Place(object):
         db = cls._get_cursor()
         obj = db.places.find_one({"user_id": user_id})
         if obj:
-            place = Places(lon=obj["coordinates"][0],
-                           lat=obj["coordinates"][1],
-                           user_id=user_id)
+            place = Place(lon=obj["coordinates"][0],
+                          lat=obj["coordinates"][1],
+                          user_id=user_id)
             place.db = db
             return place
         return None

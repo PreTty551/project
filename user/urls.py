@@ -23,10 +23,16 @@ urlpatterns = [
 
     url(r'^user/friend/invite/$', views.invite_friend, name='invite_friend'),
     url(r'^user/friend/agree/$', views.agree_friend, name='agree_friend'),
+    url(r'^user/friend/delete/$', views.delete_friend, name='delete_friend'),
     url(r'^user/friend/$', views.get_friends, name='get_friends'),
     url(r'^user/ignore/$', views.ignore, name='ignore'),
     url(r'^user/rong_token/$', views.rong_token, name='rong_token'),
     url(r'^user/friend/pinyin/$', views.get_friends_order_by_pinyin, name='get_friends_order_by_pinyin'),
     url(r'^user/friend/memo/update/$', views.update_user_memo, name='update_user_memo'),
+    url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends'),
+
     url(r'^user/search/$', views.search, name='search'),
+    url(r'^user/poke/$', views.push_to_user, name='push_to_user'),
+    url(r'^user/party_push/$', views.party_push, name='party_push'),
+    url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends')
 ]
