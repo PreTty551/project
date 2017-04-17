@@ -149,5 +149,14 @@ class LeanCloud(object):
             requests.post('%s%s' % (cls.leancloud_url, apiurl), data=json.dumps(data),
                           headers=cls.headers, timeout=5)
 
+
 def _post(url, data, headers):
     requests.post(url, data=data, headers=headers, timeout=5)
+
+
+class LeanCloudDev(LeanCloud):
+    headers = {
+        'X-AVOSCloud-Application-Id': "5suqhwhsxyw3qsr2nvzs0pvn4evgk0wyflnyefbxkie9sztx",
+        'X-AVOSCloud-Application-Key': "9mekmkgmfv97arvm7p1275dgqsxekajh6exmuy3hw9uhkj2d",
+        'Content-Type': 'application/json',
+    }
