@@ -6,6 +6,7 @@ from django.db import models, transaction
 from decimal import Decimal
 
 from corelib.redis import redis
+from corelib.agora import Agora
 
 from wallet.models import Wallet, WalletRecord
 from wallet.consts import GIFT_CATEGORY
@@ -94,23 +95,45 @@ def send_gift(owner_id, to_user_id, gift_id, amount, channel_id, record_msg="礼
                                         type=2,
                                         desc=record_msg)
 
-
             gift = Gift.get(gift_id)
             user = User.get(owner_id)
             to_user = User.get(to_user_id)
-            data = {
-                "from": order.user_id,
-                "subtitle": "￥%s" % (order.amount / Decimal(100.0)),
-                "title": gift.message % to_user.nickname,
-                "to": order.to_user_id,
+            _ = {
                 "type": 1,
-                "time": int(time.time() * 1000),
-                "gift_size": gift.size,
-                "avatar_url": user.avatar_url,
-                "icon": 1
+                "data": {
+                    "from": order.user_id,
+                    "subtitle": "￥%s" % (order.amount / Decimal(100.0)),
+                    "title": gift.message % to_user.nickname,
+                    "to": order.to_user_id,
+                    "time": int(time.time() * 1000),
+                    "gift_size": gift.size,
+                    "avatar_url": user.avatar_url,
+                    "icon": 1
+                }
             }
 
-        redis.rpush("channel:%s:gitf_queue" % channel_name, json.dumps(data))
-        redis.publish("sub:channel:%s" % channel_name, "1")
-        return True
+            agora = Agora(user_id=owner_id)
+            agora.send_cannel_msg(channel_id=channel_id, **_)
+            return True
     return False
+
+
+def test_gift_queue(owner_id, to_user_id, channel_id, gift_id=1):
+    gift = Gift.get(gift_id)
+    user = User.get(owner_id)
+    to_user = User.get(to_user_id)
+    data = {
+        "from": owner_id,
+        "subtitle": "￥%s" % (gift.amount / Decimal(100.0)),
+        "title": gift.message % to_user.nickname,
+        "to": to_user.to_user_id,
+        "type": 1,
+        "time": int(time.time() * 1000),
+        "gift_size": gift.size,
+        "avatar_url": user.avatar_url,
+        "icon": 1
+    }
+
+    agora = Agora(user_id=data["from"])
+    agora.send_cannel_msg(channel_id=channel_id, **data)
+    time.sleep(2)

@@ -18,6 +18,7 @@ def gift_transfer(request):
     gift_id = request.POST.get("gift_id")
     channel_id = request.POST.get("channel_id")
 
+    amount = Gift.get(gift_id).amount
     wallet = Wallet.get(user_id=request.user.id)
     valid = wallet.validate(amount=amount)
     if valid is not None:
