@@ -120,10 +120,23 @@ def import_thirduser():
 def import_friend():
     user_ids = User.objects.values_list("id", flat=True)
     cursor = connections['gouhuo'].cursor()
+
     for user_id in user_ids:
         cursor.execute("SELECT followed_user_id FROM yi_followuser where user_id=%s" % user_id)
-        follow_ids = [c[0] for c in cursor.fetchall()]
-        sql = "SELECT user_id FROM yi_followuser where followed_user_id=%s and user_id in %s" % (user_id, tuple(follow_ids))
+        follow_ids = [str(c[0]) for c in cursor.fetchall() if c]
+        if not follow_ids:
+            continue
+
+        str_follow_ids = ",".join(follow_ids)
+        sql = "SELECT user_id FROM yi_followuser where followed_user_id=%s and user_id in (%s)" % (user_id, str_follow_ids)
         cursor.execute(sql)
-        for r in cursor.fetchall():
-            Friend.add(user_id=user_id, friend_id=r[0])
+        fans_ids = [str(r[0]) for r in cursor.fetchall() if r]
+        if not fans_ids:
+            continue
+
+        for fans_id in fans_ids:
+            Friend.objects.create(user_id=user_id, friend_id=fans_id)
+
+        invited_ids = set(follow_ids) ^ set(fans_ids)
+        for invited_id in invited_ids:
+            InviteFriend.objects.create(user_id=user_id, invited_id=invited_id, status=10)
