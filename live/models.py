@@ -229,13 +229,3 @@ def delete_member_after(sender, instance, **kwargs):
         channel = Channel.get_channel(channel_id=instance.channel_id)
         if Channel.objects.filter(channel_id=instance.channel_id).count() == 0:
             channel.delete()
-            subprocess.Popen(["kill", str(channel.pid)])
-
-
-@receiver(post_save, sender=Channel)
-def create_process(sender, created, instance, **kwargs):
-    if created:
-        p = subprocess.Popen(["python", "manage.py", "gift_queue", str(instance.channel_id)])
-        if p:
-            instance.pid = p.pid
-            instance.save()

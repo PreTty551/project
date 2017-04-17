@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import time
+import random
 import requests
 
 from django.http import HttpResponseBadRequest
@@ -262,3 +264,29 @@ def push_to_user(request):
         mc.set("push_number:u:%s:r:%s" % (request.user.id, receiver_id), push_number, 60)
 
     return JsonResponseSuccess()
+
+
+def dirty_game_question(request):
+    from .consts import DIRTY_GAME_QUESTIONS
+    questions = DIRTY_GAME_QUESTIONS.split("\n")
+    questions = [question for question in questions if question]
+    question = random.sample(questions, 1)[0]
+    channel_name = request.POST.get('channel_name', 'sayroom')
+
+    kwargs = {
+        "data": {
+            "avatar_url": request.user.avatar_url,
+            "nickname": request.user.nickname,
+            "question": question,
+            "time": int(time.time() * 1000),
+        },
+        "type": 2
+    }
+
+    try:
+        agora = Agora(user_id=request.user.id)
+        agora.send_cannel_msg(channel_id=channel_name, **kwargs)
+    except:
+        pass
+
+    return JsonResponse({"question": question})
