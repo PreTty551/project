@@ -49,7 +49,7 @@ def init_gift():
 
 def import_user():
     with connections["gouhuo"].cursor() as cursor:
-        cursor.execute("SELECT * FROM ogow_user where from_to='yi'")
+        cursor.execute("SELECT * FROM ogow_user where from_to!='douban'")
         for row in cursor.fetchall():
             user = User()
             user.id = row[0]
