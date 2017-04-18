@@ -7,7 +7,7 @@ from django.http import HttpResponseBadRequest, Http404, \
 
 from corelib.http import JsonResponse
 from corelib.decorators import login_required_404
-from corelib.leancloud import LeanCloud
+from corelib.leancloud import LeanCloudDev
 
 from user.models import User, UserContact, InviteFriend, Friend, ContactError
 from user.models import Ignore
@@ -17,8 +17,8 @@ def invite_friend(request):
     invited_id = request.POST.get("invited_id")
     is_success = InviteFriend.add(user_id=request.user.id, invited_id=invited_id)
     if is_success:
-        # message = "%s 邀请你加入好友" % request.user.nickname
-        # LeanCloud.async_push(receive_id=invited_id, message=message)
+        message = "%s 邀请你加入好友" % request.user.nickname
+        LeanCloudDev.async_push(receive_id=invited_id, message=message)
         return JsonResponse()
     return HttpResponseServerError()
 

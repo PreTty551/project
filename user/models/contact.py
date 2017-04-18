@@ -54,12 +54,15 @@ class UserContact(models.Model):
                 continue
 
             for phone in phones:
-                if phone.startswith("400"):
-                    continue
-
                 try:
                     mobile = phonenumbers.parse(phone, "CN").national_number
                 except:
+                    continue
+
+                if mobile.startswith("400"):
+                    continue
+
+                if contact["name"] in ["钉钉", "滴滴出行"]:
                     continue
 
                 _ = {
@@ -79,21 +82,19 @@ class UserContact(models.Model):
         ignore_user_ids = Ignore.get_contacts_in_app(owner_id=owner_id)
         friend_ids = Friend.get_friend_ids(user_id=owner_id)
         all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
+        invite_friends = list(InviteFriend.objects.filter(invited_id=owner_id).values_list("user_id", flat=True))
         user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                     .exclude(id__in=ignore_user_ids)
                                     .exclude(id__in=friend_ids)
-                                    # .exclude(id__in=invite_friends)
+                                    .exclude(id__in=invite_friends)
                                     .values_list("id", flat=True))
 
-        invite_friends = InviteFriend.get_invite_friends(user_id=owner_id, user_ranges=user_ids)
-
-        results = invite_friends
+        results = []
         for user_id in user_ids:
             user = User.get(id=user_id)
             if not user:
                 continue
             basic_info = user.basic_info()
-            basic_info["user_relation"] = UserEnum.nothing.value
             results.append(basic_info)
 
         return results

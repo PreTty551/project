@@ -21,8 +21,9 @@ from corelib.leancloud import LeanCloudDev
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
-from user.models import UserContact, InviteFriend, Friend, ContactError, two_degree_relation, PokeLog
+from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, PokeLog, quit_app as Quit
 from local_push import LocalPush
+from live.models import ChannelMember
 
 
 
@@ -298,6 +299,7 @@ def _login(request, user):
     user = authenticate(username=user.username, password=user.username)
     if user is not None:
         login(request, user)
+        user.online()
         return True
     return False
 
@@ -311,6 +313,7 @@ def check_login(request):
 
     user = authenticate(username=request.user.username, password=request.user.username)
     login(request, user)
+    user.online()
     return JsonResponse(request.user.basic_info())
 
 
@@ -371,7 +374,23 @@ def binding_wechat(request):
 
 def update_paid(request):
     paid = request.POST.get("paid")
+    user = User.objects.filter(paid=paid).first()
+    if user:
+        return JsonResponse(error=LoginError.PA_ALREADY_USED)
+
     User.objects.filter(id=request.user.id).update(paid=paid)
+    return JsonResponse()
+
+
+def update_gender(request):
+    gender = request.POST.get("gender")
+    User.objects.filter(id=request.user.id).update(gender=gender)
+    return JsonResponse()
+
+
+def update_nickname(request):
+    nickname = request.POST.get("nickname")
+    User.objects.filter(id=request.user.id).update(nickname=nickname)
     return JsonResponse()
 
 
@@ -435,7 +454,7 @@ def party_push(request):
 
 
 def invite_party(request):
-    receiver_id = request.POST.get("receiver_id")
+    receiver_id = request.POST.get("user_id")
 
     push_number = 20
     icon = ""
@@ -445,15 +464,10 @@ def invite_party(request):
 
     message = u"%s%s" % (icon, message)
 
-    # url = "https://gouhuoapp.com/amumu/server_to_client/"
-    # _ = {"path": "/amumu/websocket/%s/" % receiver_id, "message": message, "tpye": 1}
-    # data = {"data": json.dumps(_)}
-    # requests.post(url, data=data)
-
-    PokeLog.objects.create(user_id=request.user.id, to_user_id=receiver_id)
-    LocalPush.invite_party(user_id=request.user.id,
-                           to_user_id=receiver_id,
-                           message=message)
+    PokeLog.objects.create(user_id=request.user.id, to_user_id=receiver_id, status=0)
+    LocalPush().invite_party(user_id=request.user.id,
+                             to_user_id=receiver_id,
+                             message=message)
 
     member = ChannelMember.objects.filter(user_id=request.user.id).first()
     if member:
@@ -463,4 +477,9 @@ def invite_party(request):
                                 msg_type=8,
                                 channel_id=member.channel_id)
 
+    return JsonResponse()
+
+
+def quit_app(request):
+    Quit()
     return JsonResponse()

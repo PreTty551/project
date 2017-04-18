@@ -18,7 +18,7 @@ from corelib.weibo import Weibo
 from corelib.utils import natural_time as time_format
 from corelib.mc import cache
 
-from user.consts import MC_USER_KEY, EMOJI_LIST
+from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST
 from .place import Place
 
 
@@ -108,6 +108,8 @@ class User(AbstractUser, PropsMixin):
     platform = models.SmallIntegerField(default=0)
     version = models.CharField(max_length=10, default="")
     pinyin = models.CharField(max_length=30, default="")
+    online_time = models.DateTimeField(default=timezone.now)
+    offline_time = models.DateTimeField(default=timezone.now)
 
     objects = UserManager()
 
@@ -138,14 +140,18 @@ class User(AbstractUser, PropsMixin):
     @classmethod
     @cache("user:%s" % '{id}')
     def get(cls, id):
-        print("cls", cls)
         return cls.objects.filter(id=id).first()
 
+    def online(self):
+        self.online_time = timezone.now()
+        self.save()
+
+    def offline(self):
+        self.offline_time = timezone.now()
+        self.save()
+
     def is_online(self):
-        if not self.last_login:
-            return False
-        last_login = timezone.now() - datetime.timedelta(hours=6)
-        return True if self.last_login >= last_login else False
+        return True if self.online_time >= self.offline_time else False
 
     @property
     def localtime(self):
@@ -177,7 +183,7 @@ class User(AbstractUser, PropsMixin):
 
     def check_friend_relation(self, user_id):
         from .friend import Friend, InviteFriend
-        is_friend = Friend.is_friend(user_id=self.id, friend_id=user_id)
+        is_friend = Friend.is_friend(owner_id=self.id, friend_id=user_id)
         if is_friend:
             return UserEnum.friend.value
         elif InviteFriend.is_invited_user(user_id=self.id, friend_id=user_id):
@@ -258,3 +264,9 @@ class PokeLog(models.Model):
 
     class Meta:
         db_table = "poke_log"
+
+
+def quit_app(user):
+    from live.models import ChannelMember
+    user.offline()
+    ChannelMember.objects.filter(user_id=user.id).delete()

@@ -14,6 +14,8 @@ urlpatterns = [
     url(r'^user/detail_info/$', views.detail_user_info, name='detail_user_info'),
     url(r'^user/profile/$', views.get_profile, name='get_profile'),
     url(r'^user/paid/update/$', views.update_paid, name='update_paid'),
+    url(r'^user/gender/update/$', views.update_gender, name='update_gender'),
+    url(r'^user/nickname/update/$', views.update_nickname, name='update_nickname'),
 
     url(r'^user/contact/$', views.get_contacts, name='get_contacts'),
     url(r'^user/contact/in_app/$', views.get_contacts_in_app, name='get_contacts_in_app'),
@@ -34,5 +36,8 @@ urlpatterns = [
     url(r'^user/search/$', views.search, name='search'),
     url(r'^user/poke/$', views.invite_party, name='invite_party'),
     url(r'^user/party_push/$', views.party_push, name='party_push'),
-    url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends')
+    url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends'),
+
+    url(r'^user/quit_app/$', views.quit_app, name='quit_app')
+
 ]
