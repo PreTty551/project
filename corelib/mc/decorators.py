@@ -67,10 +67,13 @@ def hlcache(key, redis):
             if not values:
                 values = func(*args, **kwargs)
                 if values:
-                    redis.hmset(key, [{v: 1} for v in values])
+                    r = {}
+                    for v in values:
+                        r[v] = 1
+                    redis.hmset(key, r)
             else:
                 values = [v.decode() for v in values]
-            if isinstance(value, Empty):
+            if isinstance(values, Empty):
                 values = []
 
             return values

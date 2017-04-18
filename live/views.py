@@ -14,10 +14,21 @@ from corelib.websocket import Websocket
 
 from live.models import Channel, ChannelMember, GuessWord, InviteChannel
 from live.consts import ChannelType
-from user.models import User, Friend, UserContact, two_degree_relation, Place
+from user.models import User, Friend, UserContact, Place, guess_know_user
+
+TEST_USER_IDS = []
 
 
-TEST_USER_IDS = [72240]
+def refresh_list(request):
+    channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
+    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    friend_list = []
+    for friend_id in friend_ids:
+        user = User.get(id=friend_id)
+        if user:
+            basic_info = user.basic_info()
+            friend_list.append(basic_info)
+    return JsonResponse({"channels": channels, "friends": friend_list})
 
 
 @login_required_404
@@ -38,12 +49,10 @@ def livemedia_list(request):
             basic_info = user.basic_info()
             friend_list.append(basic_info)
 
-    two_degree_friends = two_degree_relation(user_id=request.user.id)
     return JsonResponse({"channels": channels,
                          "friends": friend_list,
-                         "contacts_in_say": UserContact.get_contacts_in_app(owner_id=request.user.id),
-                         "contacts_out_say": UserContact.get_contacts_out_app(owner_id=request.user.id),
-                         "two_degree_friends": two_degree_friends})
+                         "guess_know_users": guess_know_user(),
+                         "guess_contacts": []})
 
 
 def near_channel_list(request):

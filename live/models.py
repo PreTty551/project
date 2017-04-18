@@ -9,7 +9,9 @@ from django.dispatch import receiver
 from django.db.models import F, Sum
 from django.utils import timezone
 
-from user.models import User
+from corelib.rongcloud import RongCloud
+
+from user.models import User, Friend
 from .consts import ChannelType
 
 
@@ -205,6 +207,16 @@ def unique_channel_id(user_id):
     return "%s%s" % (int(time.time()), user_id)
 
 
+def refresh(user_id):
+    friend_ids = Friend.get_friend_ids(user_id)
+    online_ids = get_online_ids()
+    online_friend_ids = [friend_id for friend_id in friend_ids if friend_id in online_ids]
+    if online_friend_ids:
+        RongCloud.send_hide_message(user_id=user_id,
+                                    to_user_id=set(online_friend_ids),
+                                    content="refresh")
+
+
 @receiver(post_save, sender=ChannelMember)
 def add_member_after(sender, created, instance, **kwargs):
     if created:
@@ -215,6 +227,9 @@ def add_member_after(sender, created, instance, **kwargs):
         channel = Channel.get_channel(channel_id=instance.channel_id)
         channel.member_count = F("member_count") + 1
         channel.save()
+
+        refresh(instance.user_id)
+
 
 
 @receiver(post_delete, sender=ChannelMember)
