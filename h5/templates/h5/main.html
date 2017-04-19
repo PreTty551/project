@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en"style="font-size: 20px">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta content="telephone=no"name="format-detection">
+    <meta name="keywords"content="映客,映客直播,映克,映客app,映客官网,美女直播,映客美女热舞,直播,迎客,应客,鹰客,印客,明星直播">
+    <meta name="description"content="映客直播,最流行最高端的手机视频直播平台,明星网红都在玩,高颜值的都在映客">
+    <title>映客直播</title>
+    <!-- <script src="//static.inke.cn/web/share/js/redirect.js?v=1"type="text/javascript"></script> -->
+    <link rel="stylesheet" href="{{STATIC_URL}}css/main.css">
+
+    <script>
+        function setRemFontSize(baseSize,baseWidth){
+            var baseSize = baseSize||20,baseWidth = baseWidth||375,
+                clientWidth = document.documentElement.clientWidth<=480?document.documentElement.clientWidth: 480 ;
+            document.getElementsByTagName('html')[0].style.fontSize = clientWidth*baseSize/baseWidth+'px'
+        }
+        setRemFontSize();
+        window.addEventListener("resize",function(){
+            setTimeout(function(){setRemFontSize();},200)
+        });
+    </script>
+</head>
+<body>
+
+<div class="mask-loading"id="js-mask-loading"style="">
+    <div class="new-loding">
+        <img src="//img2.inke.cn/MTQ4MjM3OTAwMTIwOCM2OTgjanBn.jpg">
+        <div>请稍候...</div>
+    </div>
+
+
+</div>
+
+<div class="all-wrap"id="js-all-wrap">
+    <div class="tishi top-tips"id="js-top-tips">你已经关注主播</div>
+
+
+    <div id="top"class="">
+
+        <div id="bestTop">
+
+
+            <div class="btm-box fl">
+                <div class="btm-text">更清晰，更流畅，上映客APP</div>
+                <div class="btm-logo"></div>
+            </div>
+
+            <a class="download-btn js-btn-open-app"data-id="logo_open">立即打开</a>
+        </div>
+
+
+
+        <div id="shadow"class=""></div>
+        <div class="no-player-text">
+            <div class="finish-text"style="">直播已结束</div>
+            <div id="user_num"class="finish-num"style=""> </div>
+            <div class="finish-follow-tip">关注后不会错过下一次直播 </div>
+        </div>
+
+
+
+
+        <div class="user looked-num is-live"id="js-looked-num"style="display: none">
+            <span class="record-text-start"> 精彩回放&nbsp;&nbsp;</span><span class="live-text-start"> 直播LIVE&nbsp;&nbsp;</span>
+            <span id="user_num2"></span>人 <span class="record-text-end"> 看过 </span>
+        </div>
+
+
+
+        <div class="player">
+            <div id="container">  </div>
+        </div>
+
+
+        <div id="live-bg"onselectstart="return false">
+            <div class="big-bg"></div>
+            <img src=""class="live-bg">
+            <span class="play-btn"></span>
+        </div>
+
+        <div id="hf-text"> 精彩回放</div>
+
+
+
+
+
+
+        <div id="topBom">
+            <a class="topBom js-btn-open-app"data-id="bottom_open">在映客中打开  互动更精彩</a>
+        </div>
+
+
+
+        <div class="btn-box">
+            <span class="talk talk-click"id="js-start-talk"></span>
+            <span class="gift-btn gift-btn-click"id="gift_btn"></span>
+        </div>
+
+        <div class="player-loading"id="js-player-loading"style="">
+            <div class="new-loding">
+                <img src="//img2.inke.cn/MTQ4MjM3OTAwMTIwOCM2OTgjanBn.jpg">
+                <div>请稍候...</div>
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+
+
+
+
+    <div id="top2"class="user-info-con top js-user-info-con">
+        <img src=""class="fl icon user_pic">
+        <div class="fl ziliao">
+            <div class="fl nick user_nick"> 姓名</div>
+
+
+            <br>
+
+            <div class="info-left"style="display: none">关注人数:<span id="js-follow-num"class="bo-id">0</span></div>
+            <div class="info-left ID"style="">映客号:<span id="js-user-bo-id"class="bo-id"> 0</span></div>
+        </div>
+        <div class="guanzhu js-follow-btn">关注</div>
+    </div>
+
+
+
+
+
+    <div class="talk-box"id="js-talk-ipt-wrap">
+            <a href="javascript:;"class="talk-btn js-talk-btn"id="js-send-talk-btn">发送</a>
+            <input id="js-talk-ipt"class="talk-input"placeholder="点击这输入文字"value=""maxlength="200">
+    </div>
+    <div class="msg-box pa"id="msg_box"style="display:none"></div>
+
+
+
+
+    <div class="gift-box">
+        <div class="gift-box-close"><div>X</div></div>
+        <div class="gift-lists swiper-container">
+            <div class="swiper-wrapper"id="js-swiper-wrapper">
+
+
+
+
+
+            </div>
+            <div class="swiper-pagination"></div>
+        </div>
+        <div class="gift-bbar">
+            <a href="###"class="goto-pay-btn"id="js-goto-pay-btn">
+                <span class="gift-bbar-text">充值：</span>
+                <span class="gift-bbar-money">0</span>
+                <img src="//img2.inke.cn/NDA2ODAxNDQ3ODM1Nzc3.jpg">
+                <span class="gift-bbar-text">></span>
+            </a>
+            <button class="gift-bbar-send-hide"id="gift_send">发送</button>
+            <div class="gift-countdown-bg none"id="gift_countdown_bg">
+                <div class="gift-countdown-btn">
+                    <p class="gift-countdown-btn-text"onselectstart="return false">连发</p>
+                    <p class="gift-countdown-btn-time"onselectstart="return false">30</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <ul id="js-gift-show-container"class="gift-show-container">
+        <li data-playing="false"data-fromid>
+            <div class="pride">
+                <div class="headImg"><img src=""alt="头像"></div>
+                <div class="name"></div>
+                <div class="giftType"></div>
+                <div class="giftImg"><img src=""alt="图片"></div>
+                <span class="star">×<span class="num"> </span>
+            </div>
+        </li>
+        <li data-playing="false"data-fromid>
+            <div class="pride">
+                <div class="headImg"><img src=""alt="头像"></div>
+                <div class="name"></div>
+                <div class="giftType"></div>
+                <div class="giftImg"><img src=""alt="图片"></div>
+                <span class="star">×<span class="num"> </span>
+            </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+    <div class="confirm-bg none"style="display: none">
+        <div class="confirm-content">
+            <div class="confirm-text">
+                <p class="confirm-text-title">余额不足</p>
+
+                <p class="confirm-text-content">当前余额不足，充值才能继续送礼，是否去充值？</p>
+            </div>
+            <div class="confirm-line"></div>
+            <div class="confirm-btn-left">取消</div>
+            <div class="confirm-line2"></div>
+            <div class="confirm-btn-right">充值</div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+    <div id="js-redbag-con"attr-id="mainn"class="redbag-content mask">
+
+    </div>
+
+
+
+
+    <div id="tab"class="js-list-tab"style="display: none">
+        <div class="t-one fl hot active"> 映客热门</div>
+        <div class="t-one fr back"id="js-tab-back"> 他的精彩回放</div>
+    </div>
+    <div class="bottom-head js-btn-open-app"data-id="more_live"> 更多映客热门直播 </div>
+    <div class="bottom-list-container"style="width: 100%">
+        <div class="tab-con-list slide-page-list"style="width: 100%">
+            <div class="one-page hots active"id="host-list"> </div>
+            <div class="one-page record"id="">
+                <div class="no-data-con"> </div>
+                <div class="no-record-list-text">TA还没有精彩回放哦</div>
+                <ul class="jchf"id="record-list-ul">
+
+                </ul>
+            </div>
+    </div>
+
+
+    </div>
+
+
+
+    <div class="shadd2"onselectstart="return false"></div>
+    <div class="shadd3"onselectstart="return false"></div>
+
+
+</div>
+
+
+<div id="js-confirm-open-wrap"class="open-confirm-wrap">
+    <div class="confirm-open-app"id="js-confirm-open-app">
+        <div class="open-text"> 打开映客看高清直播</div>
+        <div class="btn-wrap">
+            <span class="btn cancel-btn js-cancel-app-btn"> 取消</span>
+            <span class="btn ok-btn js-ok-app-btn js-btn-open-app"> 打开</span> </div>
+    </div>
+
+</div>
+
+
+<div id="js-show-big-gift-wrap"class="show-big-gift-wrap">
+
+
+</div>
+
+
+
+
+<script id="js-redbag-main-tpl"type="text/template">
+    <div class="main">
+        <a class="js-red-link"><img src="//img2.inke.cn/NDQwMDIxNDc0NjI1Mzcx.jpg" class="over-bg">
+            <img src="//img2.inke.cn/NDUzODkxNDc0NjI1NDM5.jpg" class="over-bg2">
+            <img src="" class="view-pic js-view-pic">
+            <div id="mingzi" class="view-nick js-view-nick"></div>
+            <div class="red-title titl1">给你发来一个红包</div>
+            <div id="shiyuan" class="money">最高<span class="js-rp-money"></span>元红包</div>
+            <div class="red-title titl2">打开映客APP微信登录领取</div>
+            <img src="//img2.inke.cn/Mzc4NzYxNDc0NjI5NDU0.jpg" class="ling"></a>
+            <img src="//img2.inke.cn/MTQ4Mjc0NDQ1ODgwNCM2NzUjanBn.jpg" class="red-close">
+    </div>
+</script>
+
+
+<script id="js-big-gift-wrap-tpl"type="text/template">
+
+    <!--跑车 紫色 -->
+    <div class="big-gift-box big_paoche_box"  id="big-gift-box-65">
+        <div class="big-text">
+            <span class="u-name"> XX</span>
+            <span class="b-gift-type"> 送..</span>
+        </div>
+        <img src="//img2.inke.cn/NjY1OTUxNDcxNTkwMTMy.jpg" alt="跑车">
+        <div id="paoche_light_box">
+            <div id="paoche_light"></div>
+        </div>
+        <div id="paoche_wheel">
+            <img src="//img2.inke.cn/NTI2MjMxNDcxNTkwNjkz.jpg" alt="">
+        </div>
+        <div id="paoche_wheel_back">
+            <img src="//img2.inke.cn/NTI2MjMxNDcxNTkwNjkz.jpg" alt="">
+        </div>
+    </div>
+
+    <!--游轮 紫色 -->
+    <div class="big-gift-box big_youlun_box"  id="big-gift-box-132">
+        <img src="//img2.inke.cn/NzYwMjExNDcxNjA3MTIx.jpg" alt="" class="animate-main youlun_ship ">
+        <img src="//img2.inke.cn/NTI1NjIxNDcxNjA4MjQ5.jpg" alt="" class="youlun_wave_1">
+        <img src="//img2.inke.cn/OTU1MDkxNDcxNjA3Nzk5.jpg" alt="" class="youlun_wave_2">
+        <div class="youlun_arrow_box"><img src="//img2.inke.cn/NjkyMTAxNDcxNjA4MzIz.jpg" alt="" class="youlun_arrow"></div>
+        <img src="//img2.inke.cn/MTYwNjgxNDcxNjA4MzU3.jpg" alt="" class="youlun_heart">
+    </div>
+
+</script>
+
+
+<script id="hot-list-tpl"type="text/template">
+    <div class="lists" data-liveid="{liveid}" data-url="{url}">
+        <div class="l-top">
+            <img src="images/big-pic-blank.jpg" class="icon-big" data-original="{portrait}">
+            <div class="h-info">
+                <span class="fans">{online_users}</span>
+            </div>
+
+        </div>
+                <div class="box-btm">{nick}</div>
+    </div>
+</script>
+
+
+<script id="record-list-tpl"type="text/template">
+    <li data-url="{record_url}" data-users="{online_users}">
+        <div class="record-left">
+            <img src="{portrait}" class="icon-little2"><img src="{verified_img}" class="vv {verified_default}">
+        </div>
+        <div class="record-right">
+            <span class="rf-nick-name fl">{nick}</span><span class="rf-times fl">{date}</span><br>
+            <div class="live-hf-title" data-text="回放">{name}</div>
+            <div class="fans2">{online_users}</div>
+        </div>
+    </li>
+</script>
+
+
+<script id="gift-list-tpl"type="text/template">
+    <li id="gift_{id}" data-id={id} data-type="{type}" data-image="{image}" data-icon="{icon}" data-gold="{gold}" data-exp="{exp}" data-anim-image="{anim_image}" data-anim-image-width="{anim_img_width}" data-anim-image-height="{anim_img_height}">
+        <a href="javascript:void(0);" id="gift_item_{id}">
+            <div class="{gift_lian}" id="gift_select_{id}"></div>
+            <img src="{image}" class="gift-pic" />
+            <img src="{anim_image}" style="display:none" id="gift_anim_img_{id}" />
+            <div class="gift-price"><span>{gold}</span><img src="//img2.inke.cn/NDA2ODAxNDQ3ODM1Nzc3.jpg"></div>
+            <div class="gift-exp">+{exp}经验值</div>
+        </a>
+    </li>
+</script>
+
+<script src="{{STATIC_URL}}js/lib.js"></script>
+<script src="{{STATIC_URL}}js/main0.js"></script>
+
+</body>
+</html>

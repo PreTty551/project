@@ -16,11 +16,15 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 
+from h5 import views
+
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'', include('user.urls')),
     url(r'', include('live.urls')),
     url(r'', include('gift.urls')),
-    url(r'', include('wallet.urls'))
+    url(r'', include('wallet.urls')),
+    url(r'^h5/$', views.main),
+
 
 ]
