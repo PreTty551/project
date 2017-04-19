@@ -22,7 +22,7 @@ from corelib.leancloud import LeanCloudDev
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, PokeLog, quit_app as Quit
-from local_push import LocalPush
+from socket_server import SocketServer
 from live.models import ChannelMember
 
 
@@ -453,21 +453,50 @@ def party_push(request):
     return JsonResponse()
 
 
-def invite_party(request):
+def invite_party_in_live(request):
     receiver_id = request.POST.get("user_id")
 
-    push_number = 20
+    max_number = 20
+    push_number = 0
     icon = ""
-    message = u"👉 %s邀请你来开Party" % request.user.nickname
+    message = u"%s邀请你来开Party" % request.user.nickname
     for i in range(push_number):
         icon += u"👉"
 
     message = u"%s%s" % (icon, message)
 
     PokeLog.add(user_id=request.user.id, to_user_id=receiver_id)
-    LocalPush().invite_party(user_id=request.user.id,
-                             to_user_id=receiver_id,
-                             message=message)
+    SocketServer().invite_party_in_live(user_id=request.user.id,
+                                        to_user_id=receiver_id,
+                                        message=message)
+
+    member = ChannelMember.objects.filter(user_id=request.user.id).first()
+    if member:
+        push_number += 1
+        LeanCloudDev.async_push(receive_id=receiver_id,
+                                message=message,
+                                msg_type=8,
+                                channel_id=member.channel_id)
+
+    return JsonResponse()
+
+
+def invite_party_out_live(request):
+    receiver_id = request.POST.get("user_id")
+
+    max_number = 20
+    push_number = 0
+    icon = ""
+    message = u"%s邀请你来开Party" % request.user.nickname
+    for i in range(push_number):
+        icon += u"👉"
+
+    message = u"%s%s" % (icon, message)
+
+    PokeLog.add(user_id=request.user.id, to_user_id=receiver_id)
+    SocketServer().invite_party_out_live(user_id=request.user.id,
+                                         to_user_id=receiver_id,
+                                         message=message)
 
     member = ChannelMember.objects.filter(user_id=request.user.id).first()
     if member:

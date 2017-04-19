@@ -2,6 +2,7 @@ from .contact import UserContact
 from .ignore import Ignore
 from .friend import Friend, InviteFriend
 from .user import User
+from user.consts import UserEnum
 
 
 def two_degree_relation(user_id):

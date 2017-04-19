@@ -14,7 +14,8 @@ from corelib.websocket import Websocket
 
 from live.models import Channel, ChannelMember, GuessWord, InviteChannel
 from live.consts import ChannelType
-from user.models import User, Friend, UserContact, Place, guess_know_user
+from user.models import User, Friend, UserContact, Place, guess_know_user, PokeLog
+from user.consts import UserEnum
 
 TEST_USER_IDS = []
 

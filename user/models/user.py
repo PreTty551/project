@@ -17,6 +17,7 @@ from corelib.props import PropsMixin
 from corelib.weibo import Weibo
 from corelib.utils import natural_time as time_format
 from corelib.mc import cache
+from corelib.redis import redis
 
 from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, MC_POKES_KEY
 from .place import Place
@@ -138,7 +139,7 @@ class User(AbstractUser, PropsMixin):
         super(User, self).save(*args, **kwargs)
 
     @classmethod
-    @cache("user:%s" % '{id}')
+    #@cache("user:%s" % '{id}')
     def get(cls, id):
         return cls.objects.filter(id=id).first()
 
@@ -272,11 +273,16 @@ class PokeLog(models.Model):
         db_table = "poke_log"
 
     def add(cls, user_id, to_user_id):
-        cls.objects.create(user_id=user_id, to_user_id=to_user_id)
+        cls.objects.create(user_id=user_id, to_user_id=to_user_id, status=0)
         redis.hset(MC_POKES_KEY % to_user_id, user_id, 1)
 
     def clear(cls, user_id, to_user_id):
         redis.hdel(MC_POKES_KEY % to_user_id, user_id)
+
+    @classmethod
+    def get_pokes(cls, owner_id):
+        user_ids = redis.hkeys(MC_POKES_KEY % owner_id)
+        return [int(user_id) for user_id in user_ids]
 
 
 def quit_app(user):

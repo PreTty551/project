@@ -13,6 +13,7 @@ from corelib.rongcloud import RongCloud
 
 from user.models import User, Friend
 from .consts import ChannelType
+from socket_server import SocketServer
 
 
 REDIS_CHANNEL_MEMBER_KEY = "agora:channel:%s:uids"
@@ -212,7 +213,7 @@ def refresh(user_id):
     online_ids = User.get_online_ids()
     online_friend_ids = [friend_id for friend_id in friend_ids if friend_id in online_ids]
     if online_friend_ids:
-        RongCloud.send_hide_message(user_id=user_id,
+        SocketServer().refresh_home(user_id=user_id,
                                     to_user_id=set(online_friend_ids),
                                     content="refresh")
 
@@ -231,7 +232,6 @@ def add_member_after(sender, created, instance, **kwargs):
         refresh(instance.user_id)
 
 
-
 @receiver(post_delete, sender=ChannelMember)
 def delete_member_after(sender, instance, **kwargs):
     LiveMediaLog.objects.filter(user_id=instance.user_id, channel_id=instance.channel_id, status=1) \
@@ -244,3 +244,5 @@ def delete_member_after(sender, instance, **kwargs):
         channel = Channel.get_channel(channel_id=instance.channel_id)
         if Channel.objects.filter(channel_id=instance.channel_id).count() == 0:
             channel.delete()
+
+        refresh(instance.user_id)

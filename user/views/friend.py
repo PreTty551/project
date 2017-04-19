@@ -11,24 +11,39 @@ from corelib.leancloud import LeanCloudDev
 
 from user.models import User, UserContact, InviteFriend, Friend, ContactError
 from user.models import Ignore
+from socket_server import SocketServer
 
 
 def invite_friend(request):
     invited_id = request.POST.get("invited_id")
-    is_success = InviteFriend.add(user_id=request.user.id, invited_id=invited_id)
+    is_success = InviteFriend.add(user_id=request.user.id,
+                                  invited_id=invited_id)
     if is_success:
         message = "%s 邀请你加入好友" % request.user.nickname
         LeanCloudDev.async_push(receive_id=invited_id, message=message)
+
+        data = {
+            "from_user_id": request.user.id,
+            "avatar_url": request.user.avatar_url,
+        }
+        SocketServer().invite_friend(user_id=request.user.id,
+                                     to_user_id=invited_id,
+                                     message=message,
+                                     **data)
         return JsonResponse()
     return HttpResponseServerError()
 
 
 def agree_friend(request):
     invited_id = request.POST.get("invited_id")
-    is_success = InviteFriend.agree(user_id=request.user.id, invited_id=invited_id)
+    is_success = InviteFriend.agree(user_id=request.user.id,
+                                    invited_id=invited_id)
     if is_success:
-        # message = "%s 同意了你的好友请求" % request.user.nickname
-        # LeanCloud.async_push(receive_id=invited_id, message=message)
+        message = "%s 同意了你的好友请求" % request.user.nickname
+        LeanCloudDev.async_push(receive_id=invited_id, message=message)
+        SocketServer().agree_friend(user_id=request.user.id,
+                                    to_user_id=invited_id,
+                                    message=message)
         return JsonResponse()
     return HttpResponseServerError()
 
@@ -62,9 +77,10 @@ def get_friends_order_by_pinyin(request):
     if "#" in keys:
         keys.remove("#")
 
-    keys = sorted(keys)
-    keys.append("#")
-    return JsonResponse({"friend_list": friend_list, "keys": keys})
+    sorted_keys = sorted(keys)
+    if "#" in keys:
+        sorted_keys.append("#")
+    return JsonResponse({"friend_list": friend_list, "keys": sorted_keys})
 
 
 def update_user_memo(request):
