@@ -209,7 +209,7 @@ def unique_channel_id(user_id):
 
 def refresh(user_id):
     friend_ids = Friend.get_friend_ids(user_id)
-    online_ids = get_online_ids()
+    online_ids = User.get_online_ids()
     online_friend_ids = [friend_id for friend_id in friend_ids if friend_id in online_ids]
     if online_friend_ids:
         RongCloud.send_hide_message(user_id=user_id,

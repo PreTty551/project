@@ -59,7 +59,7 @@ class UserContact(models.Model):
                 except:
                     continue
 
-                if mobile.startswith("400"):
+                if str(mobile).startswith("400"):
                     continue
 
                 if contact["name"] in ["钉钉", "滴滴出行"]:

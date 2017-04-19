@@ -18,4 +18,8 @@ EMOJI_LIST = [u"😀", u"😁", u"😃", u"😄", u"😇", u"😉", u"😊", u"�
 MC_USER_KEY = "u:%s"
 MC_IS_FRIEND_KEY = "u:%s:f:%s"
 MC_FRIEND_IDS_KEY = "u:%s:fs"
+MC_POKES_KEY = "u:%s:pokes"
+
+
 REDIS_MEMOS_KEY = 'u:%s:memo'
+REDIS_ONLINE_USERS_KEY = 'online:user_ids'

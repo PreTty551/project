@@ -34,12 +34,10 @@ def guess_know_user(user_id):
     all_mobile_list = list(UserContact.objects.filter(user_id=user_id).values_list("mobile", flat=True))
     # ignore_user_ids = Ignore.get_contacts_in_app(owner_id=owner_id)
     friend_ids = Friend.get_friend_ids(user_id=user_id)
-    my_invited_ids = InviteFriend.get_my_invited_ids(owner_id=user_id)
     invited_my_ids = InviteFriend.get_invited_my_ids(user_id=user_id)
 
     user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                 .exclude(id__in=friend_ids)
-                                .exclude(id__in=my_invited_ids)
                                 .exclude(id__in=invited_my_ids)
                                 .values_list("id", flat=True))
 
@@ -48,13 +46,15 @@ def guess_know_user(user_id):
     for user in users:
         basic_info = user.basic_info()
         basic_info["intro"] = "通讯录好友"
+        basic_info["user_relation"] = UserEnum.nothing.value
         results.append(basic_info)
 
-    two_degrees = two_degree_relation(user_id=request.user.id)
+    two_degrees = two_degree_relation(user_id=user_id)
     for user_id, common_friend_count in two_degrees:
         user = User.get(id=user_id)
         basic_info = user.basic_info()
         basic_info["intro"] = "你有%s个共同好友" % common_friend_count
+        basic_info["user_relation"] = UserEnum.nothing.value
         results.append(basic_info)
 
     return results

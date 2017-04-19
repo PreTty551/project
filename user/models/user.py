@@ -18,7 +18,7 @@ from corelib.weibo import Weibo
 from corelib.utils import natural_time as time_format
 from corelib.mc import cache
 
-from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST
+from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, MC_POKES_KEY
 from .place import Place
 
 
@@ -145,13 +145,19 @@ class User(AbstractUser, PropsMixin):
     def online(self):
         self.online_time = timezone.now()
         self.save()
+        redis.hset(REDIS_ONLINE_USERS_KEY, self.id, 1)
 
     def offline(self):
         self.offline_time = timezone.now()
         self.save()
+        redis.hdel(REDIS_ONLINE_USERS_KEY, self.id)
 
     def is_online(self):
-        return True if self.online_time >= self.offline_time else False
+        return redis.hget(REDIS_ONLINE_USERS_KEY, self.id)
+
+    @classmethod
+    def get_online_ids(cls):
+        return redis.hkeys(REDIS_ONLINE_USERS_KEY)
 
     @property
     def localtime(self):
@@ -259,11 +265,18 @@ class TempThirdUser(models.Model):
 class PokeLog(models.Model):
     user_id = models.IntegerField()
     to_user_id = models.IntegerField()
-    status = models.SmallIntegerField()
+    status = models.SmallIntegerField(default=0)
     date = models.DateTimeField('date', auto_now_add=True)
 
     class Meta:
         db_table = "poke_log"
+
+    def add(cls, user_id, to_user_id):
+        cls.objects.create(user_id=user_id, to_user_id=to_user_id)
+        redis.hset(MC_POKES_KEY % to_user_id, user_id, 1)
+
+    def clear(cls, user_id, to_user_id):
+        redis.hdel(MC_POKES_KEY % to_user_id, user_id)
 
 
 def quit_app(user):

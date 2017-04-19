@@ -7,15 +7,6 @@ from .format import format
 from .empty import Empty
 
 
-def login_required_404(func):
-    @wraps(func)
-    def wrapper(request, *args, **kwargs):
-        if request.user and not request.user.is_authenticated():
-            return HttpResponseNotFound()
-        return func(request, *args, **kwargs)
-    return wrapper
-
-
 def cache(key, redis, expire=None):
     def deco(func):
         arg_names, varargs, varkw, defaults = inspect.getargspec(func)
@@ -33,7 +24,6 @@ def cache(key, redis, expire=None):
 
             value = redis.get(key)
             if value is None:
-                print(func)
                 value = func(*args, **kwargs)
                 if value is not None:
                     redis.set(key, pickle.dumps(value), expire)

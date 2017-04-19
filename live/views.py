@@ -42,16 +42,29 @@ def livemedia_list(request):
         channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
 
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    poke_ids = PokeLog.get_pokes(owner_id=request.user.id)
+
     friend_list = []
+    for user_id in poke_ids:
+        user = User.get(id=user_id)
+        if user:
+            basic_info = user.basic_info()
+            basic_info["is_hint"] = True
+            friend_list.append(basic_info)
+
     for friend_id in friend_ids:
+        if friend_id in poke_ids:
+            continue
+
         user = User.get(id=friend_id)
         if user:
             basic_info = user.basic_info()
+            basic_info["is_hint"] = False
             friend_list.append(basic_info)
 
     return JsonResponse({"channels": channels,
                          "friends": friend_list,
-                         "guess_know_users": guess_know_user(),
+                         "guess_know_users": guess_know_user(request.user.id),
                          "guess_contacts": []})
 
 
@@ -280,7 +293,7 @@ def dirty_game_question(request):
     questions = DIRTY_GAME_QUESTIONS.split("\n")
     questions = [question for question in questions if question]
     question = random.sample(questions, 1)[0]
-    channel_name = request.POST.get('channel_name', 'sayroom')
+    channel_id = request.POST.get('channel_id', 'sayroom')
 
     kwargs = {
         "data": {
@@ -294,7 +307,7 @@ def dirty_game_question(request):
 
     try:
         agora = Agora(user_id=request.user.id)
-        agora.send_cannel_msg(channel_id=channel_name, **kwargs)
+        agora.send_cannel_msg(channel_id=channel_id, **kwargs)
     except:
         pass
 

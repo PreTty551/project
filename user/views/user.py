@@ -464,7 +464,7 @@ def invite_party(request):
 
     message = u"%s%s" % (icon, message)
 
-    PokeLog.objects.create(user_id=request.user.id, to_user_id=receiver_id, status=0)
+    PokeLog.add(user_id=request.user.id, to_user_id=receiver_id)
     LocalPush().invite_party(user_id=request.user.id,
                              to_user_id=receiver_id,
                              message=message)
@@ -481,5 +481,5 @@ def invite_party(request):
 
 
 def quit_app(request):
-    Quit()
+    Quit(request.user)
     return JsonResponse()
