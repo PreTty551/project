@@ -74,6 +74,7 @@ def import_user():
             user.is_import_contact = False
             user.platform = 0
             user.version = ""
+            user.set_password(user.username)
 
             pinyin = Pinyin().get_pinyin(user.nickname, "")
             user.pinyin = pinyin[:30]
