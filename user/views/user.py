@@ -453,7 +453,7 @@ def party_push(request):
     return JsonResponse()
 
 
-def invite_party_in_live(request):
+def invite_party(request):
     receiver_id = request.POST.get("user_id")
 
     max_number = 20
@@ -466,46 +466,21 @@ def invite_party_in_live(request):
     message = u"%s%s" % (icon, message)
 
     PokeLog.add(user_id=request.user.id, to_user_id=receiver_id)
-    SocketServer().invite_party_in_live(user_id=request.user.id,
-                                        to_user_id=receiver_id,
-                                        message=message)
+    LeanCloudDev.async_push(receive_id=receiver_id,
+                            message=message,
+                            msg_type=8,
+                            channel_id=member.channel_id)
 
     member = ChannelMember.objects.filter(user_id=request.user.id).first()
     if member:
         push_number += 1
-        LeanCloudDev.async_push(receive_id=receiver_id,
-                                message=message,
-                                msg_type=8,
-                                channel_id=member.channel_id)
-
-    return JsonResponse()
-
-
-def invite_party_out_live(request):
-    receiver_id = request.POST.get("user_id")
-
-    max_number = 20
-    push_number = 0
-    icon = ""
-    message = u"%s邀请你来开Party" % request.user.nickname
-    for i in range(push_number):
-        icon += u"👉"
-
-    message = u"%s%s" % (icon, message)
-
-    PokeLog.add(user_id=request.user.id, to_user_id=receiver_id)
-    SocketServer().invite_party_out_live(user_id=request.user.id,
-                                         to_user_id=receiver_id,
-                                         message=message)
-
-    member = ChannelMember.objects.filter(user_id=request.user.id).first()
-    if member:
-        push_number += 1
-        LeanCloudDev.async_push(receive_id=receiver_id,
-                                message=message,
-                                msg_type=8,
-                                channel_id=member.channel_id)
-
+        SocketServer().invite_party_in_live(user_id=request.user.id,
+                                            to_user_id=receiver_id,
+                                            message=message)
+    else:
+        SocketServer().invite_party_out_live(user_id=request.user.id,
+                                             to_user_id=receiver_id,
+                                             message=message)
     return JsonResponse()
 
 

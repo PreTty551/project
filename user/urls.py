@@ -34,8 +34,7 @@ urlpatterns = [
     url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends'),
 
     url(r'^user/search/$', views.search, name='search'),
-    url(r'^user/invite_party/in/$', views.invite_party_in_live, name='invite_party_in_live'),
-    url(r'^user/invite_party/out/$', views.invite_party_out_live, name='invite_party_out_live'),
+    url(r'^user/invite_party/$', views.invite_party, name='invite_party'),
 
     url(r'^user/party_push/$', views.party_push, name='party_push'),
     url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends'),
