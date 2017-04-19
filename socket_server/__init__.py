@@ -1,4 +1,5 @@
 import json
+import time
 
 from enum import Enum, unique
 from corelib.rongcloud import RongCloud
@@ -27,7 +28,7 @@ class SocketServer(object):
     def __init__(self):
         self.client = RongCloud()
 
-    def _send_message(self, user_id, to_user_id, box_type, msg_type, message):
+    def _send_message(self, user_id, to_user_id, box_type, msg_type, message, **kwargs):
         """
         外层type对应客户端的弹出消息样式
         data里的type是message的type, 用来控制同一种消息处理逻辑不同的情况
@@ -39,7 +40,7 @@ class SocketServer(object):
             意思是: 客户端弹出app内部的push，但无法点击
         """
         data = {
-            "type": event_type,
+            "type": box_type,
             "data": {
                 "type": msg_type,
                 "message": message,
@@ -78,19 +79,21 @@ class SocketServer(object):
                                   msg_type=MessageType.not_hit.value,
                                   message=message)
 
-    def invite_party_in_live(self, user_id, to_user_id, message):
+    def invite_party_in_live(self, user_id, to_user_id, message, channel_id):
         return self._send_message(user_id=user_id,
                                   to_user_id=to_user_id,
                                   box_type=PopBoxType.message.value,
-                                  msg_type=MessageType.not_hit.value,
-                                  message=message)
+                                  msg_type=MessageType.hit.value,
+                                  message=message,
+                                  channel_id=channel_id)
 
     def invite_party_out_live(self, user_id, to_user_id, message):
         return self._send_message(user_id=user_id,
                                   to_user_id=to_user_id,
                                   box_type=PopBoxType.message.value,
-                                  msg_type=MessageType.hit.value,
-                                  message=message)
+                                  msg_type=MessageType.not_hit.value,
+                                  message=message,
+                                  channel_id=0)
 
     def refresh_home(self, user_id, to_user_id, message):
         return self._send_event(user_id=user_id,

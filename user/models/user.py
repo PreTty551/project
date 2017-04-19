@@ -272,10 +272,12 @@ class PokeLog(models.Model):
     class Meta:
         db_table = "poke_log"
 
+    @classmethod
     def add(cls, user_id, to_user_id):
         cls.objects.create(user_id=user_id, to_user_id=to_user_id, status=0)
         redis.hset(MC_POKES_KEY % to_user_id, user_id, 1)
 
+    @classmethod
     def clear(cls, user_id, to_user_id):
         redis.hdel(MC_POKES_KEY % to_user_id, user_id)
 

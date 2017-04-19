@@ -466,21 +466,22 @@ def invite_party(request):
     message = u"%s%s" % (icon, message)
 
     PokeLog.add(user_id=request.user.id, to_user_id=receiver_id)
-    LeanCloudDev.async_push(receive_id=receiver_id,
-                            message=message,
-                            msg_type=8,
-                            channel_id=member.channel_id)
-
     member = ChannelMember.objects.filter(user_id=request.user.id).first()
     if member:
         push_number += 1
         SocketServer().invite_party_in_live(user_id=request.user.id,
                                             to_user_id=receiver_id,
-                                            message=message)
+                                            message=message,
+                                            channel_id=member.channel_id)
+        LeanCloudDev.async_push(receive_id=receiver_id,
+                                message=message,
+                                msg_type=8,
+                                channel_id=member.channel_id)
     else:
         SocketServer().invite_party_out_live(user_id=request.user.id,
                                              to_user_id=receiver_id,
                                              message=message)
+        LeanCloudDev.async_push(receive_id=receiver_id, message=message)
     return JsonResponse()
 
 
