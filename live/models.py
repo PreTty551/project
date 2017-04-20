@@ -215,7 +215,7 @@ def refresh(user_id):
     if online_friend_ids:
         SocketServer().refresh_home(user_id=user_id,
                                     to_user_id=set(online_friend_ids),
-                                    content="refresh")
+                                    message="refresh")
 
 
 @receiver(post_save, sender=ChannelMember)
