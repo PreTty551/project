@@ -52,7 +52,7 @@ class SocketServer(object):
                                               to_user_id=to_user_id,
                                               content=json.dumps(data))
 
-    def _send_event(self, user_id, to_user_id, event_type, msg_type, message):
+    def _send_event(self, user_id, to_user_id, event_type, message, **kwargs):
         data = {
             "type": event_type,
             "data": {
@@ -70,6 +70,7 @@ class SocketServer(object):
                                   to_user_id=to_user_id,
                                   box_type=PopBoxType.invite_friend.value,
                                   msg_type=MessageType.hit.value,
+                                  message=message,
                                   **kwargs)
 
     def agree_friend(self, user_id, to_user_id, message):
