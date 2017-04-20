@@ -39,6 +39,8 @@ urlpatterns = [
     url(r'^user/party_push/$', views.party_push, name='party_push'),
     url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends'),
 
-    url(r'^user/quit_app/$', views.quit_app, name='quit_app')
+    url(r'^user/quit_app/$', views.quit_app, name='quit_app'),
+    url(r'^user/online_and_offine/callback/$', views.user_online_and_offine_callback, name='online_and_offine')
+
 
 ]

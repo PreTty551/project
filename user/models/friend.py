@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError
 
 from corelib.utils import natural_time as time_format
 from corelib.redis import redis
@@ -16,9 +16,15 @@ class InviteFriend(models.Model):
     status = models.SmallIntegerField(default=0)
     date = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = (('invited_id', 'user_id'))
+
     @classmethod
     def add(cls, user_id, invited_id):
-        return cls.objects.create(user_id=user_id, invited_id=invited_id)
+        try:
+            return cls.objects.create(user_id=user_id, invited_id=invited_id)
+        except IntegrityError:
+            pass
 
     @classmethod
     def agree(cls, user_id, invited_id):
@@ -38,40 +44,9 @@ class InviteFriend(models.Model):
         return True if cls.objects.filter(user_id=friend_id, invited_id=user_id).first() else False
 
     @classmethod
-    def get_my_invited_ids(cls, owner_id):
-        return list(cls.objects.filter(user_id=owner_id,
-                                       status=0).values_list("invited_id", flat=True))
-
-    @classmethod
-    def get_invited_my_ids(cls, user_id):
-        return list(cls.objects.filter(invited_id=user_id,
+    def get_invited_my_ids(cls, owner_id):
+        return list(cls.objects.filter(invited_id=owner_id,
                                        status=0).values_list("user_id", flat=True))
-
-    @classmethod
-    def get_invite_friend_ids(cls, user_id, user_ranges=[]):
-        if not user_ranges:
-            return list(cls.objects.filter(invited_id=user_id,
-                                           status=0).values_list("user_id", flat=True))
-        return list(cls.objects.filter(invited_id=user_id,
-                                       status=0,
-                                       user_id__in=user_ranges).values_list("user_id", flat=True))
-
-    @classmethod
-    def get_invite_friends(cls, user_id, user_ranges=[]):
-        invite_friend_ids = cls.get_invite_friend_ids(user_id=user_id,
-                                                      user_ranges=user_ranges)
-
-        results = []
-        for friend_id in invite_friend_ids:
-            user = User.get(id=friend_id)
-            if not user:
-                continue
-
-            basic_info = user.basic_info()
-            basic_info["user_relation"] = UserEnum.be_invite.value
-            results.append(basic_info)
-
-        return results
 
 
 class Friend(models.Model):
@@ -81,9 +56,12 @@ class Friend(models.Model):
     memo = models.CharField(max_length=100, default="")
     date = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = (('user_id', 'friend_id'))
+
     @classmethod
     def is_friend(cls, owner_id, friend_id):
-        is_friend = redis.hget(MC_FRIEND_IDS_KEY % owner_id, owner_id)
+        is_friend = redis.hget(MC_FRIEND_IDS_KEY % owner_id, friend_id)
         if not is_friend:
             friend = cls.objects.filter(user_id=owner_id, friend_id=friend_id).first()
             return True if friend else False
@@ -113,6 +91,7 @@ class Friend(models.Model):
         cls.objects.filter(user_id=friend_id, friend_id=owner_id).delete()
         redis.hdel(MC_FRIEND_IDS_KEY % owner_id, friend_id)
         redis.hdel(MC_FRIEND_IDS_KEY % friend_id, owner_id)
+        redis.hdel(REDIS_MEMOS_KEY % owner_id, friend_id)
         return True
 
     @classmethod
@@ -136,13 +115,6 @@ class Friend(models.Model):
     @classmethod
     def count(cls, user_id):
         return cls.objects.filter(user_id=user_id).count()
-
-    @classmethod
-    @transaction.atomic()
-    def cancel(cls, user_id, friend_id):
-        cls.objects.filter(user_id=user_id, friend_id=friend_id).delete()
-        cls.objects.filter(user_id=friend_id, friend_id=user_id).delete()
-        return True
 
     @classmethod
     def get_friends(cls, user_id):

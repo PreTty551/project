@@ -135,7 +135,6 @@ class User(AbstractUser, PropsMixin):
         return "db:user:%s" % self.id
 
     def save(self, *args, **kwargs):
-        # mc.delete(MC_USER_KEY % self.id)
         super(User, self).save(*args, **kwargs)
 
     @classmethod
@@ -158,7 +157,7 @@ class User(AbstractUser, PropsMixin):
 
     @classmethod
     def get_online_ids(cls):
-        return redis.hkeys(REDIS_ONLINE_USERS_KEY)
+        return [int(user_id) for user_id in redis.hkeys(REDIS_ONLINE_USERS_KEY)]
 
     @property
     def localtime(self):
@@ -219,7 +218,7 @@ class User(AbstractUser, PropsMixin):
         detail_info = self.basic_info()
         detail_info["common_friends"] = common_friends if common_friends else ""
         if user_id:
-            detail_info["friend_relation"] = self.check_friend_relation(user_id=user_id)
+            detail_info["user_relation"] = self.check_friend_relation(user_id=user_id)
             place = Place.get(user_id=self.id)
             if place:
                 dis = place.get_dis(to_user_id=user_id)
@@ -276,10 +275,11 @@ class PokeLog(models.Model):
     def add(cls, user_id, to_user_id):
         cls.objects.create(user_id=user_id, to_user_id=to_user_id, status=0)
         redis.hset(MC_POKES_KEY % to_user_id, user_id, 1)
+        redis.hdel(MC_POKES_KEY % user_id, to_user_id)
 
     @classmethod
-    def clear(cls, user_id, to_user_id):
-        redis.hdel(MC_POKES_KEY % to_user_id, user_id)
+    def clear(cls, user_id):
+        redis.hdel(MC_POKES_KEY % user_id)
 
     @classmethod
     def get_pokes(cls, owner_id):

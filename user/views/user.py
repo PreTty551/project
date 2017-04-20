@@ -319,7 +319,8 @@ def check_login(request):
 
 def get_profile(request):
     user = User.get(id=request.user.id)
-    invite_friends = InviteFriend.get_invite_friends(user_id=request.user.id)
+    invite_friend_ids = InviteFriend.get_invited_my_ids(owner_id=request.user.id)
+
     two_degree = two_degree_relation(user_id=request.user.id)
     out_app_contacts = UserContact.get_contacts_out_app(owner_id=request.user.id)
 
@@ -486,5 +487,10 @@ def invite_party(request):
 
 
 def quit_app(request):
+    Quit(request.user)
+    return JsonResponse()
+
+
+def user_online_and_offine_callback(request):
     Quit(request.user)
     return JsonResponse()

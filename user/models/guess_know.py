@@ -33,9 +33,8 @@ def two_degree_relation(user_id):
 
 def guess_know_user(user_id):
     all_mobile_list = list(UserContact.objects.filter(user_id=user_id).values_list("mobile", flat=True))
-    # ignore_user_ids = Ignore.get_contacts_in_app(owner_id=owner_id)
     friend_ids = Friend.get_friend_ids(user_id=user_id)
-    invited_my_ids = InviteFriend.get_invited_my_ids(user_id=user_id)
+    invited_my_ids = InviteFriend.get_invited_my_ids(owner_id=user_id)
 
     user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                 .exclude(id__in=friend_ids)

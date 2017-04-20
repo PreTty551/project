@@ -95,10 +95,6 @@ def update_user_memo(request):
     return HttpResponseServerError()
 
 
-def get_friend_invites(request):
-    pass
-
-
 def who_is_friends(request):
     friend_ids = request.GET.get("friend_ids", "")
     friend_ids = friend_ids.split(",")
