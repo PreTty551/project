@@ -118,6 +118,7 @@ def create_channel(request):
 
     channel = Channel.create_channel(user_id=request.user.id, channel_type=channel_type)
     if channel:
+        PokeLog.clear()
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
 
