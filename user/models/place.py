@@ -21,7 +21,7 @@ class Place(object):
     @classmethod
     def _get_cursor(cls):
         client = pymongo.MongoClient(HOST, PORT)
-        db = client
+        db = client.places
         db.authenticate(USERNAME, PASSWORD, DB)
         return db
 

@@ -19,12 +19,11 @@ from corelib.decorators import login_required_404
 from corelib.paginator import paginator
 from corelib.leancloud import LeanCloudDev
 
-from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
+from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, PokeLog, quit_app as Quit
 from socket_server import SocketServer
 from live.models import ChannelMember
-
 
 
 @require_http_methods(["POST"])
@@ -320,6 +319,12 @@ def check_login(request):
 def get_profile(request):
     user = User.get(id=request.user.id)
     invite_friend_ids = InviteFriend.get_invited_my_ids(owner_id=request.user.id)
+    invite_friends = []
+    for friend_id in invite_friend_ids:
+        u = User.get(friend_id)
+        basic_info = u.basic_info()
+        basic_info["user_relation"] = UserEnum.be_invite.value
+        invite_friends.append(basic_info)
 
     two_degree = two_degree_relation(user_id=request.user.id)
     out_app_contacts = UserContact.get_contacts_out_app(owner_id=request.user.id)
@@ -417,9 +422,9 @@ def detail_user_info(request):
 
     user = User.get(id=user_id)
     if request.user.id == user_id:
-        detail_info = user.detail_info()
+        detail_info = request.user.detail_info()
     else:
-        detail_info = user.detail_info(user_id=user_id)
+        detail_info = request.user.detail_info(user_id=user_id)
 
     return JsonResponse(detail_info)
 
@@ -487,10 +492,30 @@ def invite_party(request):
 
 
 def quit_app(request):
-    Quit(request.user)
+    Quit(request.user.id)
     return JsonResponse()
 
 
 def user_online_and_offine_callback(request):
-    Quit(request.user)
+    nonce = request.GET.get("nonce")
+    timestamp = request.GET.get("timestamp")
+    signature = request.GET.get("signature")
+
+    valid_success = RongCloud().valid_signature(nonce=nonce,
+                                                timestamp=timestamp,
+                                                signature=signature)
+    if not valid_success:
+        return JsonResponse()
+
+    for body in json.loads(request.body):
+        user_id = body["userid"]
+        status = body["status"]
+        os = body["os"]
+        time = body["time"]
+
+        user = User.get(user_id)
+        if status == 1:
+            user.online()
+        else:
+            Quit(user_id)
     return JsonResponse()

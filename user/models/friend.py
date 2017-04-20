@@ -61,11 +61,8 @@ class Friend(models.Model):
 
     @classmethod
     def is_friend(cls, owner_id, friend_id):
-        is_friend = redis.hget(MC_FRIEND_IDS_KEY % owner_id, friend_id)
-        if not is_friend:
-            friend = cls.objects.filter(user_id=owner_id, friend_id=friend_id).first()
-            return True if friend else False
-        return True
+        friend_ids = cls.get_friend_ids(user_id=owner_id)
+        return friend_id in friend_ids
 
     @classmethod
     @hlcache(MC_FRIEND_IDS_KEY % '{user_id}')

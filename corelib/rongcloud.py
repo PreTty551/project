@@ -1,3 +1,5 @@
+import hashlib
+
 from rongcloud import RongCloud as RC
 
 from django.conf import settings
@@ -7,6 +9,10 @@ class RongCloud(object):
 
     def __init__(self):
         self.rongcloud = RC(settings.RONGCLOUD_APP_KEY, settings.RONGCLOUD_APP_SECRET)
+
+    def valid_signature(self, nonce, timestamp, signature):
+        _signature = hashlib.sha1((settings.RONGCLOUD_APP_SECRET + nonce + timestamp).encode('utf-8')).hexdigest()
+        return signature == _signature
 
     def _send(self, user_id, to_user_id, content, object_name):
         return self.rongcloud.Message.publishPrivate(

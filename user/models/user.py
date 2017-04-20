@@ -279,7 +279,7 @@ class PokeLog(models.Model):
 
     @classmethod
     def clear(cls, user_id):
-        redis.hdel(MC_POKES_KEY % user_id)
+        redis.delete(MC_POKES_KEY % user_id)
 
     @classmethod
     def get_pokes(cls, owner_id):
@@ -287,7 +287,8 @@ class PokeLog(models.Model):
         return [int(user_id) for user_id in user_ids]
 
 
-def quit_app(user):
+def quit_app(user_id):
     from live.models import ChannelMember
+    user = User.get(id=user_id)
     user.offline()
     ChannelMember.objects.filter(user_id=user.id).delete()
