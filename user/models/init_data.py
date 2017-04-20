@@ -64,7 +64,8 @@ def import_user():
             user.is_active = row[9]
             user.date_joined = row[10]
             user.mobile = row[11]
-            user.nickname = row[12]
+            nickname = row[12]
+            user.nickname = nickname[:30]
             avatar = row[13]
             user.avatar = avatar[:20] if len(avatar) > 19 else avatar
             user.gender = row[14]
@@ -124,14 +125,14 @@ def import_friend():
 
     for user_id in user_ids:
         cursor.execute("SELECT followed_user_id FROM yi_followuser where user_id=%s" % user_id)
-        follow_ids = [str(c[0]) for c in cursor.fetchall() if c]
+        follow_ids = [str(c[0]) for c in cursor.fetchall() if User.objects.filter(id=c[0]).first()]
         if not follow_ids:
             continue
 
         str_follow_ids = ",".join(follow_ids)
         sql = "SELECT user_id FROM yi_followuser where followed_user_id=%s and user_id in (%s)" % (user_id, str_follow_ids)
         cursor.execute(sql)
-        fans_ids = [str(r[0]) for r in cursor.fetchall() if r]
+        fans_ids = [str(r[0]) for r in cursor.fetchall() if User.objects.filter(id=r[0]).first()]
         if not fans_ids:
             continue
 
@@ -141,3 +142,10 @@ def import_friend():
         invited_ids = set(follow_ids) ^ set(fans_ids)
         for invited_id in invited_ids:
             InviteFriend.objects.create(user_id=user_id, invited_id=invited_id, status=10)
+
+
+def run():
+    #init_gift()
+    import_user()
+    import_thirduser()
+    import_friend()
