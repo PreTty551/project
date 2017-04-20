@@ -18,6 +18,7 @@ from corelib.wechat import OAuth
 from corelib.decorators import login_required_404
 from corelib.paginator import paginator
 from corelib.leancloud import LeanCloudDev
+from corelib.rongcloud import RongCloud
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
@@ -422,9 +423,9 @@ def detail_user_info(request):
 
     user = User.get(id=user_id)
     if request.user.id == user_id:
-        detail_info = request.user.detail_info()
+        detail_info = user.detail_info()
     else:
-        detail_info = request.user.detail_info(user_id=user_id)
+        detail_info = user.detail_info(user_id=request.user.id)
 
     return JsonResponse(detail_info)
 

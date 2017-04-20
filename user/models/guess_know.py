@@ -42,14 +42,14 @@ def guess_know_user(user_id):
                                 .values_list("id", flat=True))
 
     results = []
-    users = [User.get(id=user_id) for user_id in user_ids]
+    users = [User.get(id=user_id) for user_id in user_ids[:10]]
     for user in users:
         basic_info = user.basic_info()
         basic_info["intro"] = "通讯录好友"
         basic_info["user_relation"] = UserEnum.nothing.value
         results.append(basic_info)
 
-    two_degrees = two_degree_relation(user_id=user_id)
+    two_degrees = two_degree_relation(user_id=user_id)[:10]
     for user_id, common_friend_count in two_degrees:
         user = User.get(id=user_id)
         basic_info = user.basic_info()

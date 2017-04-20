@@ -62,7 +62,7 @@ class Friend(models.Model):
     @classmethod
     def is_friend(cls, owner_id, friend_id):
         friend_ids = cls.get_friend_ids(user_id=owner_id)
-        return friend_id in friend_ids
+        return str(friend_id) in friend_ids
 
     @classmethod
     @hlcache(MC_FRIEND_IDS_KEY % '{user_id}')
