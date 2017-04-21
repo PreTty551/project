@@ -41,3 +41,4 @@ class LoginError(BaseError):
     MOBILE_ALREADY_USED = ErrorCodeField(10011, ugettext("手机号已使用，请重新输入"))
     REGISTER_ERROR = ErrorCodeField(10012, ugettext("注册失败"))
     PA_ALREADY_USED = ErrorCodeField(10013, ugettext("Pa已使用"))
+    DUPLICATE_BING = ErrorCodeField(10014, ugettext("绑定失败, 账号已被绑定"))

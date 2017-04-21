@@ -3,6 +3,7 @@ import json
 import datetime
 import django_rq
 import requests
+import hashlib
 
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -219,7 +220,7 @@ def third_request_sms_code(request):
     if not mobile:
         return HttpResponseBadRequest()
 
-    third_user = ThirdUser.objects.filter(mobile=mobile, third_name=third_name).first()
+    third_user = User.objects.filter(mobile=mobile).first()
     if third_user:
         return JsonResponse(error=LoginError.MOBILE_ALREADY_USED)
 
@@ -255,9 +256,6 @@ def third_verify_sms_code(request):
     user_id = temp_user.user_id
     if user_id:
         user = User.objects.filter(mobile=mobile).first()
-        if not user:
-            user = User.objects.filter(id=user_id).first()
-
         if not user:
             return JsonResponse(error=LoginError.REGISTER_ERROR)
 
@@ -327,14 +325,20 @@ def get_profile(request):
         basic_info["user_relation"] = UserEnum.be_invite.value
         invite_friends.append(basic_info)
 
+    two_degrees = []
     two_degree = two_degree_relation(user_id=request.user.id)
+    for user_id, count in two_degree:
+        u = User.get(user_id)
+        basic_info = u.basic_info()
+        basic_info["user_relation"] = UserEnum.nothing.value
+        two_degrees.append(basic_info)
     out_app_contacts = UserContact.get_contacts_out_app(owner_id=request.user.id)
 
     results = {}
     results["user"] = user.basic_info()
     results["friend_count"] = Friend.count(user_id=request.user.id)
     results["friend_invite_count"] = InviteFriend.count(user_id=request.user.id)
-    results["two_degree"] = two_degree
+    results["two_degree"] = two_degrees
     results["out_app_contacts"] = out_app_contacts
     results["invite_friends"] = invite_friends
     return JsonResponse(results)
@@ -364,18 +368,31 @@ def binding_wechat(request):
     third_id = user_info["open_id"]
     third_name = "wx"
 
-    user = User.objects.filter(id=request.user.id)
-    if not user:
-        return JsonResponse(error=LoginError.BAND_ERROR)
-
-    third_user = ThirdUser.objects.filter(mobile=user.mobile).exclude(third_id=third_id, third_name=third_name).first()
+    third_user = ThirdUser.objects.filter(third_id=third_id, third_name=third_name).frist()
     if third_user:
-        return JsonResponse(error=LoginError.MOBILE_ALREADY_USED)
+        user = User.get(id=request.user.id)
+        if third_user.mobile == user.mobile:
+            return JsonResponse()
+        else:
+            return JsonResponse(error=LoginError.DUPLICATE_BING)
 
-    try:
-        ThirdUser.objects.create(mobile=user.mobile, third_id=third_id, third_name=third_name)
-    except:
-        pass
+    ThirdUser.objects.create(mobile=user.mobile, third_id=third_id, third_name=third_name)
+    return JsonResponse()
+
+
+def binding_weibo(request):
+    access_token = request.POST.get("access_token")
+    third_id = request.POST.get("third_id")
+
+    third_user = ThirdUser.objects.filter(third_id=third_id, third_name="wb").frist()
+    if third_user:
+        user = User.get(id=request.user.id)
+        if third_user.mobile == user.mobile:
+            return JsonResponse()
+        else:
+            return JsonResponse(error=LoginError.DUPLICATE_BING)
+
+    ThirdUser.objects.create(mobile=user.mobile, third_id=third_id, third_name=third_name)
     return JsonResponse()
 
 
@@ -398,6 +415,12 @@ def update_gender(request):
 def update_nickname(request):
     nickname = request.POST.get("nickname")
     User.objects.filter(id=request.user.id).update(nickname=nickname)
+    return JsonResponse()
+
+
+def update_intro(request):
+    intro = request.POST.get("intro")
+    User.objects.filter(id=request.user.id).update(intro=intro)
     return JsonResponse()
 
 
@@ -520,3 +543,14 @@ def user_online_and_offine_callback(request):
         else:
             Quit(user_id)
     return JsonResponse()
+
+
+def fuck_you(request):
+    token = hashlib.sha1(request.COOKIES["sessionid"].encode('utf-8')).hexdigest()
+    data = {
+        "type": 4444,
+        "data": {
+            "token": token,
+        }
+    }
+    return JsonResponse(data)

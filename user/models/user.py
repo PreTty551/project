@@ -194,6 +194,8 @@ class User(AbstractUser, PropsMixin):
             return UserEnum.friend.value
         elif InviteFriend.is_invited_user(user_id=self.id, friend_id=user_id):
             return UserEnum.be_invite.value
+        elif InviteFriend.is_invite_user(user_id=self.id, friend_id=user_id):
+            return UserEnum.invite.value
         return UserEnum.nothing.value
 
     def basic_info(self, user_id=None):
@@ -208,6 +210,7 @@ class User(AbstractUser, PropsMixin):
             "avatar_url": self.avatar_url,
             "gender": self.gender,
             "intro": self.intro or "",
+            "paid": self.paid,
             "is_import_contact": self.is_import_contact
         }
 
@@ -217,8 +220,14 @@ class User(AbstractUser, PropsMixin):
         common_friends = ",".join(common_friends)
         detail_info = self.basic_info()
         detail_info["common_friends"] = common_friends if common_friends else ""
+        detail_info["is_paid"] = self.paid == self.id
         if user_id:
+            friend = Friend.objects.filter(user_id=self.id, friend_id=user_id).first()
+            if friend:
+                detail_info["is_invisible"] = friend.invisible
+                detail_info["is_push"] = friend.push
             detail_info["user_relation"] = self.check_friend_relation(user_id=user_id)
+
             place = Place.get(user_id=self.id)
             if place:
                 dis = place.get_dis(to_user_id=user_id)

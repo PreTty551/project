@@ -22,9 +22,10 @@ class InviteFriend(models.Model):
     @classmethod
     def add(cls, user_id, invited_id):
         try:
-            return cls.objects.create(user_id=user_id, invited_id=invited_id)
+            cls.objects.create(user_id=user_id, invited_id=invited_id)
         except IntegrityError:
             pass
+        return True
 
     @classmethod
     def agree(cls, user_id, invited_id):
@@ -40,8 +41,12 @@ class InviteFriend(models.Model):
         return cls.objects.filter(invited_id=user_id).count()
 
     @classmethod
+    def is_invite_user(cls, user_id, friend_id):
+        return True if cls.objects.filter(user_id=friend_id, invited_id=user_id, status=0).first() else False
+
+    @classmethod
     def is_invited_user(cls, user_id, friend_id):
-        return True if cls.objects.filter(user_id=friend_id, invited_id=user_id).first() else False
+        return True if cls.objects.filter(user_id=user_id, invited_id=friend_id, status=0).first() else False
 
     @classmethod
     def get_invited_my_ids(cls, owner_id):
@@ -52,7 +57,8 @@ class InviteFriend(models.Model):
 class Friend(models.Model):
     user_id = models.IntegerField()
     friend_id = models.IntegerField()
-    notify_switch = models.BooleanField(default=True)
+    invisible = models.BooleanField(default=False)
+    push = models.BooleanField(default=True)
     memo = models.CharField(max_length=100, default="")
     date = models.DateTimeField(auto_now_add=True)
 
@@ -99,6 +105,32 @@ class Friend(models.Model):
         self.memo = memo
         self.save()
         redis.hset(REDIS_MEMOS_KEY % self.user_id, self.user_id, memo)
+        return True
+
+    def update_invisible(self, is_invisible):
+        self.invisible = is_invisible
+        self.save()
+        redis.hset(REDIS_INVISIBLE_KEY % self.user_id, self.user_id, is_invisible)
+        return True
+
+    def update_push(self, is_push):
+        self.push = is_push
+        self.save()
+        redis.hset(REDIS_PUSH_KEY % self.user_id, self.user_id, is_invisible)
+        return True
+
+    @classmethod
+    def is_invisible(cls, owner_id, user_id):
+        is_invisible = redis.hget(REDIS_INVISIBLE_KEY % owner_id, user_id)
+        if is_invisible is not None:
+            return True if is_invisible else False
+        return False
+
+    @classmethod
+    def is_push(cls, owner_id, user_id):
+        is_push = redis.hget(REDIS_PUSH_KEY % owner_id, user_id)
+        if is_push is not None:
+            return True if is_push else False
         return True
 
     @property

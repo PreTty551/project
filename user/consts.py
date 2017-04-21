@@ -22,4 +22,6 @@ MC_POKES_KEY = "u:%s:pokes"
 
 
 REDIS_MEMOS_KEY = 'u:%s:memo'
+REDIS_INVISIBLE_KEY = 'u:%s:invisible'
+REDIS_PUSH_KEY = 'u:%s:push'
 REDIS_ONLINE_USERS_KEY = 'online:user_ids'

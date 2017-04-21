@@ -16,22 +16,25 @@ from socket_server import SocketServer
 
 def invite_friend(request):
     invited_id = request.POST.get("invited_id")
-    is_success = InviteFriend.add(user_id=request.user.id,
-                                  invited_id=invited_id)
-    if is_success:
-        message = "%s 邀请你加入好友" % request.user.nickname
-        LeanCloudDev.async_push(receive_id=invited_id, message=message)
+    if InviteFriend.objects.filter(user_id=invited_id, invited_id=request.user.id).first():
+        Friend.add(user_id=request.user.id, friend_id=invited_id)
+    else:
+        is_success = InviteFriend.add(user_id=request.user.id,
+                                      invited_id=invited_id)
+        if is_success:
+            message = "%s 邀请你加入好友" % request.user.nickname
+            LeanCloudDev.async_push(receive_id=invited_id, message=message)
 
-        data = {
-            "from_user_id": request.user.id,
-            "avatar_url": request.user.avatar_url,
-        }
-        SocketServer().invite_friend(user_id=request.user.id,
-                                     to_user_id=invited_id,
-                                     message=message,
-                                     **data)
-        return JsonResponse()
-    return HttpResponseServerError()
+            data = {
+                "from_user_id": request.user.id,
+                "avatar_url": request.user.avatar_url,
+            }
+            SocketServer().invite_friend(user_id=request.user.id,
+                                         to_user_id=invited_id,
+                                         message=message,
+                                         **data)
+            return JsonResponse()
+        return HttpResponseServerError()
 
 
 def agree_friend(request):
@@ -89,7 +92,31 @@ def update_user_memo(request):
 
     friend = Friend.objects.filter(user_id=request.user.id, friend_id=friend_id).first()
     if friend:
-        is_success = friend.update_memo(friend_id=friend_id, memo=memo)
+        is_success = friend.update_memo(memo=memo)
+        if is_success:
+            return JsonResponse()
+    return HttpResponseServerError()
+
+
+def update_invisible(request):
+    friend_id = request.POST.get("friend_id")
+    invisible = request.POST.get("invisible")
+
+    friend = Friend.objects.filter(user_id=request.user.id, friend_id=friend_id).first()
+    if friend:
+        is_success = friend.update_invisible(is_invisible=invisible)
+        if is_success:
+            return JsonResponse()
+    return HttpResponseServerError()
+
+
+def update_push(request):
+    friend_id = request.POST.get("friend_id")
+    push = request.POST.get("push")
+
+    friend = Friend.objects.filter(user_id=request.user.id, friend_id=friend_id).first()
+    if friend:
+        is_success = friend.update_push(is_push=push)
         if is_success:
             return JsonResponse()
     return HttpResponseServerError()

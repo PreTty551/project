@@ -61,6 +61,7 @@ def livemedia_list(request):
         if user:
             basic_info = user.basic_info()
             basic_info["is_hint"] = False
+            basic_info["user_relation"] = UserEnum.friend.value
             friend_list.append(basic_info)
 
     return JsonResponse({"channels": channels,

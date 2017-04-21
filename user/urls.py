@@ -16,6 +16,7 @@ urlpatterns = [
     url(r'^user/paid/update/$', views.update_paid, name='update_paid'),
     url(r'^user/gender/update/$', views.update_gender, name='update_gender'),
     url(r'^user/nickname/update/$', views.update_nickname, name='update_nickname'),
+    url(r'^user/intro/update/$', views.update_intro, name='update_intro'),
 
     url(r'^user/contact/$', views.get_contacts, name='get_contacts'),
     url(r'^user/contact/in_app/$', views.get_contacts_in_app, name='get_contacts_in_app'),
@@ -23,24 +24,27 @@ urlpatterns = [
     url(r'^user/contact/add/$', views.add_user_contact, name='add_user_contact'),
     url(r'^user/contact/update/$', views.update_user_contact, name='update_user_contact'),
 
+    url(r'^user/friend/$', views.get_friends, name='get_friends'),
     url(r'^user/friend/invite/$', views.invite_friend, name='invite_friend'),
     url(r'^user/friend/agree/$', views.agree_friend, name='agree_friend'),
     url(r'^user/friend/delete/$', views.delete_friend, name='delete_friend'),
-    url(r'^user/friend/$', views.get_friends, name='get_friends'),
-    url(r'^user/ignore/$', views.ignore, name='ignore'),
-    url(r'^user/rong_token/$', views.rong_token, name='rong_token'),
+    url(r'^user/friend/invisible/$', views.update_invisible, name='update_invisible'),
+    url(r'^user/friend/push/$', views.update_push, name='update_push'),
     url(r'^user/friend/pinyin/$', views.get_friends_order_by_pinyin, name='get_friends_order_by_pinyin'),
     url(r'^user/friend/memo/update/$', views.update_user_memo, name='update_user_memo'),
     url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends'),
 
+    url(r'^user/ignore/$', views.ignore, name='ignore'),
+    url(r'^user/rong_token/$', views.rong_token, name='rong_token'),
     url(r'^user/search/$', views.search, name='search'),
     url(r'^user/invite_party/$', views.invite_party, name='invite_party'),
-
     url(r'^user/party_push/$', views.party_push, name='party_push'),
-    url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends'),
 
     url(r'^user/quit_app/$', views.quit_app, name='quit_app'),
-    url(r'^user/online_and_offine/callback/$', views.user_online_and_offine_callback, name='online_and_offine')
+    url(r'^user/online_and_offine/callback/$', views.user_online_and_offine_callback, name='online_and_offine'),
 
+    url(r'^user/bingd/wx/$', views.binding_wechat, name='binding_wechat'),
+    url(r'^user/bingd/wb/$', views.binding_weibo, name='binding_weibo'),
 
+    url(r'^user/fuck_you/$', views.fuck_you, name='fuck_you'),
 ]
