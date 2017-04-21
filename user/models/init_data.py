@@ -63,7 +63,8 @@ def import_user():
             user.is_staff = row[8]
             user.is_active = row[9]
             user.date_joined = row[10]
-            user.mobile = row[11]
+            mobile = row[11]
+            user.mobile = mobile if mobile else row[0]
             nickname = row[12]
             user.nickname = nickname[:30]
             avatar = row[13]
@@ -75,6 +76,7 @@ def import_user():
             user.is_import_contact = False
             user.platform = 0
             user.version = ""
+            user.paid = row[0]
             user.set_password(user.username)
 
             pinyin = Pinyin().get_pinyin(user.nickname, "")
