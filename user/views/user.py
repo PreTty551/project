@@ -18,8 +18,8 @@ from corelib.weibo import Weibo
 from corelib.wechat import OAuth
 from corelib.decorators import login_required_404
 from corelib.paginator import paginator
-from corelib.leancloud import LeanCloudDev
 from corelib.rongcloud import RongCloud
+from corelib.jiguang import JPush
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
@@ -466,10 +466,8 @@ def party_push(request):
                                                       .values_list("user_id", flat=True).distinct())
     bulk_user_ids = set(party_user_ids_in_week) ^ set(friend_ids)
 
-    from corelib.leancloud import LeanCloudDev
     message = "%s 正在开party" % request.user.nickname
-    LeanCloudDev.async_batch_push(receive_ids=bulk_user_ids, message=message)
-
+    JPush().async_push(user_id=bulk_user_ids, message=message)
     for friend_id in party_user_ids_in_week:
         if i < 11:
             fids = Friend.get_friend_ids(user_id=friend_id)
@@ -477,7 +475,7 @@ def party_push(request):
             nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
             nicknames = ",".join(nicknames)
             message = "%s 正在开party" % nicknames
-            LeanCloudDev.async_push(receive_id=friend_id, message=message)
+            JPush().async_push(user_id=[friend_id], message=message)
             i += 1
     return JsonResponse()
 
@@ -502,15 +500,17 @@ def invite_party(request):
                                             to_user_id=receiver_id,
                                             message=message,
                                             channel_id=member.channel_id)
-        LeanCloudDev.async_push(receive_id=receiver_id,
-                                message=message,
-                                msg_type=8,
-                                channel_id=member.channel_id)
+        JPush().async_push(user_id=[receiver_id],
+                           message=message,
+                           push_type=8,
+                           channel_id=member.channel_id)
+
     else:
         SocketServer().invite_party_out_live(user_id=request.user.id,
                                              to_user_id=receiver_id,
                                              message=message)
-        LeanCloudDev.async_push(receive_id=receiver_id, message=message)
+        JPush().async_push(user_id=[receiver_id],
+                           message=message)
     return JsonResponse()
 
 

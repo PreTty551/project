@@ -3,6 +3,7 @@ import requests
 import base64
 import json
 import jpush
+import django_rq
 
 from django.conf import settings
 from corelib.redis import redis
@@ -48,3 +49,8 @@ class JPush(object):
         push.options = {"apns_production": False}
         push.platform = ["android", "ios"]
         push.send()
+
+    def async_push(self, user_ids, message, push_type=0, is_sound=False,
+                   sound=None, title="通知提醒", **kwargs):
+        queue = django_rq.get_queue('high')
+        queue.enqueue(self.push, user_ids, message, push_type, is_sound, sound, title, **kwargs)
