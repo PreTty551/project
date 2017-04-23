@@ -50,6 +50,7 @@ def livemedia_list(request):
         user = User.get(id=user_id)
         if user:
             basic_info = user.basic_info()
+            basic_info["user_relation"] = UserEnum.friend.value
             basic_info["is_hint"] = True
             friend_list.append(basic_info)
 
@@ -67,7 +68,7 @@ def livemedia_list(request):
     return JsonResponse({"channels": channels,
                          "friends": friend_list,
                          "guess_know_users": guess_know_user(request.user.id),
-                         "guess_contacts": []})
+                         "guess_contacts": UserContact.recommend_contacts(request.user.id)})
 
 
 def near_channel_list(request):

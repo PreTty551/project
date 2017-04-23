@@ -214,7 +214,7 @@ class User(AbstractUser, PropsMixin):
         }
 
     def detail_info(self, user_id=None):
-        from .friend import common_friend
+        from .friend import common_friend, Friend
         common_friends = common_friend(self.id, user_id)
         common_friends = ",".join(common_friends)
         detail_info = self.basic_info()
