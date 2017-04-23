@@ -23,7 +23,7 @@ def invite_friend(request):
                                       invited_id=invited_id)
         if is_success:
             message = "%s 邀请你加入好友" % request.user.nickname
-            JPush().async_push(user_id=[invited_id], message=message)
+            JPush().async_push(user_ids=[invited_id], message=message)
             data = {
                 "from_user_id": request.user.id,
                 "avatar_url": request.user.avatar_url,
@@ -42,7 +42,7 @@ def agree_friend(request):
                                     invited_id=invited_id)
     if is_success:
         message = "%s 同意了你的好友请求" % request.user.nickname
-        JPush().async_push(user_id=[invited_id], message=message)
+        JPush().async_push(user_ids=[invited_id], message=message)
         SocketServer().agree_friend(user_id=request.user.id,
                                     to_user_id=invited_id,
                                     message=message)

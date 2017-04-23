@@ -467,7 +467,7 @@ def party_push(request):
     bulk_user_ids = set(party_user_ids_in_week) ^ set(friend_ids)
 
     message = "%s 正在开party" % request.user.nickname
-    JPush().async_push(user_id=bulk_user_ids, message=message)
+    JPush().async_push(user_ids=bulk_user_ids, message=message)
     for friend_id in party_user_ids_in_week:
         if i < 11:
             fids = Friend.get_friend_ids(user_id=friend_id)
@@ -475,7 +475,7 @@ def party_push(request):
             nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
             nicknames = ",".join(nicknames)
             message = "%s 正在开party" % nicknames
-            JPush().async_push(user_id=[friend_id], message=message)
+            JPush().async_push(user_ids=[friend_id], message=message)
             i += 1
     return JsonResponse()
 
@@ -500,7 +500,7 @@ def invite_party(request):
                                             to_user_id=receiver_id,
                                             message=message,
                                             channel_id=member.channel_id)
-        JPush().async_push(user_id=[receiver_id],
+        JPush().async_push(user_ids=[receiver_id],
                            message=message,
                            push_type=8,
                            channel_id=member.channel_id)
@@ -509,7 +509,7 @@ def invite_party(request):
         SocketServer().invite_party_out_live(user_id=request.user.id,
                                              to_user_id=receiver_id,
                                              message=message)
-        JPush().async_push(user_id=[receiver_id],
+        JPush().async_push(user_ids=[receiver_id],
                            message=message)
     return JsonResponse()
 

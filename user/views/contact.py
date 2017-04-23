@@ -29,14 +29,26 @@ def get_contacts_in_app(request):
     for user_id in user_ids:
         user = User.get(id=user_id)
         basic_info = user.basic_info()
-        detail_info["user_relation"] = user.check_friend_relation(user_id=request.user.id)
+        basic_info["user_relation"] = user.check_friend_relation(user_id=request.user.id)
         result.append(basic_info)
     return JsonResponse(result)
 
 
 def get_contact_list(request):
     contacts = UserContact.get_all_contact(user_id=request.user.id)
-    contacts_in_app = get_contacts_in_app(request)
+    all_mobile_list = list(UserContact.objects.filter(user_id=request.user.id).values_list("mobile", flat=True))
+    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
+                                .exclude(id__in=friend_ids)
+                                .values_list("id", flat=True))
+
+    contacts_in_app = []
+    for user_id in user_ids:
+        user = User.get(id=user_id)
+        basic_info = user.basic_info()
+        basic_info["user_relation"] = user.check_friend_relation(user_id=request.user.id)
+        contacts_in_app.append(basic_info)
+
     return JsonResponse({"contacts": contacts, "contacts_in_app": contacts_in_app})
 
 
