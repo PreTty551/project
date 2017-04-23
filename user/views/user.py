@@ -11,7 +11,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseBadRequest, Http404, \
         HttpResponseServerError, HttpResponseNotFound
 
-from corelib.jsms import JSMS
+from corelib.jiguang import JSMS
 from corelib.http import JsonResponse
 from corelib.errors import LoginError
 from corelib.weibo import Weibo

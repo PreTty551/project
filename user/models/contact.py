@@ -119,13 +119,18 @@ class UserContact(models.Model):
     @classmethod
     def recommend_contacts(cls, owner_id):
         all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
-        common_contacts = UserContact.objects.filter(mobile__in=all_mobile_list).exclude(user_id=owner_id)
+        mobile_ids = User.objects.filter(mobile__in=all_mobile_list).values_list("mobile", flat=True)
+        mobile_ids = set(mobile_ids) ^ set(all_mobile_list)
+
+        common_contacts = UserContact.objects.filter(mobile__in=mobile_ids).exclude(user_id=owner_id)
         contacts = {}
         contacts_map = {}
+        user_ids = []
         for contact in common_contacts:
             _ = contacts.setdefault(contact.mobile, [])
             _.append(contact.user_id)
             contacts_map[contact.mobile] = contact.name
+            user_ids.append(contact.user_id)
 
         results = []
         for mobile, user_ids in contacts.items():
@@ -138,7 +143,7 @@ class UserContact(models.Model):
 
         sorted_results = sorted(results, key=lambda item: item[1])
         # RecommendContact.objects.create()
-        return [{"nickname": contacts_map[r[0]], "mobile": r[0]} for r in sorted_results[:10]]
+        return [{"nickname": contacts_map[r[0]], "mobile": r[0]} for r in sorted_results[:20]]
 
     def contact_dict(self):
         return {

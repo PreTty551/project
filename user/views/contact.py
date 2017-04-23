@@ -19,26 +19,25 @@ def get_contacts(request):
 
 
 def get_contacts_in_app(request):
-    ignore_user_ids = Ignore.get_contacts_in_app(owner_id=request.user.id)
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
     all_mobile_list = list(UserContact.objects.filter(user_id=request.user.id).values_list("mobile", flat=True))
     user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
-                                .exclude(id__in=ignore_user_ids)
                                 .exclude(id__in=friend_ids)
-                                .exclude(id__in=invite_friends)
                                 .values_list("id", flat=True))
-    invite_friends = InviteFriend.get_friend_invites(user_id=request.user.id, user_ranges=user_ids)
-    user_ids = invite_friends.extend(user_ids[:10])
 
     result = []
     for user_id in user_ids:
         user = User.get(id=user_id)
         basic_info = user.basic_info()
-        # is_invited_user = Friend.is_invited_user(user_id=owner_id, friend_id=user_id)
-        # basic_info["is_invited_user"] = is_invited_user
+        detail_info["user_relation"] = user.check_friend_relation(user_id=request.user.id)
         result.append(basic_info)
-    # return result
     return JsonResponse(result)
+
+
+def get_contact_list(request):
+    contacts = UserContact.get_all_contact(user_id=request.user.id)
+    contacts_in_app = get_contacts_in_app(request)
+    return JsonResponse({"contacts": contacts, "contacts_in_app": contacts_in_app})
 
 
 def get_contacts_out_app(request):
@@ -76,3 +75,9 @@ def update_user_contact(request):
                                        mobile=uc["mobile"],
                                        user_id=request.user.id)
     return JsonResponse()
+
+
+def common_contact(request):
+    mobile = request.GET.get("mobile", "")
+    count = UserContact.objects.filter(mobile=mobile).count()
+    return JsonResponse({"common_contact": "你们有%s个共同朋友" % count, "count": count})

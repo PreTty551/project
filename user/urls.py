@@ -23,6 +23,8 @@ urlpatterns = [
     url(r'^user/contact/out_app/$', views.get_contacts_out_app, name='get_contacts_out_app'),
     url(r'^user/contact/add/$', views.add_user_contact, name='add_user_contact'),
     url(r'^user/contact/update/$', views.update_user_contact, name='update_user_contact'),
+    url(r'^user/contact/list/$', views.get_contact_list, name='get_contact_list'),
+    url(r'^user/contact/common_friend/$', views.common_contact, name='common_contact'),
 
     url(r'^user/friend/$', views.get_friends, name='get_friends'),
     url(r'^user/friend/invite/$', views.invite_friend, name='invite_friend'),
