@@ -28,7 +28,8 @@ def two_degree_relation(user_id):
         if len(mutual_friend_ids) >= 2:
             users.append((user_id, len(mutual_friend_ids)))
 
-    return users
+    sort_users = sorted(users, key=lambda item: item[1], reverse=True)
+    return sort_users
 
 
 def guess_know_user(user_id):
