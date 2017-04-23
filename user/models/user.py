@@ -83,9 +83,8 @@ def create_third_user(third_id, third_name, nickname, avatar, gender, mobile, pl
     return user
 
 
-def update_avatar_in_third_login(user_id):
+def update_avatar_in_third_login(avatar_url, user_id):
     user = User.get(user_id)
-    avatar_url = user.get_props_item("third_user_avatar", "")
     if not avatar_url:
         return
 

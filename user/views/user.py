@@ -157,6 +157,7 @@ def wx_user_login(request):
         if old_user:
             old_user.third_id = user_info["openid"]
             old_user.wx_unionid = user_info["unionid"]
+            old_user.avatar = user_info["headimgurl"]
             old_user.save()
             return JsonResponse({"temp_third_id": old_user.id, "is_new_user": True})
 
@@ -194,6 +195,7 @@ def wb_user_login(request):
         old_user = TempThirdUser.objects.filter(third_id=third_id).first()
         if old_user:
             old_user.third_id = user_info["uid"]
+            old_user.avatar = user_info["avatar"]
             old_user.save()
             return JsonResponse({"temp_third_id": old_user.id, "is_new_user": True})
         else:
@@ -275,12 +277,9 @@ def third_verify_sms_code(request):
                                  mobile=mobile,
                                  platform=platform,
                                  version=version)
-
-    user.set_props_item("third_user_avatar", temp_user.avatar)
-
     # 异步队列更新头像
     queue = django_rq.get_queue('avatar')
-    # queue.enqueue(update_avatar_in_third_login, user.id)
+    queue.enqueue(update_avatar_in_third_login, temp_user.avatar, user.id)
 
     if user.disable_login:
         return JsonResponse(error=LoginError.DISABLE_LOGIN)
