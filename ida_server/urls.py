@@ -24,6 +24,7 @@ urlpatterns = [
     url(r'', include('live.urls')),
     url(r'', include('gift.urls')),
     url(r'', include('wallet.urls')),
+    url(r'^invite/', include('invite.urls')),
     url(r'^h5/$', views.main),
 
 

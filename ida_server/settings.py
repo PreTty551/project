@@ -62,7 +62,10 @@ ROOT_URLCONF = 'ida_server.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'invite/templates'),
+            os.path.join(BASE_DIR, 'h5/templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -193,10 +196,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 STATIC_URL = '/static/'
 STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'invite/statics'),
     os.path.join(BASE_DIR, 'h5/statics'),
-)
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, 'h5/templates'),
 )
 
 
