@@ -2,6 +2,7 @@
 import requests
 import base64
 import json
+import jpush
 
 from django.conf import settings
 from corelib.redis import redis
