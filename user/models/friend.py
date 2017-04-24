@@ -2,6 +2,8 @@
 import time
 
 from django.db import models, transaction, IntegrityError
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 
 from corelib.utils import natural_time as time_format
 from corelib.redis import redis
@@ -69,7 +71,7 @@ class Friend(models.Model):
     @classmethod
     def is_friend(cls, owner_id, friend_id):
         friend_ids = cls.get_friend_ids(user_id=owner_id)
-        return str(friend_id) in friend_ids
+        return friend_id in friend_ids
 
     @classmethod
     @hlcache(MC_FRIEND_IDS_KEY % '{user_id}')
@@ -190,3 +192,16 @@ def common_friend(user_id, to_user_id):
 
     u_ids = set(user_ids) & set(to_user_id)
     return [User.get(uid).nickname for uid in u_ids if User.get(uid)]
+
+
+@receiver(post_save, sender=Friend)
+def add_friend_after(sender, created, instance, **kwargs):
+    if created:
+        redis.delete(MC_FRIEND_IDS_KEY % instance.user_id)
+        redis.delete(MC_FRIEND_IDS_KEY % instance.friend_id)
+
+
+@receiver(post_delete, sender=Friend)
+def del_friend_after(sender, instance, **kwargs):
+    redis.delete(MC_FRIEND_IDS_KEY % instance.user_id)
+    redis.delete(MC_FRIEND_IDS_KEY % instance.friend_id)

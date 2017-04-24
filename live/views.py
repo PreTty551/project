@@ -36,10 +36,10 @@ def refresh_list(request):
 def livemedia_list(request):
     channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
-    poke_ids = InviteParty.get_invites(user_id=request.user.id)
+    invite_party_ids = InviteParty.get_invites(user_id=request.user.id)
 
     friend_list = []
-    for user_id in poke_ids:
+    for user_id in invite_party_ids:
         user = User.get(id=user_id)
         if user:
             basic_info = user.basic_info()
@@ -61,7 +61,7 @@ def livemedia_list(request):
     return JsonResponse({"channels": channels,
                          "friends": friend_list,
                          "guess_know_users": guess_know_user(request.user.id),
-                         "guess_contacts": UserContact.recommend_contacts(request.user.id)})
+                         "guess_contacts": UserContact.recommend_contacts(request.user.id, 20)})
 
 
 def near_channel_list(request):

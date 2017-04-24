@@ -112,7 +112,7 @@ class UserContact(models.Model):
         for mobile in out_say_mobiles:
             uc = UserContact.objects.filter(user_id=owner_id, mobile=mobile).first()
             if uc:
-                _ = {"nickname": uc.name, "mobile": mobile}
+                _ = {"name": uc.name, "mobile": mobile}
                 result.append(_)
         return result
 

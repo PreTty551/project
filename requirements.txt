@@ -10,5 +10,6 @@ django_rq==0.9.5
 raven==6.0.0
 pymongo==3.4.0
 git+git://github.com/rongcloud/server-sdk-python#egg=rongcloud
+git+git://github.com/Iliker/ks3-python-sdk.git#egg=ks3sdk
 xpinyin==0.5.5
 jpush==3.2.6

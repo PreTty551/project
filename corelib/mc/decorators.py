@@ -62,7 +62,13 @@ def hlcache(key, redis):
                         r[v] = 1
                     redis.hmset(key, r)
             else:
-                values = [v.decode() for v in values]
+                _ll = []
+                for v in values:
+                    if v.isdigit():
+                        _ll.append(int(v))
+                    else:
+                        _ll.append(v)
+                values = _ll
             if isinstance(values, Empty):
                 values = []
 

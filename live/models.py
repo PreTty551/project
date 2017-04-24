@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from corelib.rongcloud import RongCloud
 from corelib.mc import hlcache
+from corelib.redis import redis
 
 from user.models import User, Friend
 from .consts import ChannelType, MC_INVITE_PARTY
@@ -45,7 +46,7 @@ class Channel(models.Model):
 
     @classmethod
     def get_channel(cls, channel_id):
-        return cls.objects.filter(channel_id=channel_id, channel_type=ChannelType.normal.value).first()
+        return cls.objects.filter(channel_id=channel_id).first()
 
     @classmethod
     def invite_channel(cls, user_id, invite_user_id):
@@ -222,7 +223,7 @@ class InviteParty(models.Model):
     @classmethod
     @hlcache(MC_INVITE_PARTY % '{user_id}')
     def get_invites(cls, user_id):
-        queryset = cls.objects.filter(to_user_id=user_id).values_list("user_id", flat=True)
+        queryset = cls.objects.filter(to_user_id=user_id).values_list("user_id", flat=True).distinct()
         return list(queryset)
 
 
@@ -246,7 +247,7 @@ def add_invite_party(sender, created, instance, **kwargs):
         InviteParty.objects.filter(user_id=instance.to_user_id,
                                    to_user_id=instance.user_id,
                                    status=0).update(status=1)
-        redis.delete(MC_INVITE_PARTY % user_id)
+        redis.delete(MC_INVITE_PARTY % instance.user_id)
 
 
 @receiver(post_save, sender=ChannelMember)

@@ -200,7 +200,7 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'h5/statics'),
 )
 
-AVATAR_BASE_URL = "img3.gouhuoapp.com"
+AVATAR_BASE_URL = "http://img3.gouhuoapp.com"
 
 
 TESTING = True
@@ -210,8 +210,6 @@ AUTH_USER_MODEL = 'user.User'
 # 极光短信
 JSMS_APP_KEY = ""
 JSMS_MASTER_SECRET = ""
-JSMS_APP_KEY = "0503fd95fae12affa7d7b087"
-JSMS_MASTER_SECRET = "3af292e6f3300c5f7ce73a22"
 
 # 微博
 WEIBO_CLIENT_KEY = ""

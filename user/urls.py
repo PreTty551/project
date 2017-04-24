@@ -17,6 +17,7 @@ urlpatterns = [
     url(r'^user/gender/update/$', views.update_gender, name='update_gender'),
     url(r'^user/nickname/update/$', views.update_nickname, name='update_nickname'),
     url(r'^user/intro/update/$', views.update_intro, name='update_intro'),
+    url(r'^user/avatar/update/$', views.update_avatar, name='update_avatar'),
 
     url(r'^user/contact/$', views.get_contacts, name='get_contacts'),
     url(r'^user/contact/in_app/$', views.get_contacts_in_app, name='get_contacts_in_app'),

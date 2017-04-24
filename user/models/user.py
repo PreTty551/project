@@ -7,7 +7,8 @@ from itertools import permutations
 from xpinyin import Pinyin
 
 from django.utils import timezone
-from django.db import models
+from django.conf import settings
+from django.db import models, transaction
 from django.contrib.auth import models as auth_models
 from django.contrib.auth.models import AbstractUser, UserManager as BaseUserManager
 
@@ -49,6 +50,7 @@ class UserManager(BaseUserManager):
             user.gender = gender
             user.platform = platform
             user.pinyin = pinyin
+            user.paid = user.id
             user.save()
             return user
         except Exception as e:
@@ -58,26 +60,16 @@ class UserManager(BaseUserManager):
         return super(UserManager, self).get_queryset().filter(nickname=nickname).first()
 
 
-def rename_nickname(nickname):
-    """昵称重名后的处理函数,50个emoji选index个的组合"""
-    user = User.objects.filter_nickname(nickname=nickname)
-    if not user:
-        return nickname
-
-    for i in range(50):
-        for e in permutations(EMOJI_LIST, i + 1):
-            e_str = "".join(e)
-            new_nickname = "%s%s" % (nickname, e_str)
-            user = User.objects.filter_nickname(nickname=new_nickname)
-            if not user:
-                return new_nickname
-
-
+@transaction.atomic()
 def create_third_user(third_id, third_name, nickname, avatar, gender, mobile, platform, version):
     nickname = nickname.replace(" ", "").replace("#", "").replace("@", "")
     user = User.objects.filter(mobile=mobile).first()
     if not user:
-        user = User.objects.add_user(nickname=nickname, gender=gender, mobile=mobile, platform=platform, version=version)
+        user = User.objects.add_user(nickname=nickname,
+                                     gender=gender,
+                                     mobile=mobile,
+                                     platform=platform,
+                                     version=version)
     ThirdUser.objects.create(mobile=mobile, third_id=third_id, third_name=third_name)
     return user
 
@@ -88,14 +80,14 @@ def update_avatar_in_third_login(avatar_url, user_id):
         return
 
     from corelib.kingsoft.ks3 import KS3
-    avatar_name = KS3().fetch_avatar(url=avatar_url, user_id=request.user.id)
+    avatar_name = KS3().fetch_avatar(url=avatar_url, user_id=user_id)
     if avatar_name:
         user.avatar = avatar_name
         user.save()
 
 
 class User(AbstractUser, PropsMixin):
-    paid = models.CharField(max_length=50, unique=True)
+    paid = models.CharField(max_length=50, unique=True, null=True, blank=True)
     nickname = models.CharField(max_length=50)
     mobile = models.CharField(max_length=20, unique=True)
     avatar = models.CharField(max_length=20, default="")
@@ -170,12 +162,12 @@ class User(AbstractUser, PropsMixin):
 
     @property
     def avatar_url(self):
-        if self.id < 160000:
-            if self.avatar:
-                return "http://img2.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % self.avatar
+        # if self.id < 160000:
+        #     if self.avatar:
+        #         return "http://img2.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % self.avatar
 
         if self.avatar:
-            return "%s/%s@base@tag=imgScale&w=150&h=150" % (AVATAR_BASE_URL, _avatar)
+            return "%s/%s@base@tag=imgScale&w=150&h=150" % (settings.AVATAR_BASE_URL, self.avatar)
         return ""
 
     @property
@@ -198,6 +190,10 @@ class User(AbstractUser, PropsMixin):
             return UserEnum.invite.value
         return UserEnum.nothing.value
 
+    @property
+    def is_paid(self):
+        return self.paid == self.id
+
     def basic_info(self, user_id=None):
         if user_id:
             memo = Friend.get_memo(user_id=self.id, friend_id=user_id)
@@ -210,7 +206,7 @@ class User(AbstractUser, PropsMixin):
             "avatar_url": self.avatar_url,
             "gender": self.gender,
             "intro": self.intro or "",
-            "paid": self.paid,
+            "is_paid": self.is_paid,
             "is_contact": self.is_contact
         }
 
@@ -220,7 +216,7 @@ class User(AbstractUser, PropsMixin):
         common_friends = ",".join(common_friends)
         detail_info = self.basic_info()
         detail_info["common_friends"] = common_friends if common_friends else ""
-        detail_info["is_paid"] = self.paid == self.id
+        detail_info["is_paid"] = self.is_paid
         if user_id:
             friend = Friend.objects.filter(user_id=self.id, friend_id=user_id).first()
             if friend:

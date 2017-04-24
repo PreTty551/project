@@ -22,8 +22,8 @@ from corelib.rongcloud import RongCloud
 from corelib.jiguang import JPush
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
-from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
-from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation
+from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser
+from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
 from socket_server import SocketServer
 from live.models import ChannelMember, InviteParty
 
@@ -332,14 +332,19 @@ def get_profile(request):
     results["user"] = user.basic_info()
     results["friend_count"] = Friend.count(user_id=request.user.id)
     results["friend_invite_count"] = InviteFriend.count(user_id=request.user.id)
-    results["two_degree"] = UserContact.recommend_contacts(request.user.id)
+    results["two_degree"] = guess_know_user(request.user.id)
     results["out_app_contacts"] = out_app_contacts
     results["invite_friends"] = invite_friends
     return JsonResponse(results)
 
 
 def rong_token(request):
+    if request.user.rong_token:
+        return JsonResponse({"token": request.user.rong_token})
+
     token = request.user.create_rong_token()
+    request.user.rong_token = token
+    request.user.save()
     return JsonResponse({"token": token})
 
 
@@ -415,6 +420,12 @@ def update_nickname(request):
 def update_intro(request):
     intro = request.POST.get("intro")
     User.objects.filter(id=request.user.id).update(intro=intro)
+    return JsonResponse()
+
+
+def update_avatar(request):
+    avatar = request.POST.get("avatar")
+    User.objects.filter(id=request.user.id).update(avatar=avatar)
     return JsonResponse()
 
 
