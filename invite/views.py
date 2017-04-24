@@ -1,5 +1,7 @@
 from django.shortcuts import render
+from user.models import User
 
 
-def wechat(request):
-    return render(request, 'invite/index.html', {})
+def wechat(request, user_id):
+    user = User.get(id=user_id)
+    return render(request, 'invite/index.html', {'user': user})
