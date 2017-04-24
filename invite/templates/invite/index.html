@@ -1,37 +1,38 @@
-<!DOCTYPE html>
-<html lang="zh-cmn-Hans">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="renderer" content="webkit">
-  <meta name="referrer" content="always">
-  <title>开PA</title>
-  <meta content="随手和见朋友" name="description"/>
-  <link href="https://cdn.bootcss.com/bulma/0.4.0/css/bulma.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-  <link rel="apple-touch-icon" sizes="180x180" href="http://bulma.io/favicons/apple-touch-icon.png?v=201701041855">
-</head>
+{% extends "invite/base.html" %}
 
-<body class="layout-default" background="/static/back_temp.jpg">
-  <div style="height:700px">
-    <div>
-      <div style="position:absolute;margin-top:35px;margin-left:80px">金子大人邀请你加入Party</div>
-      <a href="http://img.gouhuoapp.com/logo.jpg">
-        <img style="margin-top:10px" src="/static/top_bar.png" />
+{% block body %}
+<body class="layout-default">
+  <div style="height:600px;width:100%;">
+    <div style="position:fixed;top:10px;z-index:10;">
+      <div style="position:absolute;margin-top:25px;margin-left:80px">{{user.nickname|truncatechars:6}}邀请你加入Party</div>
+      <a href="http://gouhuoapp.com/wechat/share/812/74960/">
+        <img src="/static/top_bar.png" />
       </a>
     </div>
-    <div>
+    <div style="position:absolute;left:0;top:0;z-index:1;width:100%;height:600px">
       <video
+        id="video"
+        style="object-fit:initial;z-index:1;height:600px;width:100%;"
+        class="video-js"
         preload="auto"
+        x5-video-player-type="h5"
+        x5-video-player-fullscreen="true"
         playsinline
-        src="http://vid-123636.hls.fastweb.broadcastapp.agoraio.cn/live/1492343681276/index.m3u8">
+        webkit-playsinline
+        controls
+        autoplay
+        poster="{{user.avatar_url}}"
+        src="http://vid-123636.hls.fastweb.broadcastapp.agoraio.cn/live/1492952265276/index.m3u8">
       </video>
     </div>
-    <div style="position:fixed;bottom:0;">
+    <div style="position:fixed;bottom:-10px;z-index:11;">
       <img src="/static/bottom_bar.png" />
     </div>
   </div>
 
+<script>
+document.getElementById('video').play();
+</script>
+
 </body>
-</html>
+{% endblock %}
