@@ -2,7 +2,13 @@
 
 {% block body %}
 <body class="layout-default">
-  <div style="height:600px;width:100%;background-image:url('/static/bg.png');">
+  <div id="top_area" style="position:absolute;top:10px;display:none;z-index:100;">
+    <div style="position:absolute;margin-top:25px;margin-left:80px">{{user.nickname|truncatechars:6}}邀请你加入Party</div>
+    <a href="http://gouhuoapp.com/wechat/share/812/74960/">
+      <img src="/static/top_bar.png" />
+    </a>
+  </div>
+  <div id="area" style="height:600px;width:100%;background-image:url('/static/bg.png');">
     <div style="height:50px">
     </div>
     <div style="width:296px;height:459px;margin: 0 auto;background-image:url(/static/card.png);padding-top:50px;">
@@ -19,7 +25,7 @@
         id: Golden
       </div>
       <div style="width:208px;height:42px;margin: 0 auto;padding-top:40px;">
-        <a href="/invite/{{user_id}}/play/">
+        <a href="#" onclick="play()">
           <img src="/static/btn_join1.png"/>
         </a>
       </div>
@@ -28,5 +34,27 @@
       <img src="/static/bottom_bar.png" />
     </div>
   </div>
+  <video
+    id="video"
+    style="object-fit:initial;height:600px;width:100%;z-index:1;"
+    preload="auto"
+    x5-video-player-type="h5"
+    x5-video-player-fullscreen="true"
+    playsinline
+    webkit-playsinline
+    controls
+    src="https://joinhouse.party/assets/video/video.mp4">
+  </video>
+
+<script>
+function play() {
+  var video = document.getElementById('video');
+  video.style.position = "absolute";
+  video.style.top = "0px";
+  video.play();
+  document.getElementById('area').style.display = "none";
+  document.getElementById('top_area').style.display = "block";
+}
+</script>
 </body>
 {% endblock %}
