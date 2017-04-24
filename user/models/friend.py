@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import time
+
 from django.db import models, transaction, IntegrityError
 
 from corelib.utils import natural_time as time_format
 from corelib.redis import redis
+from corelib.mc import hlcache
 
 from user.models import User
 from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY
-from corelib.mc import hlcache
 
 
 class InviteFriend(models.Model):

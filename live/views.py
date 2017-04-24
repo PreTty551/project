@@ -12,9 +12,9 @@ from corelib.agora import Agora
 from corelib.http import JsonResponse
 from corelib.websocket import Websocket
 
-from live.models import Channel, ChannelMember, GuessWord, InviteChannel
+from live.models import Channel, ChannelMember, GuessWord, InviteChannel, InviteParty
 from live.consts import ChannelType
-from user.models import User, Friend, UserContact, Place, guess_know_user, PokeLog
+from user.models import User, Friend, UserContact, Place, guess_know_user
 from user.consts import UserEnum
 
 TEST_USER_IDS = []
@@ -34,16 +34,9 @@ def refresh_list(request):
 
 @login_required_404
 def livemedia_list(request):
-    channels = []
-    if request.user.id in TEST_USER_IDS:
-        res = requests.get("https://gouhuoapp.com/api/v2/livemedia/list/")
-        res = res.json()
-        channels = res["channels"]
-    else:
-        channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
-
+    channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
-    poke_ids = PokeLog.get_pokes(owner_id=request.user.id)
+    poke_ids = InviteParty.get_invites(user_id=request.user.id)
 
     friend_list = []
     for user_id in poke_ids:
@@ -55,7 +48,7 @@ def livemedia_list(request):
             friend_list.append(basic_info)
 
     for friend_id in friend_ids:
-        if friend_id in poke_ids:
+        if str(friend_id) in poke_ids:
             continue
 
         user = User.get(id=friend_id)
@@ -120,7 +113,7 @@ def create_channel(request):
 
     channel = Channel.create_channel(user_id=request.user.id, channel_type=channel_type)
     if channel:
-        PokeLog.clear(request.user.id)
+        InviteParty.clear(request.user.id)
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
 

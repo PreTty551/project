@@ -11,7 +11,6 @@ from django.db import models
 from django.contrib.auth import models as auth_models
 from django.contrib.auth.models import AbstractUser, UserManager as BaseUserManager
 
-# from corelib.memcache import mc, cache
 from corelib.qiniucloud import Qiniu
 from corelib.props import PropsMixin
 from corelib.weibo import Weibo
@@ -19,7 +18,7 @@ from corelib.utils import natural_time as time_format
 from corelib.mc import cache
 from corelib.redis import redis
 
-from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, MC_POKES_KEY
+from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY
 from .place import Place
 
 
@@ -96,20 +95,21 @@ def update_avatar_in_third_login(avatar_url, user_id):
 
 
 class User(AbstractUser, PropsMixin):
-    paid = models.CharField(max_length=50, default="", db_index=True)
-    nickname = models.CharField(max_length=30)
-    mobile = models.CharField(max_length=20, unique=True, default="")
+    paid = models.CharField(max_length=50, unique=True)
+    nickname = models.CharField(max_length=50)
+    mobile = models.CharField(max_length=20, unique=True)
     avatar = models.CharField(max_length=20, default="")
     gender = models.SmallIntegerField(default=0)
     intro = models.CharField(max_length=100, default="")
     country = models.CharField(max_length=20, default="")
     country_code = models.CharField(max_length=10, default="")
-    is_import_contact = models.BooleanField(default=False)
+    is_contact = models.BooleanField(default=False)
     platform = models.SmallIntegerField(default=0)
     version = models.CharField(max_length=10, default="")
-    pinyin = models.CharField(max_length=30, default="")
+    pinyin = models.CharField(max_length=50, default="")
     online_time = models.DateTimeField(default=timezone.now)
     offline_time = models.DateTimeField(default=timezone.now)
+    rong_token = models.CharField(max_length=100, default="")
 
     objects = UserManager()
 
@@ -150,6 +150,8 @@ class User(AbstractUser, PropsMixin):
         self.offline_time = timezone.now()
         self.save()
         redis.hdel(REDIS_ONLINE_USERS_KEY, self.id)
+        from live.models import ChannelMember
+        ChannelMember.objects.filter(user_id=self.id).delete()
 
     def is_online(self):
         return redis.hget(REDIS_ONLINE_USERS_KEY, self.id)
@@ -168,20 +170,19 @@ class User(AbstractUser, PropsMixin):
 
     @property
     def avatar_url(self):
-        _avatar = "default_avatar"
+        if self.id < 160000:
+            if self.avatar:
+                return "http://img2.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % self.avatar
+
         if self.avatar:
-            _avatar = self.avatar
-        else:
-            avatar_url = self.get_props_item("third_user_avatar", "")
-            if avatar_url:
-                return avatar_url
-        return "http://img2.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % _avatar
+            return "%s/%s@base@tag=imgScale&w=150&h=150" % (AVATAR_BASE_URL, _avatar)
+        return ""
 
     @property
     def disable_login(self):
         return self.id in list(BanUser.objects.values_list("user_id", flat=True))
 
-    def rong_token(self):
+    def create_rong_token(self):
         from corelib.rong import client
         res = client.user_get_token(str(self.id), self.nickname, self.avatar_url)
         return res['token']
@@ -210,7 +211,7 @@ class User(AbstractUser, PropsMixin):
             "gender": self.gender,
             "intro": self.intro or "",
             "paid": self.paid,
-            "is_import_contact": self.is_import_contact
+            "is_contact": self.is_contact
         }
 
     def detail_info(self, user_id=None):
@@ -247,21 +248,11 @@ class ThirdUser(models.Model):
         db_table = "third_user"
 
 
-class BanUser(models.Model):
-    user_id = models.IntegerField()
-    desc = models.CharField(max_length=200)
-    date = models.DateTimeField(auto_now_add=True)
-    second = models.IntegerField()
-
-    class Meta:
-        db_table = "ban_user"
-
-
 class TempThirdUser(models.Model):
     third_id = models.CharField(max_length=30)
     third_name = models.CharField(max_length=20)
     gender = models.SmallIntegerField(default=0)
-    nickname = models.CharField(max_length=20)
+    nickname = models.CharField(max_length=50)
     avatar = models.CharField(max_length=255)
     wx_unionid = models.CharField(max_length=50, default="")
     user_id = models.IntegerField(default=0)
@@ -270,33 +261,11 @@ class TempThirdUser(models.Model):
         db_table = "temp_third_user"
 
 
-class PokeLog(models.Model):
+class BanUser(models.Model):
     user_id = models.IntegerField()
-    to_user_id = models.IntegerField()
-    status = models.SmallIntegerField(default=0)
-    date = models.DateTimeField('date', auto_now_add=True)
+    desc = models.CharField(max_length=200)
+    date = models.DateTimeField(auto_now_add=True)
+    second = models.IntegerField()
 
     class Meta:
-        db_table = "poke_log"
-
-    @classmethod
-    def add(cls, user_id, to_user_id):
-        cls.objects.create(user_id=user_id, to_user_id=to_user_id, status=0)
-        redis.hset(MC_POKES_KEY % to_user_id, user_id, 1)
-        redis.hdel(MC_POKES_KEY % user_id, to_user_id)
-
-    @classmethod
-    def clear(cls, user_id):
-        redis.delete(MC_POKES_KEY % user_id)
-
-    @classmethod
-    def get_pokes(cls, owner_id):
-        user_ids = redis.hkeys(MC_POKES_KEY % owner_id)
-        return [int(user_id) for user_id in user_ids]
-
-
-def quit_app(user_id):
-    from live.models import ChannelMember
-    user = User.get(id=user_id)
-    user.offline()
-    ChannelMember.objects.filter(user_id=user.id).delete()
+        db_table = "ban_user"

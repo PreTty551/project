@@ -200,6 +200,8 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'h5/statics'),
 )
 
+AVATAR_BASE_URL = "img3.gouhuoapp.com"
+
 
 TESTING = True
 

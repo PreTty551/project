@@ -10,14 +10,11 @@ from django.db.models import F, Sum
 from django.utils import timezone
 
 from corelib.rongcloud import RongCloud
+from corelib.mc import hlcache
 
 from user.models import User, Friend
-from .consts import ChannelType
+from .consts import ChannelType, MC_INVITE_PARTY
 from socket_server import SocketServer
-
-
-REDIS_CHANNEL_MEMBER_KEY = "agora:channel:%s:uids"
-REDIS_CHANNEL_GIFT_QUEEN = "channel:%s:gifts"
 
 
 class Channel(models.Model):
@@ -204,6 +201,31 @@ class GuessWord(models.Model):
         return ""
 
 
+class InviteParty(models.Model):
+    user_id = models.IntegerField()
+    to_user_id = models.IntegerField()
+    status = models.SmallIntegerField(default=0)
+    date = models.DateTimeField('date', auto_now_add=True)
+
+    class Meta:
+        db_table = "invite_party"
+
+    @classmethod
+    def add(cls, user_id, to_user_id):
+        cls.objects.create(user_id=user_id, to_user_id=to_user_id)
+
+    @classmethod
+    def clear(cls, user_id):
+        redis.delete(MC_INVITE_PARTY % user_id)
+        cls.objects.filter(user_id=user_id).update(status=1)
+
+    @classmethod
+    @hlcache(MC_INVITE_PARTY % '{user_id}')
+    def get_invites(cls, user_id):
+        queryset = cls.objects.filter(to_user_id=user_id).values_list("user_id", flat=True)
+        return list(queryset)
+
+
 def unique_channel_id(user_id):
     return "%s%s" % (int(time.time()), user_id)
 
@@ -216,6 +238,15 @@ def refresh(user_id):
         SocketServer().refresh_home(user_id=user_id,
                                     to_user_id=set(online_friend_ids),
                                     message="refresh")
+
+
+@receiver(post_save, sender=InviteParty)
+def add_invite_party(sender, created, instance, **kwargs):
+    if created:
+        InviteParty.objects.filter(user_id=instance.to_user_id,
+                                   to_user_id=instance.user_id,
+                                   status=0).update(status=1)
+        redis.delete(MC_INVITE_PARTY % user_id)
 
 
 @receiver(post_save, sender=ChannelMember)

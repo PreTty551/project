@@ -3,6 +3,8 @@ from enum import Enum
 
 ChannelType = Enum("ChannelType", ("normal", "near", "private"))
 
+# MC_POKES_KEY = "u:%s:pokes"
+MC_INVITE_PARTY = "u:%s:invite_party"
 
 DIRTY_GAME_QUESTIONS = u"""
 你对约炮怎么看？

@@ -17,8 +17,8 @@ from user.consts import UserEnum
 
 class UserContact(models.Model):
     user_id = models.IntegerField(db_index=True)
-    name = models.CharField(max_length=20, default="")
-    mobile = models.CharField(max_length=20)
+    name = models.CharField(max_length=50)
+    mobile = models.CharField(max_length=20, db_index=True)
 
     class Meta:
         db_table = "user_contact"
@@ -75,7 +75,7 @@ class UserContact(models.Model):
 
     @classmethod
     def get_all_contact(cls, user_id):
-        return [contact.contact_dict() for contact in cls.objects.filter(user_id=user_id)]
+        return [contact.to_dict() for contact in cls.objects.filter(user_id=user_id)]
 
     @classmethod
     def get_contacts_in_app(cls, owner_id):
@@ -117,7 +117,7 @@ class UserContact(models.Model):
         return result
 
     @classmethod
-    def recommend_contacts(cls, owner_id):
+    def recommend_contacts(cls, owner_id, limit=None):
         all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
         mobile_ids = User.objects.filter(mobile__in=all_mobile_list).values_list("mobile", flat=True)
         mobile_ids = set(mobile_ids) ^ set(all_mobile_list)
@@ -143,14 +143,9 @@ class UserContact(models.Model):
 
         sorted_results = sorted(results, key=lambda item: item[1])
         # RecommendContact.objects.create()
-        return [{"nickname": contacts_map[r[0]], "mobile": r[0]} for r in sorted_results[:20]]
-
-    def contact_dict(self):
-        return {
-            "name": self.name,
-            "mobile": self.mobile,
-            "avatar_url": "%scontact_avatar_%s@3x-min.png" % (settings.MEDIA_URL, random.randint(1, 9))
-        }
+        if limit is not None:
+            sorted_results = sorted_results[:limit]
+        return [{"name": contacts_map[r[0]], "mobile": r[0]} for r in sorted_results]
 
     def to_dict(self):
         return {

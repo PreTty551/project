@@ -23,9 +23,9 @@ from corelib.jiguang import JPush
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
 from user.models import User, ThirdUser, create_third_user, rename_nickname, update_avatar_in_third_login, TempThirdUser
-from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, PokeLog, quit_app as Quit
+from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation
 from socket_server import SocketServer
-from live.models import ChannelMember
+from live.models import ChannelMember, InviteParty
 
 
 @require_http_methods(["POST"])
@@ -112,16 +112,11 @@ def register(request):
     platform = request.POST.get("platform", "")
 
     nickname = nickname.strip().replace("#", "").replace("@", "").replace(" ", "")
-
-    # if nickname.lower() == u"say酱".lower():
-    #     return UserNicknameError().json()
-
     if len(mobile) != 11:
         return HttpResponseBadRequest()
 
     user = User.objects.filter(mobile=mobile).first()
     if not user:
-        # nickname = rename_nickname(nickname)
         user = User.objects.add_user(nickname=nickname,
                                      mobile=mobile,
                                      platform=platform,
@@ -257,7 +252,7 @@ def third_verify_sms_code(request):
     # 老用户
     user_id = temp_user.user_id
     if user_id:
-        user = User.objects.filter(mobile=mobile).first()
+        user = User.objects.filter(id=user_id).first()
         if not user:
             return JsonResponse(error=LoginError.REGISTER_ERROR)
 
@@ -337,14 +332,14 @@ def get_profile(request):
     results["user"] = user.basic_info()
     results["friend_count"] = Friend.count(user_id=request.user.id)
     results["friend_invite_count"] = InviteFriend.count(user_id=request.user.id)
-    results["two_degree"] = two_degrees
+    results["two_degree"] = UserContact.recommend_contacts(request.user.id)
     results["out_app_contacts"] = out_app_contacts
     results["invite_friends"] = invite_friends
     return JsonResponse(results)
 
 
 def rong_token(request):
-    token = request.user.rong_token()
+    token = request.user.create_rong_token()
     return JsonResponse({"token": token})
 
 
@@ -468,6 +463,7 @@ def party_push(request):
 
     message = "%s 正在开party" % request.user.nickname
     JPush().async_push(user_ids=bulk_user_ids, message=message)
+
     for friend_id in party_user_ids_in_week:
         if i < 11:
             fids = Friend.get_friend_ids(user_id=friend_id)
@@ -492,7 +488,7 @@ def invite_party(request):
 
     message = u"%s%s" % (icon, message)
 
-    PokeLog.add(user_id=request.user.id, to_user_id=receiver_id)
+    InviteParty.add(user_id=request.user.id, to_user_id=receiver_id)
     member = ChannelMember.objects.filter(user_id=request.user.id).first()
     if member:
         push_number += 1
@@ -515,7 +511,7 @@ def invite_party(request):
 
 
 def quit_app(request):
-    Quit(request.user.id)
+    request.user.offline()
     return JsonResponse()
 
 
@@ -540,7 +536,7 @@ def user_online_and_offine_callback(request):
         if status == 1:
             user.online()
         else:
-            Quit(user_id)
+            user.offline()
     return JsonResponse()
 
 

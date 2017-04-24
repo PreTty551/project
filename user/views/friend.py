@@ -33,7 +33,7 @@ def invite_friend(request):
                                          message=message,
                                          **data)
             return JsonResponse()
-        return HttpResponseServerError()
+    return HttpResponseServerError()
 
 
 def agree_friend(request):

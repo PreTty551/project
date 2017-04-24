@@ -73,7 +73,7 @@ def import_user():
             user.intro = row[16] or ""
             user.country = ""
             user.country_code = "86"
-            user.is_import_contact = False
+            user.is_contact = False
             user.platform = 0
             user.version = ""
             user.paid = row[0]

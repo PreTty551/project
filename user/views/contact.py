@@ -64,7 +64,7 @@ def add_user_contact(request):
     is_success = UserContact.bulk_add(contact_list=contact_list, user_id=request.user.id)
     if is_success:
         user = User.get(request.user.id)
-        user.is_import_contact = 1
+        user.is_contact = 1
         user.save()
         return JsonResponse()
     return HttpResponseServerError()
