@@ -1,5 +1,5 @@
 from django.shortcuts import render
 
 
-def main(request):
-    return render(request, 'h5/main.html', {})
+def main(request, user_id):
+    return render(request, 'h5/main.html', {'user_id': user_id})
