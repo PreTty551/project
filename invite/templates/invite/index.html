@@ -2,37 +2,42 @@
 
 {% block body %}
 <body class="layout-default">
-  <div style="height:600px;width:100%;">
-    <div style="position:fixed;top:10px;z-index:10;">
-      <div style="position:absolute;margin-top:25px;margin-left:80px">{{user.nickname|truncatechars:6}}邀请你加入Party</div>
-      <a href="http://gouhuoapp.com/wechat/share/812/74960/">
-        <img src="/static/top_bar.png" />
-      </a>
+  <div style="height:600px;width:100%;background-image:url('/static/bg.png');">
+    <div style="height:50px">
     </div>
-    <div style="position:absolute;left:0;top:0;z-index:1;width:100%;height:600px">
+    <div style="width:296px;height:459px;margin: 0 auto;background-image:url(/static/card.png);padding-top:50px;">
+      <div style="width:72px;height:79px;margin: 0 auto;">
+        <img src="/static/logo1.png"/>
+      </div>
+      <div style="width:84px;height:84px;margin: 0 auto;padding-top:20px">
+        <img style="width:84px;height:84px;border-radius:50%;" src="http://img3.gouhuoapp.com/a60089044f054dddb29b378f8c3103e6.jpg@base@tag=imgScale&w=150&h=150&c=1" />
+      </div>
+      <div style="width:84px;height:10px;margin: 0 auto;padding-top:25px;text-align:center;font-size:20px">
+        金子大人
+      </div>
+      <div style="width:84px;height:10px;margin: 0 auto;padding-top:25px;text-align:center;font-size:13px">
+        id: Golden
+      </div>
+      <div style="width:208px;height:42px;margin: 0 auto;padding-top:40px;">
+        <img src="/static/btn_join1.png"/>
+      </div>
+    </div>
+    <div style="position:absolute;bottom:-10px;">
+      <img src="/static/bottom_bar.png" />
+    </div>
+    <div style="position:absolute;left:0;top:0;width:100%;height:600px;">
       <video
         id="video"
-        style="object-fit:initial;z-index:1;height:600px;width:100%;"
-        class="video-js"
+        style="object-fit:initial;height:600px;width:100%;"
         preload="auto"
         x5-video-player-type="h5"
         x5-video-player-fullscreen="true"
         playsinline
         webkit-playsinline
-        controls
         autoplay
-        poster="{{user.avatar_url}}"
-        src="http://vid-123636.hls.fastweb.broadcastapp.agoraio.cn/live/1492952265276/index.m3u8">
+        src="https://joinhouse.party/assets/video/video.mp4">
       </video>
     </div>
-    <div style="position:fixed;bottom:-10px;z-index:11;">
-      <img src="/static/bottom_bar.png" />
-    </div>
   </div>
-
-<script>
-document.getElementById('video').play();
-</script>
-
 </body>
 {% endblock %}
