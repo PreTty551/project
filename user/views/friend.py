@@ -11,7 +11,7 @@ from corelib.jiguang import JPush
 
 from user.models import User, UserContact, InviteFriend, Friend, ContactError
 from user.models import Ignore
-from socket_server import SocketServer
+from socket_server import SocketServer, EventType
 
 
 def invite_friend(request):
@@ -46,6 +46,10 @@ def agree_friend(request):
         SocketServer().agree_friend(user_id=request.user.id,
                                     to_user_id=invited_id,
                                     message=message)
+        SocketServer().refresh(user_id=request.user.id,
+                               to_user_id=[request.user.id, invited_id],
+                               message="refresh",
+                               event_type=EventType.refresh_friend.value)
         return JsonResponse()
     return HttpResponseServerError()
 
@@ -54,6 +58,10 @@ def delete_friend(request):
     friend_id = request.POST.get("friend_id")
     is_success = Friend.delete_friend(owner_id=request.user.id, friend_id=friend_id)
     if is_success:
+        SocketServer().refresh(user_id=request.user.id,
+                               to_user_id=[request.user.id, friend_id],
+                               message="refresh",
+                               event_type=EventType.refresh_friend.value)
         return JsonResponse()
     return HttpResponseServerError()
 
@@ -127,3 +135,8 @@ def who_is_friends(request):
 
     friend_ids = Friend.who_is_friends(owner_id=request.user.id, friend_ids=friend_ids)
     return JsonResponse({"friend_ids": friend_ids})
+
+
+def unagree_friend_count(request):
+    count = InviteFriend.objects.filter(invited_id=request.user.id).count()
+    return JsonResponse({"unagree_count": count})
