@@ -21,22 +21,8 @@ TEST_USER_IDS = []
 
 
 def refresh_list(request):
-    channels = [channel.to_dict() for channel in Channel.objects.filter(member_count__gt=0)]
-    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
-    friend_list = []
-    for friend_id in friend_ids:
-        user = User.get(id=friend_id)
-        if user:
-            basic_info = user.basic_info()
-            friend_list.append(basic_info)
-    return JsonResponse({"channels": channels, "friends": friend_list})
-
-
-@login_required_404
-def livemedia_list(request):
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
     channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
-    channels = []
     for channel_id in channel_ids:
         channel = Channel.get_channel(channel_id)
         if not channel:
@@ -57,7 +43,149 @@ def livemedia_list(request):
             friend_list.append(basic_info)
 
     for friend_id in friend_ids:
-        if str(friend_id) in invite_party_ids:
+        if friend_id in invite_party_ids:
+            continue
+
+        user = User.get(id=friend_id)
+        if user:
+            basic_info = user.basic_info()
+            basic_info["is_hint"] = False
+            basic_info["user_relation"] = UserEnum.friend.value
+            friend_list.append(basic_info)
+
+    return JsonResponse({"channels": channels,
+                         "friends": friend_list})
+
+
+def refresh_home_list(request):
+    channels = []
+    invite_party_ids = InviteParty.objects.filter(
+                            to_user_id=request.user.id,
+                            party_type=ChannelType.private.value).values_list("channel_id", flat=True)
+    for party_id in invite_party_ids:
+        channel = Channel.get_channel(channel_id)
+        if not channel:
+            continue
+        channels.append(channel.to_dict())
+
+    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
+    for channel_id in channel_ids:
+        channel = Channel.get_channel(channel_id)
+        if not channel:
+            continue
+        if channel.channel_type == ChannelType.private.value:
+            continue
+        channels.append(channel.to_dict())
+
+    invite_party_ids = InviteParty.get_invites(user_id=request.user.id)
+
+    friend_list = []
+    for user_id in invite_party_ids:
+        user = User.get(id=user_id)
+        if user:
+            basic_info = user.basic_info()
+            basic_info["user_relation"] = UserEnum.friend.value
+            basic_info["is_hint"] = True
+            friend_list.append(basic_info)
+
+    for friend_id in friend_ids:
+        if friend_id in invite_party_ids:
+            continue
+
+        user = User.get(id=friend_id)
+        if user:
+            basic_info = user.basic_info()
+            basic_info["is_hint"] = False
+            basic_info["user_relation"] = UserEnum.friend.value
+            friend_list.append(basic_info)
+
+    return JsonResponse({"channels": channels,
+                         "friends": friend_list})
+
+
+@login_required_404
+def home_list(request):
+    """
+    首页房间列表，包含
+       1. 邀请我的private party
+       2. 我的好友开的public party
+       3. 好友可见的party
+    """
+    channels = []
+    invite_party_ids = InviteParty.objects.filter(
+                            to_user_id=request.user.id,
+                            party_type=ChannelType.private.value).values_list("channel_id", flat=True)
+    for party_id in invite_party_ids:
+        channel = Channel.get_channel(channel_id)
+        if not channel:
+            continue
+        channels.append(channel.to_dict())
+
+    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
+    for channel_id in channel_ids:
+        channel = Channel.get_channel(channel_id)
+        if not channel:
+            continue
+        if channel.channel_type == ChannelType.private.value:
+            continue
+        channels.append(channel.to_dict())
+
+    invite_party_ids = InviteParty.get_invites(user_id=request.user.id)
+
+    friend_list = []
+    for user_id in invite_party_ids:
+        user = User.get(id=user_id)
+        if user:
+            basic_info = user.basic_info()
+            basic_info["user_relation"] = UserEnum.friend.value
+            basic_info["is_hint"] = True
+            friend_list.append(basic_info)
+
+    for friend_id in friend_ids:
+        if friend_id in invite_party_ids:
+            continue
+
+        user = User.get(id=friend_id)
+        if user:
+            basic_info = user.basic_info()
+            basic_info["is_hint"] = False
+            basic_info["user_relation"] = UserEnum.friend.value
+            friend_list.append(basic_info)
+
+    return JsonResponse({"channels": channels,
+                         "friends": friend_list,
+                         "guess_know_users": guess_know_user(request.user.id),
+                         "guess_contacts": UserContact.recommend_contacts(request.user.id, 20)})
+
+
+@login_required_404
+def livemedia_list(request):
+    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
+    channels = []
+    for channel_id in channel_ids:
+        channel = Channel.get_channel(channel_id)
+        if not channel:
+            continue
+        if channel.channel_type in [ChannelType.private.value, ChannelType.public.value]:
+            continue
+        channels.append(channel.to_dict())
+
+    invite_party_ids = InviteParty.get_invites(user_id=request.user.id)
+
+    friend_list = []
+    for user_id in invite_party_ids:
+        user = User.get(id=user_id)
+        if user:
+            basic_info = user.basic_info()
+            basic_info["user_relation"] = UserEnum.friend.value
+            basic_info["is_hint"] = True
+            friend_list.append(basic_info)
+
+    for friend_id in friend_ids:
+        if friend_id in invite_party_ids:
             continue
 
         user = User.get(id=friend_id)
@@ -101,6 +229,8 @@ def near_channel_list(request):
     for channel in channel_list:
         channels.append(channel.to_dict())
 
+    return JsonResponse({"channels": channels})
+
 
 def private_channel_list(request):
     # my_channel_id = Channel.objects.filter(user_id=request.user.id).values_list("channel_id", flat=True)
@@ -112,9 +242,6 @@ def private_channel_list(request):
 
     friend_list = []
     for friend_id in friend_ids:
-        if str(friend_id) in poke_ids:
-            continue
-
         user = User.get(id=friend_id)
         if user:
             basic_info = user.basic_info()

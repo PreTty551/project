@@ -133,7 +133,8 @@ class Channel(models.Model):
             "icon": self.icon,
             "is_lock": self.is_lock,
             "date": self.date,
-            "member_count": self.member_count
+            "member_count": self.member_count,
+            "channel_type": self.channel_type
         }
 
 
@@ -241,9 +242,10 @@ def refresh(user_id):
     online_ids = User.get_online_ids()
     online_friend_ids = [friend_id for friend_id in friend_ids if friend_id in online_ids]
     if online_friend_ids:
-        SocketServer().refresh_home(user_id=user_id,
-                                    to_user_id=set(online_friend_ids),
-                                    message="refresh")
+        SocketServer().refresh(user_id=user_id,
+                               to_user_id=set(online_friend_ids),
+                               message="refresh",
+                               event_type=EventType.refresh_home.value)
 
 
 @receiver(post_save, sender=InviteParty)

@@ -5,8 +5,10 @@ from django.conf.urls import url
 from live import views
 
 urlpatterns = [
-    url(r'^livemedia/refresh_list/$', views.refresh_list, name='refresh_list'),
+    url(r'^livemedia/home_list/refresh/$', views.refresh_home_list, name='refresh_home_list'),
+    url(r'^livemedia/home_list/$', views.home_list, name='home_list'),
     url(r'^livemedia/list/$', views.livemedia_list, name='livemedia_list'),
+    url(r'^livemedia/list/refresh/$', views.refresh_list, name='refresh_list'),
     url(r'^livemedia/channel/near/list/$', views.near_channel_list, name='near_channel_list'),
     url(r'^livemedia/channel/private/list/$', views.private_channel_list, name='private_channel_list'),
     url(r'^livemedia/channel/create/$', views.create_channel, name='create_channel'),

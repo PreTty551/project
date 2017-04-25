@@ -20,6 +20,10 @@ class MessageType(Enum):
 @unique
 class EventType(Enum):
     refresh_home = 0
+    refresh_inner_home = 1
+    refresh_public = 2
+    refresh_private = 3
+    refresh_friend = 4
 
 
 class SocketServer(object):
@@ -96,8 +100,8 @@ class SocketServer(object):
                                   message=message,
                                   channel_id=0)
 
-    def refresh_home(self, user_id, to_user_id, message):
+    def refresh(self, user_id, to_user_id, message, event_type):
         return self._send_event(user_id=user_id,
                                 to_user_id=to_user_id,
-                                event_type=EventType.refresh_home.value,
+                                event_type=event_type,
                                 message=message)
