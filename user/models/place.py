@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import pymongo
 
+from bson.son import SON
+
 from django.conf import settings
 
 
