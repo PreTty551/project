@@ -21,16 +21,16 @@ from socket_server import SocketServer
 class Channel(models.Model):
     name = models.CharField(max_length=100, default="")
     channel_id = models.CharField(unique=True, max_length=50)
+    creator_id = models.IntegerField(default=0)
     member_count = models.SmallIntegerField(default=0)
     channel_type = models.SmallIntegerField(default=0)
     is_lock = models.BooleanField(default=False)
     date = models.DateTimeField('date', auto_now_add=True)
-    pid = models.IntegerField(default=0)
 
     @classmethod
     @transaction.atomic()
     def _add(cls, channel_id, user_id, channel_type):
-        obj = cls.objects.create(channel_id=channel_id, channel_type=channel_type)
+        obj = cls.objects.create(creator_id=user_id, channel_id=channel_id, channel_type=channel_type)
         if obj:
             ChannelMember.add(channel_id=channel_id, user_id=user_id)
             ChannelMember.objects.exclude(channel_id=obj.channel_id).filter(user_id=user_id).delete()
@@ -205,6 +205,8 @@ class GuessWord(models.Model):
 class InviteParty(models.Model):
     user_id = models.IntegerField()
     to_user_id = models.IntegerField()
+    channel_id = models.CharField(max_length=50, default="")
+    party_type = models.SmallIntegerField(default=0)
     status = models.SmallIntegerField(default=0)
     date = models.DateTimeField('date', auto_now_add=True)
 
@@ -212,8 +214,11 @@ class InviteParty(models.Model):
         db_table = "invite_party"
 
     @classmethod
-    def add(cls, user_id, to_user_id):
-        cls.objects.create(user_id=user_id, to_user_id=to_user_id)
+    def add(cls, user_id, to_user_id, party_type, channel_id=""):
+        return cls.objects.create(user_id=user_id,
+                                  to_user_id=to_user_id,
+                                  party_type=party_type,
+                                  channel_id=channel_id)
 
     @classmethod
     def clear(cls, user_id):
@@ -221,7 +226,7 @@ class InviteParty(models.Model):
         cls.objects.filter(user_id=user_id).update(status=1)
 
     @classmethod
-    @hlcache(MC_INVITE_PARTY % '{user_id}')
+    # @hlcache(MC_INVITE_PARTY % '{user_id}')
     def get_invites(cls, user_id):
         queryset = cls.objects.filter(to_user_id=user_id).values_list("user_id", flat=True).distinct()
         return list(queryset)
@@ -268,13 +273,14 @@ def add_member_after(sender, created, instance, **kwargs):
 def delete_member_after(sender, instance, **kwargs):
     LiveMediaLog.objects.filter(user_id=instance.user_id, channel_id=instance.channel_id, status=1) \
                         .update(end_date=timezone.now(), status=2)
+
     channel = Channel.get_channel(channel_id=instance.channel_id)
     if channel:
         channel.member_count = F("member_count") - 1
         channel.save()
 
-        channel = Channel.get_channel(channel_id=instance.channel_id)
-        if Channel.objects.filter(channel_id=instance.channel_id).count() == 0:
-            channel.delete()
+        member_count = ChannelMember.objects.filter(channel_id=instance.channel_id).count()
+        if member_count == 0:
+            Channel.objects.filter(channel_id=instance.channel_id).delete()
 
         refresh(instance.user_id)

@@ -489,6 +489,8 @@ def party_push(request):
 
 def invite_party(request):
     receiver_id = request.POST.get("user_id")
+    party_type = request.POST.get("party_type", 0)
+    channel_id = request.POST.get("channel_id", "")
 
     max_number = 20
     push_number = 0
@@ -499,7 +501,14 @@ def invite_party(request):
 
     message = u"%s%s" % (icon, message)
 
-    InviteParty.add(user_id=request.user.id, to_user_id=receiver_id)
+    if int(party_type) == 3:
+        InviteParty.add(user_id=request.user.id,
+                        to_user_id=receiver_id,
+                        party_type=3,
+                        channel_id=channel_id)
+    else:
+        InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
+
     member = ChannelMember.objects.filter(user_id=request.user.id).first()
     if member:
         push_number += 1

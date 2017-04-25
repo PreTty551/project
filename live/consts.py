@@ -1,7 +1,7 @@
 
 from enum import Enum
 
-ChannelType = Enum("ChannelType", ("normal", "near", "private"))
+ChannelType = Enum("ChannelType", ("normal", "public", "private"))
 
 # MC_POKES_KEY = "u:%s:pokes"
 MC_INVITE_PARTY = "u:%s:invite_party"
