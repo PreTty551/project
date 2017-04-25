@@ -50,4 +50,5 @@ urlpatterns = [
     url(r'^user/bingd/wb/$', views.binding_weibo, name='binding_weibo'),
 
     url(r'^user/fuck_you/$', views.fuck_you, name='fuck_you'),
+    url(r'^user/location/add/$', views.add_user_location, name='add_user_location'),
 ]

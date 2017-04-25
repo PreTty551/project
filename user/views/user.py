@@ -22,7 +22,7 @@ from corelib.rongcloud import RongCloud
 from corelib.jiguang import JPush
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
-from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser
+from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
 from socket_server import SocketServer
 from live.models import ChannelMember, InviteParty
@@ -326,7 +326,7 @@ def get_profile(request):
         basic_info = u.basic_info()
         basic_info["user_relation"] = UserEnum.nothing.value
         two_degrees.append(basic_info)
-    out_app_contacts = UserContact.get_contacts_out_app(owner_id=request.user.id)
+    out_app_contacts = UserContact.recommend_contacts(request.user.id, 20)
 
     results = {}
     results["user"] = user.basic_info()
@@ -560,3 +560,11 @@ def fuck_you(request):
         }
     }
     return JsonResponse(data)
+
+
+def add_user_location(request):
+    lon = request.POST.get("lon", "")
+    lat = request.POST.get("lat", "")
+
+    Place.add(lon=float(lon), lat=float(lat), user_id=request.user.id)
+    return JsonResponse()
