@@ -11,6 +11,7 @@ from corelib.decorators import login_required_404
 from corelib.agora import Agora
 from corelib.http import JsonResponse
 from corelib.websocket import Websocket
+from corelib.redis import redis
 
 from live.models import Channel, ChannelMember, GuessWord, InviteChannel, InviteParty
 from live.consts import ChannelType
@@ -405,32 +406,6 @@ def close_guess_word(request):
     return JsonResponse()
 
 
-def push_to_user(request):
-    receiver_id = request.POST.get("receiver_id")
-
-    max_number = 20
-    push_number = mc.get("push_number:u:%s:r:%s" % (request.user.id, receiver_id)) or 0
-    if push_number > max_number:
-        return JsonResponseSuccess()
-
-    icon = ""
-    message = u"👉 %s邀请你来开Party" % request.user.nickname
-    for i in range(push_number):
-        icon += u"👉"
-
-    message = u"%s%s" % (icon, message)
-    websocket = Websocket(receiver_id=receiver_id)
-    websocket.push(message=message)
-
-    member = ChannelMember.objects.filter(user_id=request.user.id).first()
-    if member:
-        push_number += 1
-        LeanCloudIOS.async_push(receive_id=receiver_id, message=message, msg_type=8, channel_id=member.channel_id)
-        mc.set("push_number:u:%s:r:%s" % (request.user.id, receiver_id), push_number, 60)
-
-    return JsonResponseSuccess()
-
-
 def dirty_game_question(request):
     from .consts import DIRTY_GAME_QUESTIONS
     questions = DIRTY_GAME_QUESTIONS.split("\n")
@@ -455,3 +430,23 @@ def dirty_game_question(request):
         pass
 
     return JsonResponse({"question": question})
+
+
+def poke(request):
+    user_id = request.POST.get("user_id")
+
+    push_lock = redis.get("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id)) or 0
+    if push_lock and int(push_lock) <= 20:
+        icon = ""
+        message = u"%s捅了你一下" % request.user.nickname
+        for i in range(push_lock):
+            icon += u"👉"
+        message = u"%s%s" % (icon, message)
+
+        SocketServer().invite_party_in_live(user_id=request.user.id,
+                                            to_user_id=receiver_id,
+                                            message=message,
+                                            channel_id=0)
+
+        redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id), int(push_lock) + 1, 600)
+    return JsonResponse()

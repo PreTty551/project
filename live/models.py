@@ -300,35 +300,38 @@ def delete_member_after(sender, instance, **kwargs):
 @receiver(post_save, sender=Channel)
 def add_channel_after(sender, created, instance, **kwargs):
     if created:
-        bulk_ids = []
-        ids = []
-        i = 0
+        push_lock = redis.get("mc:user:%s:pa_push_lock" % request.user.id)
+        if not push_lock:
+            bulk_ids = []
+            ids = []
+            i = 0
 
-        user = User.get(id=instance.creator_id)
-        friend_ids = Friend.get_friend_ids(user_id=instance.creator_id)
-        pre_week = timezone.now() - datetime.timedelta(days=7)
-        party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=friend_ids)
-                                                          .values_list("user_id", flat=True).distinct())
-        bulk_user_ids = set(party_user_ids_in_week) ^ set(friend_ids)
+            user = User.get(id=instance.creator_id)
+            friend_ids = Friend.get_friend_ids(user_id=instance.creator_id)
+            pre_week = timezone.now() - datetime.timedelta(days=7)
+            party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=friend_ids)
+                                                              .values_list("user_id", flat=True).distinct())
+            bulk_user_ids = set(party_user_ids_in_week) ^ set(friend_ids)
 
-        message = "%s 开party" % user.nickname
-        JPush().async_push(user_ids=bulk_user_ids, message=message)
-        print("bulk_user_ids",bulk_user_ids)
-        SocketServer().invite_party_in_live(user_id=user.id,
-                                            to_user_id=bulk_user_ids,
-                                            message=message,
-                                            channel_id=instance.channel_id)
+            message = "%s 正在开PA" % user.nickname
+            JPush().async_push(user_ids=bulk_user_ids, message=message)
+            SocketServer().invite_party_in_live(user_id=user.id,
+                                                to_user_id=bulk_user_ids,
+                                                message=message,
+                                                channel_id=instance.channel_id)
 
-        for friend_id in party_user_ids_in_week:
-            if i < 11:
-                fids = Friend.get_friend_ids(user_id=friend_id)
-                party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
-                nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
-                nicknames = ",".join(nicknames)
-                message = "%s 在开party" % nicknames
-                JPush().async_push(user_ids=[friend_id], message=message)
-                SocketServer().invite_party_in_live(user_id=user.id,
-                                                    to_user_id=friend_id,
-                                                    message=message,
-                                                    channel_id=instance.channel_id)
-                i += 1
+            for friend_id in party_user_ids_in_week:
+                if i < 11:
+                    fids = Friend.get_friend_ids(user_id=friend_id)
+                    party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
+                    nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
+                    nicknames = ",".join(nicknames)
+                    message = "%s 正在开PA" % nicknames
+                    JPush().async_push(user_ids=[friend_id], message=message)
+                    SocketServer().invite_party_in_live(user_id=user.id,
+                                                        to_user_id=friend_id,
+                                                        message=message,
+                                                        channel_id=instance.channel_id)
+                    i += 1
+
+            redis.get("mc:user:%s:pa_push_lock" % request.user.id, 1, 60)

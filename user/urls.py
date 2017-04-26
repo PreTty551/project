@@ -42,7 +42,6 @@ urlpatterns = [
     url(r'^user/rong_token/$', views.rong_token, name='rong_token'),
     url(r'^user/search/$', views.search, name='search'),
     url(r'^user/invite_party/$', views.invite_party, name='invite_party'),
-    url(r'^user/party_push/$', views.party_push, name='party_push'),
 
     url(r'^user/quit_app/$', views.quit_app, name='quit_app'),
     url(r'^user/online_and_offine/callback/$', views.user_online_and_offine_callback, name='online_and_offine'),

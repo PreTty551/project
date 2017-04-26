@@ -23,4 +23,6 @@ urlpatterns = [
     url(r'^livemedia/close_guess_word/$', views.close_guess_word, name='close_guess_word'),
     url(r'^livemedia/channel/invite/$', views.invite_channel, name='invite_channel'),
     url(r'^livemedia/dirty_game/$', views.dirty_game_question, name='dirty_game_question'),
+
+    url(r'^livemedia/poke/$', views.poke, name='poke'),
 ]

@@ -22,16 +22,19 @@ def invite_friend(request):
         is_success = InviteFriend.add(user_id=request.user.id,
                                       invited_id=invited_id)
         if is_success:
-            message = "%s 邀请你加入好友" % request.user.nickname
-            JPush().async_push(user_ids=[invited_id], message=message)
-            data = {
-                "from_user_id": request.user.id,
-                "avatar_url": request.user.avatar_url,
-            }
-            SocketServer().invite_friend(user_id=request.user.id,
-                                         to_user_id=invited_id,
-                                         message=message,
-                                         **data)
+            push_lock = redis.get("mc:user:%s:friend:%s:invite_push_lock" % (request.user.id, invited_id))
+            if not push_lock:
+                message = "%s 申请添加你为好友" % request.user.nickname
+                JPush().async_push(user_ids=[invited_id], message=message)
+                data = {
+                    "from_user_id": request.user.id,
+                    "avatar_url": request.user.avatar_url,
+                }
+                SocketServer().invite_friend(user_id=request.user.id,
+                                             to_user_id=invited_id,
+                                             message=message,
+                                             **data)
+                redis.set("mc:user:%s:friend:%s:invite_push_lock" % (request.user.id, invited_id), 1, 60)
             return JsonResponse()
     return HttpResponseServerError()
 
@@ -41,7 +44,7 @@ def agree_friend(request):
     is_success = InviteFriend.agree(user_id=request.user.id,
                                     invited_id=invited_id)
     if is_success:
-        message = "%s 同意了你的好友请求" % request.user.nickname
+        message = "%s 通过了你的好友申请，一起开PA吧！" % request.user.nickname
         JPush().async_push(user_ids=[invited_id], message=message)
         SocketServer().agree_friend(user_id=request.user.id,
                                     to_user_id=invited_id,

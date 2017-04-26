@@ -20,6 +20,7 @@ from corelib.decorators import login_required_404
 from corelib.paginator import paginator
 from corelib.rongcloud import RongCloud
 from corelib.jiguang import JPush
+from corelib.redis import redis
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
 from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place
@@ -481,65 +482,35 @@ def ignore(request):
     return JsonResponse()
 
 
-def party_push(request):
-    """
-    1. 一周内开party的用户
-    """
-    bulk_ids = []
-    ids = []
-    i = 0
-
-    friend_ids = Friend.get_friend_ids(user_id=user_id)
-    pre_week = timezone.now() - datetime.timedelta(days=7)
-    party_user_ids_in_week = list(LiveMediaLog.objects.filter(data__gte=pre_week, user_id__in=friend_ids)
-                                                      .values_list("user_id", flat=True).distinct())
-    bulk_user_ids = set(party_user_ids_in_week) ^ set(friend_ids)
-
-    message = "%s 正在开party" % request.user.nickname
-    JPush().async_push(user_ids=bulk_user_ids, message=message)
-
-    for friend_id in party_user_ids_in_week:
-        if i < 11:
-            fids = Friend.get_friend_ids(user_id=friend_id)
-            party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
-            nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
-            nicknames = ",".join(nicknames)
-            message = "%s 正在开party" % nicknames
-            JPush().async_push(user_ids=[friend_id], message=message)
-            i += 1
-    return JsonResponse()
-
-
 def invite_party(request):
     receiver_id = request.POST.get("user_id")
+    push_lock = redis.get("mc:user:%s:to_user_id:%s:pa_push_lock" % (request.user.id, receiver_id)) or 0
+    if push_lock and int(push_lock) <= 20:
+        icon = ""
+        message = u"%s邀请你来开PA" % request.user.nickname
+        for i in range(push_lock):
+            icon += u"👉"
+        message = u"%s%s" % (icon, message)
 
-    max_number = 20
-    push_number = 0
-    icon = ""
-    message = u"%s邀请你来开Party" % request.user.nickname
-    for i in range(push_number):
-        icon += u"👉"
+        channel_member = ChannelMember.objects.filter(user_id=request.user.id).first()
+        if channel_member:
+            SocketServer().invite_party_in_live(user_id=request.user.id,
+                                                to_user_id=receiver_id,
+                                                message=message,
+                                                channel_id=channel_member.channel_id)
+            JPush().async_push(user_ids=[receiver_id],
+                               message=message,
+                               push_type=8,
+                               channel_id=member.channel_id)
+        else:
+            InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
+            SocketServer().invite_party_out_live(user_id=request.user.id,
+                                                 to_user_id=receiver_id,
+                                                 message=message)
+            JPush().async_push(user_ids=[receiver_id],
+                               message=message)
 
-    message = u"%s%s" % (icon, message)
-
-    channel_member = ChannelMember.objects.filter(user_id=request.user.id).first()
-    if channel_member:
-        SocketServer().invite_party_in_live(user_id=request.user.id,
-                                            to_user_id=receiver_id,
-                                            message=message,
-                                            channel_id=channel_member.channel_id)
-        JPush().async_push(user_ids=[receiver_id],
-                           message=message,
-                           push_type=8,
-                           channel_id=member.channel_id)
-    else:
-        InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
-        SocketServer().invite_party_out_live(user_id=request.user.id,
-                                             to_user_id=receiver_id,
-                                             message=message)
-        JPush().async_push(user_ids=[receiver_id],
-                           message=message)
-
+        redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (request.user.id, receiver_id), int(push_lock) + 1, 600)
     return JsonResponse()
 
 
