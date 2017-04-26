@@ -472,6 +472,15 @@ def detail_user_info(request):
     return JsonResponse(detail_info)
 
 
+def ignore(request):
+    ignore_id = request.POST.get("ignore_id")
+    ignore_type = request.POST.get("ignore_type")
+    Ignore.add(owner_id=request.user.id,
+               ignore_id=ignore_id,
+               ignore_type=ignore_type)
+    return JsonResponse()
+
+
 def party_push(request):
     """
     1. 一周内开party的用户
