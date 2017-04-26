@@ -101,7 +101,7 @@ class UserContact(models.Model):
 
     @classmethod
     def get_contacts_out_app(cls, owner_id):
-        ignore_user_ids = Ignore.get_contacts_out_app(owner_id=owner_id)
+        ignore_user_ids = Ignore.objects.filter(ignore_type=2).values_list("ignore_id", flat=True)
         all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
         mobile_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                       .exclude(id__in=ignore_user_ids)
@@ -112,15 +112,14 @@ class UserContact(models.Model):
         for mobile in out_say_mobiles:
             uc = UserContact.objects.filter(user_id=owner_id, mobile=mobile).first()
             if uc:
-                _ = {"name": uc.name, "mobile": mobile}
-                result.append(_)
+                result.append(uc.to_dict())
         return result
 
     @classmethod
     def recommend_contacts(cls, owner_id, limit=None):
         ignore_ids = list(Ignore.objects.filter(owner_id=owner_id, ignore_type=2).values_list("ignore_id", flat=True))
         all_mobile_list = list(UserContact.objects.filter(user_id=owner_id)
-                                                  .exclude(id=ignore_ids).values_list("mobile", flat=True))
+                                                  .exclude(id__in=ignore_ids).values_list("mobile", flat=True))
         mobile_ids = User.objects.filter(mobile__in=all_mobile_list).values_list("mobile", flat=True)
         mobile_ids = set(mobile_ids) ^ set(all_mobile_list)
 
@@ -148,7 +147,7 @@ class UserContact(models.Model):
         if limit is not None:
             sorted_results = sorted_results[:limit]
 
-        return [{"name": contacts_map[r[0]][0], "mobile": r[0]} for r in sorted_results, "id": contacts_map[r[0]][1]]
+        return [{"name": contacts_map[r[0]][0], "mobile": r[0], "id": contacts_map[r[0]][1]} for r in sorted_results]
 
     def to_dict(self):
         return {

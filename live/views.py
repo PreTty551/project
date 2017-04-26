@@ -145,14 +145,14 @@ def home_list(request):
             basic_info["dynamic"] = friend_dynamic(user.id)
             friend_list.append(basic_info)
 
-    guess_know_user = guess_know_user(request.user.id)
-    if len(guess_know_user) < 5:
-        guess_contacts =
+    _guess_know_user = guess_know_user(request.user.id)
+    if len(_guess_know_user) < 5:
+        guess_contacts = UserContact.get_contacts_out_app(request.user.id)
     else:
         guess_contacts = UserContact.recommend_contacts(request.user.id, 20)
     return JsonResponse({"channels": channels,
                          "friends": friend_list,
-                         "guess_know_users": guess_know_user,
+                         "guess_know_users": _guess_know_user,
                          "guess_contacts": guess_contacts})
 
 
