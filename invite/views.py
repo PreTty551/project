@@ -22,3 +22,5 @@ def pa(request, user_id):
     user = User.get(id=user_id)
     return render(request, 'invite/index1.html', {'user': user})
 
+def download(request):
+    return redirect('https://fir.im/say')
