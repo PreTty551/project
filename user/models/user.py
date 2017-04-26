@@ -9,6 +9,8 @@ from xpinyin import Pinyin
 from django.utils import timezone
 from django.conf import settings
 from django.db import models, transaction
+from django.db.models.signals import post_delete, post_save
+
 from django.contrib.auth import models as auth_models
 from django.contrib.auth.models import AbstractUser, UserManager as BaseUserManager
 
@@ -153,6 +155,30 @@ class User(AbstractUser, PropsMixin):
     def get_online_ids(cls):
         return [int(user_id) for user_id in redis.hkeys(REDIS_ONLINE_USERS_KEY)]
 
+    def binding_wechat(self, third_id):
+        ThirdUser.objects.create(mobile=user.mobile, third_id=third_id, third_name="wx")
+        return True
+
+    def binding_weibo(self, third_id):
+        ThirdUser.objects.create(mobile=user.mobile, third_id=third_id, third_name="wb")
+        return True
+
+    def unbinding_wechat(self):
+        ThirdUser.objects.filter(mobile=self.mobile, third_name="wx").delete()
+        return True
+
+    def unbinding_weibo(self):
+        ThirdUser.objects.filter(mobile=self.mobile, third_name="wb").delete()
+        return True
+
+    @property
+    def is_bind_wechat(self):
+        return redis.get_props_item("bind_wechat") or 0
+
+    @property
+    def is_bing_weibo(self):
+        return redis.get_props_item("bind_weibo") or 0
+
     @property
     def localtime(self):
         return timezone.localtime(self.last_login)
@@ -219,6 +245,8 @@ class User(AbstractUser, PropsMixin):
         detail_info = self.basic_info()
         detail_info["common_friends"] = common_friends if common_friends else ""
         detail_info["is_paid"] = self.is_paid
+        detail_info["is_bind_wechat"] = self.is_bind_wechat
+        detail_info["is_bind_weibo"] = self.is_bind_weibo
         if user_id:
             friend = Friend.objects.filter(user_id=self.id, friend_id=user_id).first()
             if friend:
@@ -267,3 +295,20 @@ class BanUser(models.Model):
 
     class Meta:
         db_table = "ban_user"
+
+
+@receiver(post_save, sender=ThirdUser)
+def add_thirduser_after(sender, created, instance, **kwargs):
+    if created:
+        if instance.third_name == "wx":
+            instance.set_props_item("is_bind_wechat", 1)
+        elif instance.third_name == "wb":
+            instance.set_props_item("is_bind_weibo", 1)
+
+
+@receiver(post_delete, sender=ThirdUser)
+def del_thirduser_after(sender, instance, **kwargs):
+    if instance.third_name == "wx":
+        instance.set_props_item("is_bind_wechat", 0)
+    elif instance.third_name == "wb":
+        instance.set_props_item("is_bind_weibo", 0)

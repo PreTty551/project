@@ -47,8 +47,10 @@ urlpatterns = [
     url(r'^user/quit_app/$', views.quit_app, name='quit_app'),
     url(r'^user/online_and_offine/callback/$', views.user_online_and_offine_callback, name='online_and_offine'),
 
-    url(r'^user/bingd/wx/$', views.binding_wechat, name='binding_wechat'),
-    url(r'^user/bingd/wb/$', views.binding_weibo, name='binding_weibo'),
+    url(r'^user/bind/wx/$', views.bind_wechat, name='binding_wechat'),
+    url(r'^user/bind/wb/$', views.bind_weibo, name='binding_weibo'),
+    url(r'^user/unbind/wx/$', views.unbind_wechat, name='unbind_wechat'),
+    url(r'^user/unbind/wb/$', views.unbind_weibo, name='unbind_weibo'),
 
     url(r'^user/fuck_you/$', views.fuck_you, name='fuck_you'),
     url(r'^user/location/add/$', views.add_user_location, name='add_user_location'),

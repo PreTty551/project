@@ -358,7 +358,7 @@ def get_basic_user_info(request):
     return HttpResponseBadRequest()
 
 
-def binding_wechat(request):
+def bind_wechat(request):
     code = request.POST.get("code")
     user_info = OAuth.get_user_info(code=code)
     if not user_info:
@@ -375,11 +375,11 @@ def binding_wechat(request):
         else:
             return JsonResponse(error=LoginError.DUPLICATE_BING)
 
-    ThirdUser.objects.create(mobile=user.mobile, third_id=third_id, third_name=third_name)
+    request.user.binding_wechat(third_id=third_id)
     return JsonResponse()
 
 
-def binding_weibo(request):
+def bind_weibo(request):
     access_token = request.POST.get("access_token")
     third_id = request.POST.get("third_id")
 
@@ -391,8 +391,22 @@ def binding_weibo(request):
         else:
             return JsonResponse(error=LoginError.DUPLICATE_BING)
 
-    ThirdUser.objects.create(mobile=user.mobile, third_id=third_id, third_name=third_name)
+    request.user.binding_wechat(third_id=third_id)
     return JsonResponse()
+
+
+def unbind_wechat(reqeust):
+    is_success = request.user.unbinding_wechat()
+    if is_success:
+        return JsonResponse()
+    return HttpResponseServerError()
+
+
+def unbind_weibo(request):
+    is_success = request.user.unbinding_weibo()
+    if is_success:
+        return JsonResponse()
+    return HttpResponseServerError()
 
 
 def update_paid(request):
