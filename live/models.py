@@ -277,6 +277,9 @@ def add_member_after(sender, created, instance, **kwargs):
         InviteParty.objects.filter(to_user_id=instance.user_id, status=0).update(status=1)
         redis.delete(MC_INVITE_PARTY % instance.user_id)
 
+        user = User.get(instance.user_id)
+        user.last_pa_time = time.time()
+
         refresh(instance.user_id)
 
 
@@ -294,13 +297,16 @@ def delete_member_after(sender, instance, **kwargs):
         if member_count == 0:
             Channel.objects.filter(channel_id=instance.channel_id).delete()
 
+        user = User.get(instance.user_id)
+        user.last_pa_time = time.time()
+
         refresh(instance.user_id)
 
 
 @receiver(post_save, sender=Channel)
 def add_channel_after(sender, created, instance, **kwargs):
     if created:
-        push_lock = redis.get("mc:user:%s:pa_push_lock" % request.user.id)
+        push_lock = redis.get("mc:user:%s:pa_push_lock" % instance.creator_id)
         if not push_lock:
             bulk_ids = []
             ids = []
@@ -334,4 +340,4 @@ def add_channel_after(sender, created, instance, **kwargs):
                                                         channel_id=instance.channel_id)
                     i += 1
 
-            redis.get("mc:user:%s:pa_push_lock" % request.user.id, 1, 60)
+            redis.get("mc:user:%s:pa_push_lock" % instance.creator_id)

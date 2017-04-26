@@ -1,4 +1,4 @@
-from .contact import get_contacts, get_contacts_in_app, get_contacts_out_app, add_user_contact, update_user_contact, \
+from .contact import get_contacts, add_user_contact, update_user_contact, \
                      get_contact_list, common_contact
 from .friend import invite_friend, agree_friend, ignore, get_friends, get_friends_order_by_pinyin, update_user_memo, \
                     who_is_friends, delete_friend, update_invisible, update_push, unagree_friend_count

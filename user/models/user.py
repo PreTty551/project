@@ -188,6 +188,14 @@ class User(AbstractUser, PropsMixin):
     def natural_time(self):
         return time_format(self.localtime)
 
+    def _get_last_pa_time(self):
+        return self.get_props_item("last_pa_time")
+
+    def _set_last_pa_time(self, value):
+        return self.set_props_item("last_pa_time", value)
+
+    last_pa_time = property(_get_last_pa_time, _set_last_pa_time)
+
     @property
     def avatar_url(self):
         # if self.id < 160000:

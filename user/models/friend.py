@@ -4,6 +4,7 @@ import time
 from django.db import models, transaction, IntegrityError
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from corelib.utils import natural_time as time_format
 from corelib.redis import redis
@@ -194,6 +195,27 @@ class Friend(models.Model):
             "nickname": user.nickname,
             "status": self.status,
         }
+
+
+def friend_dynamic(user_id):
+    user = User.get(user_id)
+    last_pa_time = user.last_pa_time
+    if not last_pa_time:
+        return
+
+    import datetime
+    try:
+        dt = datetime.datetime.fromtimestamp(float(last_pa_time))
+    except:
+        return ""
+
+    d = time_format(timezone.localtime(dt))
+    if (datetime.datetime.now() - dt).seconds < 600:
+        return "%s离开房间" % d
+    elif (datetime.datetime.now() - dt).days < 4:
+        return "%s开过party" % d
+    elif (datetime.datetime.now() - dt).days < 30:
+        return "%s见过TA" % d
 
 
 def common_friend(user_id, to_user_id):

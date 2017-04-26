@@ -8,6 +8,7 @@ from django.http import HttpResponseBadRequest, Http404, \
 from corelib.http import JsonResponse
 from corelib.decorators import login_required_404
 from corelib.jiguang import JPush
+from corelib.redis import redis
 
 from user.models import User, UserContact, InviteFriend, Friend, ContactError
 from user.models import Ignore
@@ -141,5 +142,5 @@ def who_is_friends(request):
 
 
 def unagree_friend_count(request):
-    count = InviteFriend.objects.filter(invited_id=request.user.id).count()
+    count = InviteFriend.objects.filter(invited_id=request.user.id, status=0).count()
     return JsonResponse({"unagree_count": count})

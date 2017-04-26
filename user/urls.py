@@ -20,8 +20,6 @@ urlpatterns = [
     url(r'^user/avatar/update/$', views.update_avatar, name='update_avatar'),
 
     url(r'^user/contact/$', views.get_contacts, name='get_contacts'),
-    url(r'^user/contact/in_app/$', views.get_contacts_in_app, name='get_contacts_in_app'),
-    url(r'^user/contact/out_app/$', views.get_contacts_out_app, name='get_contacts_out_app'),
     url(r'^user/contact/add/$', views.add_user_contact, name='add_user_contact'),
     url(r'^user/contact/update/$', views.update_user_contact, name='update_user_contact'),
     url(r'^user/contact/list/$', views.get_contact_list, name='get_contact_list'),

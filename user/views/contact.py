@@ -18,22 +18,6 @@ def get_contacts(request):
     return JsonResponse(contact_list)
 
 
-def get_contacts_in_app(request):
-    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
-    all_mobile_list = list(UserContact.objects.filter(user_id=request.user.id).values_list("mobile", flat=True))
-    user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
-                                .exclude(id__in=friend_ids)
-                                .values_list("id", flat=True))
-
-    result = []
-    for user_id in user_ids:
-        user = User.get(id=user_id)
-        basic_info = user.basic_info()
-        basic_info["user_relation"] = user.check_friend_relation(user_id=request.user.id)
-        result.append(basic_info)
-    return JsonResponse(result)
-
-
 def get_contact_list(request):
     contacts = UserContact.get_all_contact(user_id=request.user.id)
     all_mobile_list = list(UserContact.objects.filter(user_id=request.user.id).values_list("mobile", flat=True))
@@ -50,11 +34,6 @@ def get_contact_list(request):
         contacts_in_app.append(basic_info)
 
     return JsonResponse({"contacts": contacts, "contacts_in_app": contacts_in_app})
-
-
-def get_contacts_out_app(request):
-    contact_list = UserContact.get_contacts_out_app(owner_id=request.user.id)
-    return JsonResponse(contact_list)
 
 
 @login_required_404
