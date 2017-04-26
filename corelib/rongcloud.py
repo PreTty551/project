@@ -19,8 +19,7 @@ class RongCloud(object):
                     fromUserId=user_id,
                     toUserId=to_user_id,
                     objectName=object_name,
-                    content=content,
-                    isPersisted=16)
+                    content=content)
 
     def send_inner_message(self, user_id, to_user_id, content):
         return self._send(user_id=user_id,

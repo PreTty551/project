@@ -12,10 +12,11 @@ from django.utils import timezone
 from corelib.rongcloud import RongCloud
 from corelib.mc import hlcache
 from corelib.redis import redis
+from corelib.jiguang import JPush
 
 from user.models import User, Friend
 from .consts import ChannelType, MC_INVITE_PARTY
-from socket_server import SocketServer
+from socket_server import SocketServer, EventType
 
 
 class Channel(models.Model):
@@ -229,7 +230,7 @@ class InviteParty(models.Model):
     @classmethod
     # @hlcache(MC_INVITE_PARTY % '{user_id}')
     def get_invites(cls, user_id):
-        queryset = cls.objects.filter(to_user_id=user_id).values_list("user_id", flat=True).distinct()
+        queryset = cls.objects.filter(to_user_id=user_id, status=0).values_list("user_id", flat=True).distinct()
         return list(queryset)
 
 
@@ -241,11 +242,16 @@ def refresh(user_id):
     friend_ids = Friend.get_friend_ids(user_id)
     online_ids = User.get_online_ids()
     online_friend_ids = [friend_id for friend_id in friend_ids if friend_id in online_ids]
+    online_friend_ids.append(user_id)
     if online_friend_ids:
         SocketServer().refresh(user_id=user_id,
                                to_user_id=set(online_friend_ids),
                                message="refresh",
                                event_type=EventType.refresh_home.value)
+        SocketServer().refresh(user_id=user_id,
+                               to_user_id=set(online_friend_ids),
+                               message="refresh",
+                               event_type=EventType.refresh_inner_home.value)
 
 
 @receiver(post_save, sender=InviteParty)
@@ -268,6 +274,9 @@ def add_member_after(sender, created, instance, **kwargs):
         channel.member_count = F("member_count") + 1
         channel.save()
 
+        InviteParty.objects.filter(to_user_id=instance.user_id, status=0).update(stuats=1)
+        redis.delete(MC_INVITE_PARTY % instance.user_id)
+
         refresh(instance.user_id)
 
 
@@ -286,3 +295,40 @@ def delete_member_after(sender, instance, **kwargs):
             Channel.objects.filter(channel_id=instance.channel_id).delete()
 
         refresh(instance.user_id)
+
+
+@receiver(post_save, sender=Channel)
+def add_channel_after(sender, created, instance, **kwargs):
+    if created:
+        bulk_ids = []
+        ids = []
+        i = 0
+
+        user = User.get(id=instance.creator_id)
+        friend_ids = Friend.get_friend_ids(user_id=instance.creator_id)
+        pre_week = timezone.now() - datetime.timedelta(days=7)
+        party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=friend_ids)
+                                                          .values_list("user_id", flat=True).distinct())
+        bulk_user_ids = set(party_user_ids_in_week) ^ set(friend_ids)
+
+        message = "%s 开party" % user.nickname
+        JPush().async_push(user_ids=bulk_user_ids, message=message)
+        print("bulk_user_ids",bulk_user_ids)
+        SocketServer().invite_party_in_live(user_id=user.id,
+                                            to_user_id=bulk_user_ids,
+                                            message=message,
+                                            channel_id=instance.channel_id)
+
+        for friend_id in party_user_ids_in_week:
+            if i < 11:
+                fids = Friend.get_friend_ids(user_id=friend_id)
+                party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
+                nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
+                nicknames = ",".join(nicknames)
+                message = "%s 在开party" % nicknames
+                JPush().async_push(user_ids=[friend_id], message=message)
+                SocketServer().invite_party_in_live(user_id=user.id,
+                                                    to_user_id=friend_id,
+                                                    message=message,
+                                                    channel_id=instance.channel_id)
+                i += 1

@@ -25,7 +25,7 @@ from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
 from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
 from socket_server import SocketServer
-from live.models import ChannelMember, InviteParty
+from live.models import Channel, ChannelMember, InviteParty
 
 
 @require_http_methods(["POST"])
@@ -489,8 +489,6 @@ def party_push(request):
 
 def invite_party(request):
     receiver_id = request.POST.get("user_id")
-    party_type = request.POST.get("party_type", 0)
-    channel_id = request.POST.get("channel_id", "")
 
     max_number = 20
     push_number = 0
@@ -501,17 +499,8 @@ def invite_party(request):
 
     message = u"%s%s" % (icon, message)
 
-    if int(party_type) == 3:
-        InviteParty.add(user_id=request.user.id,
-                        to_user_id=receiver_id,
-                        party_type=3,
-                        channel_id=channel_id)
-    else:
-        InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
-
-    member = ChannelMember.objects.filter(user_id=request.user.id).first()
-    if member:
-        push_number += 1
+    channel_member = ChannelMember.objects.filter(user_id=request.user.id).first()
+    if channel_member:
         SocketServer().invite_party_in_live(user_id=request.user.id,
                                             to_user_id=receiver_id,
                                             message=message,
@@ -520,13 +509,14 @@ def invite_party(request):
                            message=message,
                            push_type=8,
                            channel_id=member.channel_id)
-
     else:
+        InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
         SocketServer().invite_party_out_live(user_id=request.user.id,
                                              to_user_id=receiver_id,
                                              message=message)
         JPush().async_push(user_ids=[receiver_id],
                            message=message)
+
     return JsonResponse()
 
 
@@ -553,7 +543,7 @@ def user_online_and_offine_callback(request):
         time = body["time"]
 
         user = User.get(user_id)
-        if status == 1:
+        if int(status) == 0:
             user.online()
         else:
             user.offline()

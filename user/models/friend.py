@@ -56,6 +56,16 @@ class InviteFriend(models.Model):
         return list(cls.objects.filter(invited_id=owner_id,
                                        status=0).values_list("user_id", flat=True))
 
+    @classmethod
+    def get_my_invited_ids(cls, owner_id):
+        return list(cls.objects.filter(user_id=owner_id,
+                                       status=0).values_list("invited_id", flat=True))
+
+    @classmethod
+    def get_my_invited_ids(cls, owner_id):
+        return list(cls.objects.filter(user_id=owner_id,
+                                       status=0).values_list("invited_id", flat=True))
+
 
 class Friend(models.Model):
     user_id = models.IntegerField()

@@ -36,11 +36,14 @@ def guess_know_user(user_id):
     all_mobile_list = list(UserContact.objects.filter(user_id=user_id).values_list("mobile", flat=True))
     friend_ids = Friend.get_friend_ids(user_id=user_id)
     invited_my_ids = InviteFriend.get_invited_my_ids(owner_id=user_id)
-
+    my_invited_ids = InviteFriend.get_my_invited_ids(owner_id=user_id)
     user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                 .exclude(id__in=friend_ids)
                                 .exclude(id__in=invited_my_ids)
                                 .values_list("id", flat=True))
+
+    if user_id in user_ids:
+        user_ids.remove(user_id)
 
     results = []
     users = [User.get(id=user_id) for user_id in user_ids[:10]]

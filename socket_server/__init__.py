@@ -88,7 +88,7 @@ class SocketServer(object):
         return self._send_message(user_id=user_id,
                                   to_user_id=to_user_id,
                                   box_type=PopBoxType.message.value,
-                                  msg_type=MessageType.hit.value,
+                                  msg_type=MessageType.not_hit.value,
                                   message=message,
                                   channel_id=channel_id)
 
@@ -96,7 +96,7 @@ class SocketServer(object):
         return self._send_message(user_id=user_id,
                                   to_user_id=to_user_id,
                                   box_type=PopBoxType.message.value,
-                                  msg_type=MessageType.not_hit.value,
+                                  msg_type=MessageType.hit.value,
                                   message=message,
                                   channel_id=0)
 

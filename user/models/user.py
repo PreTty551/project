@@ -90,7 +90,7 @@ class User(AbstractUser, PropsMixin):
     paid = models.CharField(max_length=50, unique=True, null=True, blank=True)
     nickname = models.CharField(max_length=50)
     mobile = models.CharField(max_length=20, unique=True)
-    avatar = models.CharField(max_length=20, default="")
+    avatar = models.CharField(max_length=40, default="")
     gender = models.SmallIntegerField(default=0)
     intro = models.CharField(max_length=100, default="")
     country = models.CharField(max_length=20, default="")

@@ -21,6 +21,7 @@ TEST_USER_IDS = []
 
 
 def refresh_list(request):
+    channels = []
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
     channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
     for channel_id in channel_ids:
@@ -39,7 +40,7 @@ def refresh_list(request):
         if user:
             basic_info = user.basic_info()
             basic_info["user_relation"] = UserEnum.friend.value
-            basic_info["is_hint"] = True
+            basic_info["is_hint"] = False
             friend_list.append(basic_info)
 
     for friend_id in friend_ids:
@@ -59,14 +60,6 @@ def refresh_list(request):
 
 def refresh_home_list(request):
     channels = []
-    invite_party_ids = InviteParty.objects.filter(
-                            to_user_id=request.user.id,
-                            party_type=ChannelType.private.value).values_list("channel_id", flat=True)
-    for party_id in invite_party_ids:
-        channel = Channel.get_channel(channel_id)
-        if not channel:
-            continue
-        channels.append(channel.to_dict())
 
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
     channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
@@ -86,7 +79,7 @@ def refresh_home_list(request):
         if user:
             basic_info = user.basic_info()
             basic_info["user_relation"] = UserEnum.friend.value
-            basic_info["is_hint"] = True
+            basic_info["is_hint"] = False
             friend_list.append(basic_info)
 
     for friend_id in friend_ids:
@@ -116,7 +109,7 @@ def home_list(request):
     invite_party_ids = InviteParty.objects.filter(
                             to_user_id=request.user.id,
                             party_type=ChannelType.private.value).values_list("channel_id", flat=True)
-    for party_id in invite_party_ids:
+    for channel_id in invite_party_ids:
         channel = Channel.get_channel(channel_id)
         if not channel:
             continue
@@ -165,6 +158,10 @@ def livemedia_list(request):
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
     channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
     channels = []
+    channel = Channel.objects.filter(creator_id=request.user.id).first()
+    if channel:
+        channels.append(channel.to_dict())
+
     for channel_id in channel_ids:
         channel = Channel.get_channel(channel_id)
         if not channel:
@@ -207,22 +204,23 @@ def near_channel_list(request):
     1. 先查找所有附近类型的房间，再查这些房间用户，算附近排序(现在使用中)
     2. 先直接查找附近n距离内的用户，再根据这些用户找到房间
     """
-    channel_ids = Channel.objects.filter(channel_type=ChannelType.public.value).values_list("id", flat=True)
-    user_ids = ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True)
+    channel_ids = list(Channel.objects.filter(channel_type=ChannelType.public.value).values_list("id", flat=True))
+    user_ids = list(ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True))
     place = Place.get(user_id=request.user.id)
     channels = []
     if place:
-        user_locations = Place.get_multi_user_dis(user_ids=user_ids)
-        sorted_user_ids = sorted(user_locations.items(), key=lambda item: item[1])
+        user_locations = place.get_multi_user_dis(user_ids=user_ids)
+        if user_locations:
+            sorted_user_ids = sorted(user_locations.items(), key=lambda item: item[1])
 
-        for user_id in sorted_user_ids:
-            channel_id = ChannelMember.objects.filter(channel_type=ChannelType.normal.value,
-                                                      user_id=user_id).values_list("channel_id", flat=True)
-            channel = Channel.get_channel(channel_id=channel_id)
-            if not channel:
-                continue
+            for user_id in sorted_user_ids:
+                channel_member = ChannelMember.objects.filter(channel_type=ChannelType.normal.value,
+                                                              user_id=user_id).frist()
+                channel = Channel.get_channel(channel_id=channel_member.channel_id)
+                if not channel:
+                    continue
 
-            channels.append(channel.to_dict())
+                channels.append(channel.to_dict())
 
     limit = 100 - len(channels)
     channel_list = Channel.objects.filter(channel_type=ChannelType.public.value).order_by("-id")[:limit]
@@ -261,9 +259,9 @@ def create_channel(request):
     except ValueError:
         return HttpResponseBadRequest()
 
+    InviteParty.clear(request.user.id)
     channel = Channel.create_channel(user_id=request.user.id, channel_type=channel_type)
     if channel:
-        InviteParty.clear(request.user.id)
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
 
