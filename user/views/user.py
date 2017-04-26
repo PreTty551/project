@@ -518,7 +518,7 @@ def invite_party(request):
         SocketServer().invite_party_in_live(user_id=request.user.id,
                                             to_user_id=receiver_id,
                                             message=message,
-                                            channel_id=member.channel_id)
+                                            channel_id=channel_member.channel_id)
         JPush().async_push(user_ids=[receiver_id],
                            message=message,
                            push_type=8,

@@ -235,7 +235,12 @@ def private_channel_list(request):
     channel_ids = InviteParty.objects.filter(party_type=ChannelType.private.value,
                                              to_user_id=request.user.id).values_list("channel_id", flat=True)
     # channel_ids = my_channel_id + channel_ids
-    channels = [Channel.get_channel(channel_id=channel_id).to_dict() for channel_id in channel_ids]
+    channels = []
+    for channel_id in channel_ids:
+        channel = Channel.get_channel(channel_id=channel_id)
+        if channel:
+            channels.append(channel.to_dict())
+
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
 
     friend_list = []

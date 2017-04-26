@@ -274,7 +274,7 @@ def add_member_after(sender, created, instance, **kwargs):
         channel.member_count = F("member_count") + 1
         channel.save()
 
-        InviteParty.objects.filter(to_user_id=instance.user_id, status=0).update(stuats=1)
+        InviteParty.objects.filter(to_user_id=instance.user_id, status=0).update(status=1)
         redis.delete(MC_INVITE_PARTY % instance.user_id)
 
         refresh(instance.user_id)
