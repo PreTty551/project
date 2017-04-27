@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect
+from django.http import HttpResponse
+
 from user.models import User
 from live.models import ChannelMember, Channel
 
@@ -18,9 +20,19 @@ def wechat(request, user_id):
     else:
         return redirect('invite_pa', user_id=user_id)
 
+
 def pa(request, user_id):
     user = User.get(id=user_id)
     return render(request, 'invite/index1.html', {'user': user})
 
+
 def download(request):
     return redirect('https://fir.im/say')
+
+
+def file_download(request):
+    with open('/home/mengwei/apple-app-site-association') as f:
+        c = f.read()
+    response = HttpResponse(c)
+    response['Content-Type'] = 'application/json'
+    return response

@@ -42,7 +42,7 @@ class InviteFriend(models.Model):
 
     @classmethod
     def count(cls, user_id):
-        return cls.objects.filter(invited_id=user_id).count()
+        return cls.objects.filter(invited_id=user_id, status=0).count()
 
     @classmethod
     def is_invite_user(cls, user_id, friend_id):
@@ -56,11 +56,6 @@ class InviteFriend(models.Model):
     def get_invited_my_ids(cls, owner_id):
         return list(cls.objects.filter(invited_id=owner_id,
                                        status=0).values_list("user_id", flat=True))
-
-    @classmethod
-    def get_my_invited_ids(cls, owner_id):
-        return list(cls.objects.filter(user_id=owner_id,
-                                       status=0).values_list("invited_id", flat=True))
 
     @classmethod
     def get_my_invited_ids(cls, owner_id):
@@ -210,10 +205,12 @@ def friend_dynamic(user_id):
         return ""
 
     d = time_format(timezone.localtime(dt))
-    if (datetime.datetime.now() - dt).seconds < 600:
-        return "%s离开房间" % d
+    if redis.get(MC_PAING % user_id):
+        return "正在开PA"
+    elif (datetime.datetime.now() - dt).seconds < 600:
+        return "刚刚离开房间"
     elif (datetime.datetime.now() - dt).days < 4:
-        return "%s开过party" % d
+        return "%s开过PA" % d
     elif (datetime.datetime.now() - dt).days < 30:
         return "%s见过TA" % d
 

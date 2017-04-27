@@ -24,6 +24,7 @@ TEST_USER_IDS = []
 def refresh_list(request):
     channels = []
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    friend_ids.append(request.user.id)
     channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
     for channel_id in channel_ids:
         channel = Channel.get_channel(channel_id)
@@ -65,6 +66,7 @@ def refresh_home_list(request):
     channels = []
 
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    friend_ids.append(request.user.id)
     channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
     for channel_id in channel_ids:
         channel = Channel.get_channel(channel_id)
@@ -112,6 +114,7 @@ def home_list(request):
     channels = []
 
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    friend_ids.append(request.user.id)
     channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
     for channel_id in channel_ids:
         channel = Channel.get_channel(channel_id)
@@ -119,7 +122,7 @@ def home_list(request):
             continue
         if channel.channel_type == ChannelType.private.value:
             continue
-        channels.append(channel.to_dict())
+        channels.append(channel.to_dict(friend_ids=friend_ids))
 
     # 红点, 排序
     invite_party_ids = InviteParty.get_invites(user_id=request.user.id)
@@ -159,11 +162,9 @@ def home_list(request):
 @login_required_404
 def livemedia_list(request):
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    friend_ids.append(request.user.id)
     channel_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("channel_id", flat=True).distinct()
     channels = []
-    channel = Channel.objects.filter(creator_id=request.user.id).first()
-    if channel:
-        channels.append(channel.to_dict())
 
     for channel_id in channel_ids:
         channel = Channel.get_channel(channel_id)
@@ -232,7 +233,32 @@ def near_channel_list(request):
     for channel in channel_list:
         channels.append(channel.to_dict())
 
-    return JsonResponse({"channels": channels})
+    invite_party_ids = InviteParty.get_invites(user_id=request.user.id)
+
+    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    friend_list = []
+    for user_id in invite_party_ids:
+        user = User.get(id=user_id)
+        if user:
+            basic_info = user.basic_info()
+            basic_info["user_relation"] = UserEnum.friend.value
+            basic_info["is_hint"] = True
+            basic_info["dynamic"] = friend_dynamic(user.id)
+            friend_list.append(basic_info)
+
+    for friend_id in friend_ids:
+        if friend_id in invite_party_ids:
+            continue
+
+        user = User.get(id=friend_id)
+        if user:
+            basic_info = user.basic_info()
+            basic_info["is_hint"] = False
+            basic_info["user_relation"] = UserEnum.friend.value
+            basic_info["dynamic"] = friend_dynamic(user.id)
+            friend_list.append(basic_info)
+
+    return JsonResponse({"channels": channels, "friends": friend_list})
 
 
 def private_channel_list(request):

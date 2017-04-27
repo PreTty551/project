@@ -58,6 +58,9 @@ def guess_know_user(user_id):
 
     two_degrees = two_degree_relation(user_id=user_id)[:10]
     for user_id, common_friend_count in two_degrees:
+        if user_id in invited_my_ids:
+            continue
+
         user = User.get(id=user_id)
         basic_info = user.basic_info()
         basic_info["reason"] = "你们有%s个共同好友" % common_friend_count

@@ -485,12 +485,12 @@ def ignore(request):
 def invite_party(request):
     receiver_id = request.POST.get("user_id")
     push_lock = redis.get("mc:user:%s:to_user_id:%s:pa_push_lock" % (request.user.id, receiver_id)) or 0
-    if push_lock and int(push_lock) <= 20:
+    if int(push_lock) <= 20:
         icon = ""
-        message = u"%s邀请你来开PA" % request.user.nickname
+        message = "%s邀请你来开PA" % request.user.nickname
         for i in range(push_lock):
-            icon += u"👉"
-        message = u"%s%s" % (icon, message)
+            icon += "👉"
+        message = "%s%s" % (icon, message)
 
         channel_member = ChannelMember.objects.filter(user_id=request.user.id).first()
         if channel_member:

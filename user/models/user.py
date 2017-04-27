@@ -196,6 +196,14 @@ class User(AbstractUser, PropsMixin):
 
     last_pa_time = property(_get_last_pa_time, _set_last_pa_time)
 
+    def _get_gift_count(self):
+        return self.get_props_item("gift_count")
+
+    def _set_gift_count(self, value):
+        return self.set_props_item("gift_count", value)
+
+    gift_count = property(_get_gift_count, _set_gift_count)
+
     @property
     def avatar_url(self):
         # if self.id < 160000:
@@ -226,9 +234,13 @@ class User(AbstractUser, PropsMixin):
             return UserEnum.invite.value
         return UserEnum.nothing.value
 
+    def gift_count(self):
+        redis.get
+        return redis.get(REDIS_GIFT_COUNT % self.id) or 0
+
     @property
     def is_paid(self):
-        return self.paid == self.id
+        return self.paid == str(self.id)
 
     def basic_info(self, user_id=None):
         if user_id:
@@ -252,10 +264,11 @@ class User(AbstractUser, PropsMixin):
         common_friends = common_friend(self.id, user_id)
         common_friends = ",".join(common_friends)
         detail_info = self.basic_info()
+        detail_info["gift_count"] = self.gift_count
         detail_info["common_friends"] = common_friends if common_friends else ""
         detail_info["is_paid"] = self.is_paid
-        detail_info["is_bind_wechat"] = self.is_bind_wechat
-        detail_info["is_bind_weibo"] = self.is_bind_weibo
+        detail_info["is_bind_wechat"] = self.is_bind_wechat or 0
+        detail_info["is_bind_weibo"] = self.is_bind_weibo or 0
         if user_id:
             friend = Friend.objects.filter(user_id=self.id, friend_id=user_id).first()
             if friend:
@@ -309,15 +322,17 @@ class BanUser(models.Model):
 @receiver(post_save, sender=ThirdUser)
 def add_thirduser_after(sender, created, instance, **kwargs):
     if created:
+        user = User.objects.filter(mobile=instance.mobile).first()
         if instance.third_name == "wx":
-            instance.set_props_item("is_bind_wechat", 1)
+            user.set_props_item("is_bind_wechat", 1)
         elif instance.third_name == "wb":
-            instance.set_props_item("is_bind_weibo", 1)
+            user.set_props_item("is_bind_weibo", 1)
 
 
 @receiver(post_delete, sender=ThirdUser)
 def del_thirduser_after(sender, instance, **kwargs):
+    user = User.objects.filter(mobile=instance.mobile).first()
     if instance.third_name == "wx":
-        instance.set_props_item("is_bind_wechat", 0)
+        user.set_props_item("is_bind_wechat", 0)
     elif instance.third_name == "wb":
-        instance.set_props_item("is_bind_weibo", 0)
+        user.set_props_item("is_bind_weibo", 0)
