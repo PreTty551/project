@@ -6,3 +6,4 @@ from .ignore import Ignore
 from .place import Place
 from .init_data import init_data_to_user
 from .guess_know import guess_know_user, two_degree_relation
+from .feedback import FeedBack
