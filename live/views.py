@@ -2,6 +2,7 @@
 import time
 import random
 import requests
+import datetime
 
 from django.http import HttpResponseBadRequest
 from django.views.decorators.http import require_http_methods
@@ -13,7 +14,7 @@ from corelib.http import JsonResponse
 from corelib.websocket import Websocket
 from corelib.redis import redis
 
-from live.models import Channel, ChannelMember, GuessWord, InviteChannel, InviteParty
+from live.models import Channel, ChannelMember, GuessWord, InviteChannel, InviteParty, LiveMediaLog
 from live.consts import ChannelType
 from user.models import User, Friend, UserContact, Place, guess_know_user, friend_dynamic
 from user.consts import UserEnum
@@ -352,10 +353,21 @@ def join_channel(request):
 @login_required_404
 def quit_channel(request):
     channel_id = request.POST.get("channel_id")
+    content = request.POST.get("content", "")
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         channel.quit_channel(user_id=request.user.id)
-    return JsonResponse()
+
+        last_pa_time = request.user.last_pa_time
+        if not last_pa_time:
+            return
+
+        dt = datetime.datetime.fromtimestamp(float(last_pa_time))
+        if (datetime.datetime.now() - dt).seconds > 300:
+            count = LiveMediaLog.objects.filter(channel_id=channel_id).count()
+            if count > 1:
+                return JsonResponse({"feedback": True})
+    return JsonResponse({"feedback": False})
 
 
 @require_http_methods(["POST"])

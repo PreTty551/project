@@ -3,7 +3,7 @@ import time
 
 from enum import Enum, unique
 from corelib.rongcloud import RongCloud
-
+from django.conf import settings
 
 @unique
 class PopBoxType(Enum):
@@ -83,7 +83,7 @@ class SocketServer(object):
                                   box_type=PopBoxType.message.value,
                                   msg_type=MessageType.not_hit.value,
                                   message=message,
-                                  icon_url="%s/pa/friend.png" % AVATAR_BASE_URL)
+                                  icon_url="%s/pa/friend.png" % settings.AVATAR_BASE_URL)
 
     def invite_party_in_live(self, user_id, to_user_id, message, channel_id):
         return self._send_message(user_id=user_id,
@@ -92,7 +92,7 @@ class SocketServer(object):
                                   msg_type=MessageType.not_hit.value,
                                   message=message,
                                   channel_id=channel_id,
-                                  icon_url="%s/pa/party.png" % AVATAR_BASE_URL)
+                                  icon_url="%s/pa/party.png" % settings.AVATAR_BASE_URL)
 
     def invite_party_out_live(self, user_id, to_user_id, message):
         return self._send_message(user_id=user_id,
@@ -101,7 +101,7 @@ class SocketServer(object):
                                   msg_type=MessageType.hit.value,
                                   message=message,
                                   channel_id=0,
-                                  icon_url="%s/pa/party.png" % AVATAR_BASE_URL)
+                                  icon_url="%s/pa/party.png" % settings.AVATAR_BASE_URL)
 
     def refresh(self, user_id, to_user_id, message, event_type):
         return self._send_event(user_id=user_id,

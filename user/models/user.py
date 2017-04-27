@@ -234,10 +234,6 @@ class User(AbstractUser, PropsMixin):
             return UserEnum.invite.value
         return UserEnum.nothing.value
 
-    def gift_count(self):
-        redis.get
-        return redis.get(REDIS_GIFT_COUNT % self.id) or 0
-
     @property
     def is_paid(self):
         return self.paid == str(self.id)

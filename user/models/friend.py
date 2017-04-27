@@ -12,6 +12,7 @@ from corelib.mc import hlcache
 
 from user.models import User
 from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY
+from live.consts import MC_PAING
 
 
 class InviteFriend(models.Model):

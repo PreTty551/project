@@ -100,7 +100,7 @@ class Channel(models.Model):
     def title(self, friend_ids=None):
         nicknames = []
         if friend_ids:
-            user_ids = self.get_members_order_by_friend(friend_ids=friend_ids)
+            user_ids = ChannelMember.get_members_order_by_friend(channel_id=self.channel_id, friend_ids=friend_ids)
         else:
             user_ids = self.get_channel_member()
 
@@ -175,7 +175,8 @@ class ChannelMember(models.Model):
         member_ids = list(cls.objects.filter(channel_id=channel_id).values_list("user_id", flat=True))
         friend_member_ids = [member_id for member_id in member_ids if member_id in friend_ids]
         no_friend_member_ids = [member_id for member_id in member_ids if member_id not in friend_ids]
-        return friend_member_ids.extend(no_friend_member_ids)
+        friend_member_ids.extend(no_friend_member_ids)
+        return friend_member_ids
 
     @classmethod
     def add(cls, channel_id, user_id):
