@@ -96,7 +96,6 @@ class Channel(models.Model):
         return ChannelMember.objects.all().count()
         return cls.objects.all().aggregate(Sum("member_count"))["member_count__sum"] or 0
 
-    @property
     def title(self, friend_ids=None):
         nicknames = []
         if friend_ids:
