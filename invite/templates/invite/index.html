@@ -4,7 +4,7 @@
 <body class="layout-default">
   <div id="top_area" style="position:absolute;top:10px;display:none;z-index:100;">
     <div style="position:absolute;margin-top:25px;margin-left:80px">{{user.nickname|truncatechars:6}}邀请你加入Party</div>
-    <a href="http://api1.gouhuoapp.com:9001/invite/download/">
+    <a href="https://gouhuoapp.com/invite/download/?channel_id={{channel.channel_id}}&channel_type={{channel.channel_type}}">
       <img src="/static/top_bar.png" />
     </a>
   </div>
@@ -31,7 +31,9 @@
       </div>
     </div>
     <div style="position:absolute;bottom:-10px;">
-      <img src="/static/bottom_bar.png" />
+      <a href="https://gouhuoapp.com/invite/download/?channel_id={{channel.channel_id}}&channel_type={{channel.channel_type}}">
+        <img src="/static/bottom_bar.png" />
+      </a>
     </div>
   </div>
   <video
@@ -55,7 +57,7 @@ function play() {
   document.getElementById('area').style.display = "none";
   document.getElementById('top_area').style.display = "block";
 }
-setTimeout("location.href='/invite/{{user.id}}/pa/'", 10000);
+setTimeout("location.href='/invite/{{user.id}}/pa/?channel_id={{channel.channel_id}}&channel_type={{channel.channel_type}}'", 10000);
 </script>
 </body>
 {% endblock %}

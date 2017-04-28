@@ -16,14 +16,18 @@ def wechat(request, user_id):
         if is_lock:
             return redirect('invite_pa', user_id=user_id)
 
-        return render(request, 'invite/index.html', {'user': user, 'channel_id': channel_id})
+        return render(request, 'invite/index.html', {'user': user, 'channel': channel})
     else:
         return redirect('invite_pa', user_id=user_id)
 
 
 def pa(request, user_id):
     user = User.get(id=user_id)
-    return render(request, 'invite/index1.html', {'user': user})
+    channelmember = ChannelMember.objects.filter(user_id=user_id).first()
+    channel = None
+    if channelmember:
+        channel = Channel.get_channel(channelmember.channel_id)
+    return render(request, 'invite/index1.html', {'user': user, 'channel': channel})
 
 
 def download(request):
@@ -36,3 +40,7 @@ def file_download(request):
     response = HttpResponse(c)
     response['Content-Type'] = 'application/json'
     return response
+
+
+def home(request):
+    return render(request, 'invite/house_index.html')
