@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from django.shortcuts import render
 from django.http import HttpResponseBadRequest, HttpResponseServerError, \
-        HttpResponseNotFound
+        HttpResponseNotFound, HttpResponse
 
+from decimal import Decimal
 from corelib.http import JsonResponse
 from corelib.utils import random_str
 from corelib.wechat import OAuth
@@ -73,8 +74,9 @@ def wechat_recharge(request):
 
 def wechat_recharge_callback(request):
     wechat = WechatSDK()
-    wechat.transfer_callback(request_body=request.body,
-                             func=WalletRecharge.recharge_callback)
+    xml = wechat.transfer_callback(request_body=request.body,
+                                   func=WalletRecharge.recharge_callback)
+    return HttpResponse(xml)
 
 
 def client_recharge_callback(request):
@@ -125,7 +127,7 @@ def wallet_record(request):
         user = User.get(record.owner_id)
         basic_info = user.basic_info()
         basic_info["record_msg"] = "%s - %s" % (user.nickname, record.type)
-        basic_info["amount"] = record.amount
+        basic_info["amount"] = Decimal(record.amount) // 100
         basic_info["type"] = record.type
         basic_info["category"] = record.category
 

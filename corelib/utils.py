@@ -13,7 +13,7 @@ def random_str(num=10):
 def dict_to_xml(arr):
     """ dict转xml """
     xml = ["<xml>"]
-    for k, v in arr.iteritems():
+    for k, v in arr.items():
         if v.isdigit():
             xml.append("<{0}>{1}</{0}>".format(k, v))
         else:
