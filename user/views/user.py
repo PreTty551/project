@@ -21,12 +21,14 @@ from corelib.paginator import paginator
 from corelib.rongcloud import RongCloud
 from corelib.jiguang import JPush
 from corelib.redis import redis
+from corelib.kingsoft.ks3 import KS3
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
 from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
 from socket_server import SocketServer
 from live.models import Channel, ChannelMember, InviteParty
+from wallet.models import is_disable_wallet
 
 
 @require_http_methods(["POST"])
@@ -34,6 +36,9 @@ def request_sms_code(request):
     mobile = request.POST.get("mobile", "")
     if not mobile:
         return HttpResponseBadRequest()
+
+    if mobile == APPSTORE_MOBILE:
+        return JsonResponse()
 
     try:
         jsms = JSMS(mobile=mobile)
@@ -49,6 +54,9 @@ def request_voice_code(request):
     mobile = request.POST.get("mobile", "")
     if not mobile:
         return HttpResponseBadRequest()
+
+    if mobile == APPSTORE_MOBILE:
+        return JsonResponse()
 
     try:
         jsms = JSMS(mobile=mobile)
@@ -77,7 +85,14 @@ def verify_sms_code(request):
         user = User.objects.filter(mobile=mobile).first()
         user = authenticate(username=user.username, password=user.username)
         login(request, user)
-        return JsonResponse(user.normal_info())
+
+        basic_info = user.basic_info()
+        basic_info["is_bind_wechat"] = user.is_bind_wechat
+        basic_info["is_bind_weibo"] = user.is_bind_weibo
+        basic_info["is_disable_wallet"] = is_disable_wallet(request.user)
+        basic_info["is_new_user"] = False
+
+        return JsonResponse(basic_info)
 
     try:
         if is_universal_code:
@@ -98,6 +113,9 @@ def verify_sms_code(request):
                     return JsonResponse(error=LoginError.DISABLE_LOGIN)
 
                 basic_info = user.basic_info()
+                basic_info["is_bind_wechat"] = user.is_bind_wechat
+                basic_info["is_bind_weibo"] = user.is_bind_weibo
+                basic_info["is_disable_wallet"] = is_disable_wallet(request.user)
                 basic_info["is_new_user"] = False
                 return JsonResponse(basic_info)
         return JsonResponse({"is_new_user": True})
@@ -140,12 +158,17 @@ def wx_user_login(request):
     third_user = ThirdUser.objects.filter(third_id=user_info["openid"]).first()
     if third_user:
         user = User.objects.filter(mobile=third_user.mobile).first()
+        user.set_password(user.username)
+        user.save()
         if user.disable_login:
             return JsonResponse(error=LoginError.DISABLE_LOGIN)
 
         # 登录
         if _login(request, user):
             basic_info = user.basic_info()
+            basic_info["is_bind_wechat"] = user.is_bind_wechat
+            basic_info["is_bind_weibo"] = user.is_bind_weibo
+            basic_info["is_disable_wallet"] = is_disable_wallet(request.user)
             basic_info["is_new_user"] = False
             return JsonResponse(basic_info)
     else:
@@ -179,12 +202,17 @@ def wb_user_login(request):
     third_user = ThirdUser.objects.filter(third_id=third_id).first()
     if third_user:
         user = User.objects.filter(mobile=third_user.mobile).first()
+        user.set_password(user.username)
+        user.save()
         if user.disable_login:
             return JsonResponse(error=LoginError.DISABLE_LOGIN)
 
         # 登录
         if _login(request, user):
             basic_info = user.basic_info()
+            basic_info["is_bind_wechat"] = user.is_bind_wechat
+            basic_info["is_bind_weibo"] = user.is_bind_weibo
+            basic_info["is_disable_wallet"] = is_disable_wallet(request.user)
             basic_info["is_new_user"] = False
             return JsonResponse(basic_info)
     else:
@@ -260,6 +288,7 @@ def third_verify_sms_code(request):
         user.mobile = mobile
         user.platform = platform
         user.version = version
+        user.set_password(user.username)
         user.save()
         ThirdUser.objects.create(mobile=mobile,
                                  third_id=temp_user.third_id,
@@ -282,7 +311,11 @@ def third_verify_sms_code(request):
 
     # 登录
     if _login(request, user):
-        return JsonResponse(user.basic_info())
+        basic_info = user.basic_info()
+        basic_info["is_bind_wechat"] = user.is_bind_wechat
+        basic_info["is_bind_weibo"] = user.is_bind_weibo
+        basic_info["is_disable_wallet"] = is_disable_wallet(request.user)
+        return JsonResponse(basic_info)
     return JsonResponse(error=LoginError.REGISTER_ERROR)
 
 
@@ -307,7 +340,11 @@ def check_login(request):
     user = authenticate(username=request.user.username, password=request.user.username)
     login(request, user)
     user.online()
-    return JsonResponse(request.user.basic_info())
+    basic_info = user.basic_info()
+    basic_info["is_bind_wechat"] = user.is_bind_wechat
+    basic_info["is_bind_weibo"] = user.is_bind_weibo
+    basic_info["is_disable_wallet"] = is_disable_wallet(request.user)
+    return JsonResponse(basic_info)
 
 
 def get_profile(request):
@@ -361,14 +398,14 @@ def get_basic_user_info(request):
 
 def bind_wechat(request):
     code = request.POST.get("code")
-    user_info = OAuth.get_user_info(code=code)
+    user_info = OAuth().get_user_info(code=code)
     if not user_info:
         return JsonResponse(error=LoginError.WX_LOGIN)
 
-    third_id = user_info["open_id"]
+    third_id = user_info["openid"]
     third_name = "wx"
 
-    third_user = ThirdUser.objects.filter(third_id=third_id, third_name=third_name).frist()
+    third_user = ThirdUser.objects.filter(third_id=third_id, third_name=third_name).first()
     if third_user:
         user = User.get(id=request.user.id)
         if third_user.mobile == user.mobile:
@@ -439,14 +476,15 @@ def update_intro(request):
 
 
 def update_avatar(request):
-    avatar = request.POST.get("avatar")
+    photo = request.FILES['photo']
+    avatar = KS3().upload_avatar(img_content=photo.read(), user_id=request.user.id)
     User.objects.filter(id=request.user.id).update(avatar=avatar)
     return JsonResponse()
 
 
 def search(request):
     content = request.POST.get("content")
-    page = request.POST.get("page", 1)
+    page = int(request.POST.get("page", 1))
 
     user_list = list(User.objects.filter(paid=content))
     if not user_list:
@@ -454,9 +492,14 @@ def search(request):
 
     results = {"user_list": [], "paginator": {}}
     user_list, paginator_dict = paginator(user_list, page, 30)
-    user_list = [user.basic_info() for user in user_list]
+    friends = []
+    for user in user_list:
+        basic_info = user.basic_info()
+        basic_info["user_relation"] = user.check_friend_relation(user_id=request.user.id)
+        friends.append(basic_info)
+
     results["paginator"] = paginator_dict
-    results["friends"] = user_list
+    results["friends"] = friends
 
     return JsonResponse(results)
 
@@ -500,7 +543,7 @@ def invite_party(request):
                                                 channel_id=channel_member.channel_id)
             JPush().async_push(user_ids=[receiver_id],
                                message=message,
-                               push_type=8,
+                               push_type=1,
                                channel_id=channel_member.channel_id)
         else:
             InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
@@ -511,6 +554,8 @@ def invite_party(request):
                                message=message)
 
         redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (request.user.id, receiver_id), int(push_lock) + 1, 600)
+    else:
+        return JsonResponse({"error": {"return_code":4000, "return_msg": "知道了知道了, 对方已经收到了"}})
     return JsonResponse()
 
 
@@ -560,4 +605,35 @@ def add_user_location(request):
     lat = request.POST.get("lat", "")
 
     Place.add(lon=float(lon), lat=float(lat), user_id=request.user.id)
+    return JsonResponse()
+
+
+def poke(request):
+    user_id = request.POST.get("user_id")
+
+    push_lock = redis.get("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id)) or 0
+    if push_lock and int(push_lock) <= 20:
+        icon = ""
+        message = u"%s捅了你一下" % request.user.nickname
+        for i in range(push_lock):
+            icon += u"👉"
+        message = u"%s%s" % (icon, message)
+
+        SocketServer().invite_party_in_live(user_id=request.user.id,
+                                            to_user_id=receiver_id,
+                                            message=message,
+                                            channel_id=0)
+
+        redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id), int(push_lock) + 1, 600)
+    else:
+        return JsonResponse({"error": {"return_code": 40000, "return_msg": "知道了知道了, 对方已经收到了"}})
+    return JsonResponse()
+
+
+def rongcloud_push(request):
+    to_user_id = request.POST.get("to_user_id")
+    message = request.POST.get("message", "")
+
+    message = "%s: %s" % (request.user.nickname, message)
+    JPush().async_push(user_ids=[to_user_id], message=message)
     return JsonResponse()

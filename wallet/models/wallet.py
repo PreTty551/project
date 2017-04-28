@@ -190,3 +190,9 @@ def get_related_amount(amount):
 def yuan(amount):
     """金额(元)"""
     return (Decimal(amount) / Decimal("100")).quantize(Decimal('0.00'))
+
+
+def is_disable_wallet(user):
+    if user.id == 45:
+        return True
+    return False

@@ -6,14 +6,40 @@ from django.http import HttpResponseBadRequest, HttpResponseServerError, \
 from corelib.http import JsonResponse
 from corelib.utils import random_str
 from corelib.wechat import OAuth
+from corelib.paginator import paginator
 
-from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount, Withdrawals
+from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount, Withdrawals, WalletRecord
 from wallet.error_handle import WalletError
+from user.models import User
 
 
 def wallet(request):
     wallet = Wallet.get(user_id=request.user.id)
     return JsonResponse(wallet.to_dict())
+
+
+def wallet_record(request):
+    page = request.POST.get("page", 1)
+
+    record_list = WalletRecord.objects.filter(owner_id=request.user.id)
+
+    results = {"record_list": [], "paginator": {}}
+    record_list, paginator_dict = paginator(record_list, page, 30)
+    # user_list = [user.basic_info() for user in record_list]
+    records = []
+    for record in record_list:
+        user = User.get(record.owner_id)
+        basic_info = user.basic_info()
+        basic_info["record_msg"] = "%s - %s" % (user.nickname, record.type)
+        basic_info["amount"] = record.amount
+        basic_info["type"] = record.type
+        basic_info["category"] = record.category
+
+        records.append(basic_info)
+
+    results["paginator"] = paginator_dict
+    results["record_list"] = records
+    return JsonResponse(results)
 
 
 def wechat_recharge(request):
@@ -85,3 +111,32 @@ def apply_withdrawal_to_wechat(request):
                 return JsonResponse(error={"return_code": e.result_code, "return_msg": e.errmsg})
         return JsonResponse(error=WalletError.WITHDRAWAL_FAIL)
     return HttpResponseServerError()
+
+
+def wallet_record(request):
+    page = int(request.POST.get("page", 1))
+
+    record_list = WalletRecord.objects.filter(owner_id=request.user.id)
+
+    results = {"record_list": [], "paginator": {}}
+    record_list, paginator_dict = paginator(record_list, page, 30)
+    records = []
+    for record in record_list:
+        user = User.get(record.owner_id)
+        basic_info = user.basic_info()
+        basic_info["record_msg"] = "%s - %s" % (user.nickname, record.type)
+        basic_info["amount"] = record.amount
+        basic_info["type"] = record.type
+        basic_info["category"] = record.category
+
+        records.append(basic_info)
+
+    results["paginator"] = paginator_dict
+    results["record_list"] = records
+    return JsonResponse(results)
+
+
+def is_disable(request):
+    if request.user.id == 45:
+        return JsonResponse({"disable": True})
+    return JsonResponse({"disable": False})

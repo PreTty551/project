@@ -157,11 +157,11 @@ class User(AbstractUser, PropsMixin):
         return [int(user_id) for user_id in redis.hkeys(REDIS_ONLINE_USERS_KEY)]
 
     def binding_wechat(self, third_id):
-        ThirdUser.objects.create(mobile=user.mobile, third_id=third_id, third_name="wx")
+        ThirdUser.objects.create(mobile=self.mobile, third_id=third_id, third_name="wx")
         return True
 
     def binding_weibo(self, third_id):
-        ThirdUser.objects.create(mobile=user.mobile, third_id=third_id, third_name="wb")
+        ThirdUser.objects.create(mobile=self.mobile, third_id=third_id, third_name="wb")
         return True
 
     def unbinding_wechat(self):

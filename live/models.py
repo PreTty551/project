@@ -330,7 +330,7 @@ def add_channel_after(sender, created, instance, **kwargs):
             bulk_user_ids = set(party_user_ids_in_week) ^ set(friend_ids)
 
             message = "%s 正在开PA" % user.nickname
-            JPush().async_push(user_ids=bulk_user_ids, message=message)
+            JPush().async_push(user_ids=bulk_user_ids, message=message, push_type=1)
             SocketServer().invite_party_in_live(user_id=user.id,
                                                 to_user_id=bulk_user_ids,
                                                 message=message,
@@ -346,7 +346,7 @@ def add_channel_after(sender, created, instance, **kwargs):
 
                     nicknames = ",".join(nicknames)
                     message = "%s 正在开PA" % nicknames
-                    JPush().async_push(user_ids=[friend_id], message=message)
+                    JPush().async_push(user_ids=[friend_id], message=message, push_type=1)
                     SocketServer().invite_party_in_live(user_id=user.id,
                                                         to_user_id=friend_id,
                                                         message=message,

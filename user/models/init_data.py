@@ -9,6 +9,7 @@ from django.db import connection, connections
 from .user import User, TempThirdUser, ThirdUser
 from .friend import InviteFriend, Friend
 from .contact import UserContact
+from wallet.models import Wallet
 
 
 def init_data(user_id=None):
@@ -64,11 +65,13 @@ def import_user():
             user.is_active = row[9]
             user.date_joined = row[10]
             mobile = row[11]
+            if mobile == "undefined":
+                mobile = row[0]
             user.mobile = mobile if mobile else row[0]
             nickname = row[12]
-            user.nickname = nickname[:30]
+            user.nickname = nickname[:50]
             avatar = row[13]
-            user.avatar = avatar[:20] if len(avatar) > 19 else avatar
+            user.avatar = avatar[:40]
             user.gender = row[14]
             user.intro = row[16] or ""
             user.country = ""
@@ -77,10 +80,10 @@ def import_user():
             user.platform = 0
             user.version = ""
             user.paid = row[0]
-            user.set_password(user.username)
+            # user.set_password(user.username)
 
             pinyin = Pinyin().get_pinyin(user.nickname, "")
-            user.pinyin = pinyin[:30]
+            user.pinyin = pinyin[:50]
             user.save()
 
 
@@ -140,14 +143,32 @@ def import_friend():
 
         for fans_id in fans_ids:
             Friend.objects.create(user_id=user_id, friend_id=fans_id)
+            InviteFriend.objects.filter(user_id=user_id, invited_id=fans_id).delete()
+            InviteFriend.objects.filter(invited_id=fans_id, user_id=user_id).delete()
 
         invited_ids = set(follow_ids) ^ set(fans_ids)
         for invited_id in invited_ids:
             InviteFriend.objects.create(user_id=user_id, invited_id=invited_id, status=10)
 
 
+def import_account():
+    cursor = connections['gouhuo'].cursor()
+    cursor.execute("SELECT user_id, amount FROM user_account")
+    for row in cursor.fetchall():
+        Wallet.objects.create(user_id=row[0], amount=row[1])
+
+
+def import_account():
+    cursor = connections['gouhuo'].cursor()
+    cursor.execute("SELECT user_id, amount FROM user_account")
+    for row in cursor.fetchall():
+        Wallet.objects.create(user_id=row[0], amount=row[1])
+
+
 def run():
-    #init_gift()
+    init_gift()
     import_user()
     import_thirduser()
     import_friend()
+    import_account()
+    # 礼物数

@@ -51,6 +51,9 @@ def refresh_list(request):
         if friend_id in invite_party_ids:
             continue
 
+        if friend_id == request.user.id:
+            continue
+
         user = User.get(id=friend_id)
         if user:
             basic_info = user.basic_info()
@@ -93,6 +96,9 @@ def refresh_home_list(request):
         if friend_id in invite_party_ids:
             continue
 
+        if friend_id == request.user.id:
+            continue
+
         user = User.get(id=friend_id)
         if user:
             basic_info = user.basic_info()
@@ -121,8 +127,6 @@ def home_list(request):
         channel = Channel.get_channel(channel_id)
         if not channel:
             continue
-        if channel.channel_type == ChannelType.private.value:
-            continue
         channels.append(channel.to_dict(friend_ids=friend_ids))
 
     # 红点, 排序
@@ -139,6 +143,9 @@ def home_list(request):
 
     for friend_id in friend_ids:
         if friend_id in invite_party_ids:
+            continue
+
+        if friend_id == request.user.id:
             continue
 
         user = User.get(id=friend_id)
@@ -189,6 +196,9 @@ def livemedia_list(request):
 
     for friend_id in friend_ids:
         if friend_id in invite_party_ids:
+            continue
+
+        if friend_id == request.user.id:
             continue
 
         user = User.get(id=friend_id)
@@ -249,6 +259,9 @@ def near_channel_list(request):
 
     for friend_id in friend_ids:
         if friend_id in invite_party_ids:
+            continue
+
+        if friend_id == request.user.id:
             continue
 
         user = User.get(id=friend_id)
@@ -482,10 +495,10 @@ def poke(request):
     user_id = request.POST.get("user_id")
 
     push_lock = redis.get("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id)) or 0
-    if push_lock and int(push_lock) <= 20:
+    if int(push_lock) <= 20:
         icon = ""
         message = u"%s捅了你一下" % request.user.nickname
-        for i in range(push_lock):
+        for i in list(range(int(push_lock))):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
 

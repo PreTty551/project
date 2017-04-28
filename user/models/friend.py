@@ -15,6 +15,13 @@ from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH
 from live.consts import MC_PAING
 
 
+class ChannelAddFriendLog(models.Model):
+    user_id = models.IntegerField()
+    friend_id = models.IntegerField()
+    channel_type = modles.SmallIntegerField()
+    date = models.DateTimeField(auto_now_add=True)
+
+
 class InviteFriend(models.Model):
     user_id = models.IntegerField()
     invited_id = models.IntegerField()
@@ -95,6 +102,8 @@ class Friend(models.Model):
     def add(cls, user_id, friend_id):
         Friend.objects.create(user_id=user_id, friend_id=friend_id)
         Friend.objects.create(user_id=friend_id, friend_id=user_id)
+        InviteFriend.objects.filter(user_id=user_id, invited_id=friend_id).delete()
+        InviteFriend.objects.filter(user_id=friend_id, invited_id=user_id).delete()
         return True
 
     @classmethod

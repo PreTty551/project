@@ -21,3 +21,9 @@ class KS3(object):
         filename = "%s_%s.jpg" % (user_id, int(time.time() * 1000))
         self.fetch(url=url, filename=filename)
         return filename
+
+    def upload_avatar(self, user_id, img_content, headers={"Content-Type": "image/jpeg"}):
+        filename = "%s_%s.jpg" % (user_id, int(time.time() * 1000))
+        obj = self.bucket.new_key(filename)
+        obj.set_contents_from_string(img_content, headers=headers, policy="public-read")
+        return filename

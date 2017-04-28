@@ -28,8 +28,9 @@ class UserContact(models.Model):
         contact_list = cls.clean_contact(contact_list=contact_list)
         results = []
         for contact in contact_list:
+            name = contact["name"]
             _ = cls(user_id=user_id,
-                    name=contact["name"],
+                    name=name[:20],
                     mobile=contact["mobile"])
             results.append(_)
 

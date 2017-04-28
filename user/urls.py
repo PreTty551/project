@@ -53,4 +53,7 @@ urlpatterns = [
     url(r'^user/location/add/$', views.add_user_location, name='add_user_location'),
     url(r'^user/ignore/$', views.ignore, name='ignore'),
     url(r'^user/feedback/$', views.add_feedback, name='feedback'),
+    url(r'^user/poke/$', views.poke, name='poke'),
+
+    url(r'^rongcloud/push/$', views.rongcloud_push, name='rongcloud_push'),
 ]
