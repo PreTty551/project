@@ -206,12 +206,13 @@ class User(AbstractUser, PropsMixin):
 
     @property
     def avatar_url(self):
-        # if self.id < 160000:
-        #     if self.avatar:
-        #         return "http://img2.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % self.avatar
-
-        if self.avatar:
+        if ".jpg" in self.avatar:
             return "%s/%s@base@tag=imgScale&w=150&h=150" % (settings.AVATAR_BASE_URL, self.avatar)
+
+        if self.id < 160000:
+            if self.avatar:
+                return "http://img.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % self.avatar
+
         return ""
 
     @property
