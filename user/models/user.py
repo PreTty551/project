@@ -174,11 +174,11 @@ class User(AbstractUser, PropsMixin):
 
     @property
     def is_bind_wechat(self):
-        return redis.get_props_item("bind_wechat") or 0
+        return self.get_props_item("bind_wechat") or 0
 
     @property
     def is_bing_weibo(self):
-        return redis.get_props_item("bind_weibo") or 0
+        return self.get_props_item("bind_weibo") or 0
 
     @property
     def localtime(self):

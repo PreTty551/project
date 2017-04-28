@@ -18,7 +18,7 @@ from live.consts import MC_PAING
 class ChannelAddFriendLog(models.Model):
     user_id = models.IntegerField()
     friend_id = models.IntegerField()
-    channel_type = modles.SmallIntegerField()
+    channel_type = models.SmallIntegerField()
     date = models.DateTimeField(auto_now_add=True)
 
 
