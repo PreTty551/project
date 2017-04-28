@@ -1,0 +1,470 @@
+::selection {
+  background: white;
+  color: #FF004D;
+  text-shadow: none; }
+
+a:link {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.2); }
+
+body {
+  font-size: 20px;
+  background-color: #F7F7F7;
+  font-family: system, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Lucida Grande", "Roboto", "Arial", sans-serif;
+  color: white;
+  -webkit-font-smoothing: antialiased; }
+
+#wrapper, footer {
+  z-index: 1;
+  position: relative; }
+
+#wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column; }
+
+header {
+  padding: 2.2em 2.5em; }
+  header #logo-conteiner {
+    transition: .2s;
+    cursor: pointer; }
+  header #logo-conteiner:hover {
+    transform: scale(1.04); }
+  header #logo-conteiner:active {
+    transform: scale(0.9); }
+  header #logo-conteiner, header #buttons, header .button {
+    display: inline-block;
+    vertical-align: middle;
+    -webkit-user-select: none; }
+  header #logo-conteiner svg {
+    height: 2em; }
+  header #buttons {
+    float: right; }
+  header .button {
+    padding: .4em 1em;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: .4em;
+    color: white;
+    text-decoration: none;
+    margin-bottom: .5em;
+    transition: .3s; }
+    header .button .button-logo {
+      width: 1.3em;
+      fill: white; }
+    header .button .button-logo, header .button .button-label {
+      display: inline-block; }
+    header .button .button-small-label, header .button .button-big-label {
+      display: block; }
+    header .button .button-label {
+      padding-left: .4em;
+      text-align: left; }
+      header .button .button-label .button-small-label {
+        font-size: .6em;
+        font-weight: 400; }
+      header .button .button-label .button-big-label {
+        font-size: 1em;
+        font-weight: 700; }
+  header .button:hover {
+    background-color: rgba(0, 0, 0, 0.4); }
+
+#phone-container {
+  display: flex;
+  align-items: center;
+  flex-grow: 1; }
+
+#phone {
+  margin: 1em auto 4em auto;
+  background-color: white;
+  display: table;
+  border: 0.25em solid #D6D6D6;
+  border-radius: 2.5em;
+  -webkit-user-select: none;
+  transition: 0.5s cubic-bezier(0, 1.5, 0.8, 1); }
+  #phone #speaker {
+    width: 2.5em;
+    height: .3em;
+    border-radius: .15em;
+    background-color: #D6D6D6;
+    position: absolute;
+    margin: 2em 9.6em 0;
+    transition: width 0.5s cubic-bezier(0, 1.5, 0.8, 1), height 0.5s cubic-bezier(0, 1.5, 0.8, 1), border-radius 0.5s cubic-bezier(0, 1.5, 0.8, 1), margin 0.5s cubic-bezier(0, 1.5, 0.8, 1), background-color 0.25s linear; }
+  #phone #button {
+    width: 3em;
+    height: 3em;
+    border-radius: 1.5em;
+    border-width: .25em;
+    border-style: solid;
+    border-color: #D6D6D6;
+    position: absolute;
+    margin: -3.6em 9.3em 0;
+    transition: width 0.5s cubic-bezier(0, 1.5, 0.8, 1), height 0.5s cubic-bezier(0, 1.5, 0.8, 1), margin 0.5s cubic-bezier(0, 1.5, 0.8, 1), border-color 0.2s linear; }
+  #phone video {
+    width: 20em;
+    height: 35.5em;
+    border: .15em solid black;
+    border-radius: .2em;
+    margin: 4.1em .75em;
+    background-color: black; }
+  #phone video::-webkit-media-controls {
+    display: none; }
+
+#gif-video {
+  width: 100%;
+  opacity: .2;
+  position: fixed;
+  z-index: 0;
+  display: none; }
+
+footer {
+  background-color: white;
+  text-align: center;
+  padding: 2.25em 1em 3em; }
+  footer #social-links {
+    padding-bottom: 0.25em; }
+    footer #social-links li {
+      display: inline-block; }
+      footer #social-links li svg {
+        height: 1em;
+        fill: #808080;
+        margin: 0.75em 1.5em;
+        cursor: pointer; }
+      footer #social-links li #twitter-link:hover {
+        fill: #55ACEE; }
+      footer #social-links li #instagram-link:hover {
+        fill: #2E5E86; }
+      footer #social-links li #facebook-link:hover {
+        fill: #4C66A4; }
+      footer #social-links li #medium-link:hover {
+        fill: #00AB6C; }
+      footer #social-links li #contact-link:hover {
+        fill: #FF004D; }
+  footer span {
+    font-size: .6em;
+    font-weight: 700;
+    color: #D6D6D6; }
+    footer span a {
+      color: #D6D6D6; }
+  footer #jobs-banner {
+    position: relative;
+    padding: .5em 2em;
+    display: inline-block;
+    font-size: .6em;
+    font-weight: 700;
+    color: white;
+    background: #FF004D;
+    text-decoration: none;
+    margin: 0 auto 3em;
+    border-radius: 10em;
+    box-shadow: 0 0 0 transparent;
+    transition: .4s; }
+  footer #jobs-banner:hover {
+    box-shadow: 0 0.2em 0.5em rgba(0, 0, 0, 0.3);
+    transform: scale(1.05) translateZ(0); }
+  footer #contact-list-container {
+    position: relative; }
+  footer #contact-list {
+    position: absolute;
+    left: -3.6em;
+    bottom: 1.5em;
+    text-align: left;
+    padding: 1em;
+    background-color: white;
+    border-radius: .4em;
+    box-shadow: 0em 0.2em 0.5em rgba(0, 0, 0, 0.2);
+    font-size: .9em;
+    min-width: 12.5em;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(2em);
+    z-index: 2;
+    transition: 0.4s cubic-bezier(0, 1.5, 0.8, 1); }
+    footer #contact-list li {
+      display: list-item; }
+    footer #contact-list a {
+      display: list-item;
+      color: #FF004D;
+      text-decoration: none;
+      font-weight: 800;
+      padding: .5em 1em;
+      border-radius: .2em;
+      transition: .3s; }
+    footer #contact-list a:hover {
+      background-color: #eaeaea; }
+    footer #contact-list a:active {
+      background-color: #c4c4c4; }
+  footer #contact-list-closer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    display: none;
+    cursor: pointer; }
+
+@keyframes speaker {
+  from {
+    width: 3em;
+    height: 3em;
+    border: 0.25em solid #D6D6D6;
+    margin: -3.6em 9.3em 0; }
+  to {
+    width: 7em;
+    height: 0em;
+    border: .25em solid #424242;
+    margin: -2.5em 7.35em 0; } }
+.confetti {
+  position: absolute;
+  top: -20px; }
+
+@keyframes confetti {
+  to {
+    top: 100%;
+    transform: rotate(360deg); } }
+@keyframes confetti2 {
+  to {
+    top: 100%;
+    transform: rotate(-360deg); } }
+#article-wrapper {
+  background-color: white;
+  padding: 2em 1em 6em;
+  color: #808080;
+  border-bottom: 1px solid #D6D6D6; }
+  #article-wrapper article {
+    max-width: 36em;
+    margin: 0 auto;
+    line-height: 1.4em; }
+    #article-wrapper article h1, #article-wrapper article h2, #article-wrapper article h3, #article-wrapper article h4 {
+      padding: 1em 0 .5em;
+      color: rgba(0, 0, 0, 0.6); }
+    #article-wrapper article h1 {
+      font-size: 2em;
+      font-weight: 800;
+      color: rgba(0, 0, 0, 0.8);
+      line-height: 1em; }
+    #article-wrapper article h2 {
+      font-size: 1.3em;
+      font-weight: 700; }
+    #article-wrapper article h3 {
+      font-size: 1em;
+      font-weight: 700; }
+    #article-wrapper article h4 {
+      font-size: .7em;
+      font-weight: 700;
+      text-transform: uppercase; }
+    #article-wrapper article p a {
+      color: #FF004D;
+      text-decoration: none;
+      transition: .2s;
+      word-break: break-all; }
+    #article-wrapper article p a:hover {
+      color: white;
+      background-color: #FF004D; }
+    #article-wrapper article p, #article-wrapper article ul {
+      padding-bottom: 1em; }
+    #article-wrapper article ul {
+      list-style: disc; }
+    #article-wrapper article ol ul {
+      padding-left: 1.5em; }
+  #article-wrapper #job ul {
+    background-color: #F7F7F7;
+    border-radius: .2em;
+    list-style-position: outside;
+    padding: 1em 2em; }
+    #article-wrapper #job ul li {
+      padding: 0 0 .3em; }
+
+#audio-button-container {
+  position: relative; }
+
+#audio-button {
+  height: 3.9em;
+  width: 3em;
+  position: absolute;
+  left: -3.2em;
+  top: 5em;
+  border-radius: .15em 0 0 .15em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 40%;
+  transition: .2s; }
+  #audio-button #audio-switch {
+    height: 2.6em;
+    width: .2em;
+    border-radius: .15em 0 0 .15em;
+    background-color: #D6D6D6;
+    transition: .2s; }
+  #audio-button #icon-container {
+    width: 1.15em;
+    height: .95em;
+    margin-left: .8em; }
+  #audio-button svg {
+    position: absolute;
+    width: 1.15em;
+    transition: .2s; }
+  #audio-button #unmuted-icon {
+    opacity: 0; }
+
+#audio-button:hover {
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.02); }
+
+#link-bar {
+  text-align: center;
+  border-top: 2px solid white;
+  padding: .5em 0; }
+  #link-bar ul {
+    margin: .5em 0;
+    text-align: center; }
+    #link-bar ul li {
+      display: inline-block; }
+      #link-bar ul li a {
+        padding: 0.5em 1em;
+        margin: 0.25em 0.5em;
+        background: white;
+        border-radius: .3em;
+        border: 2px solid rgba(0, 0, 0, 0.03);
+        text-decoration: none;
+        color: #808080;
+        font-weight: 700;
+        transition: .2s;
+        display: inline-block; }
+  #link-bar ul li a:hover {
+    background: #808080;
+    border: 2px solid transparent;
+    color: white; }
+
+article #lever {
+  border-top: 2px solid white;
+  padding: .5em 0;
+  /*
+  	h3:first-child {
+  		background-color: #FF9E2A;
+  	}
+  	
+  	h3:nth-of-type(2n) {
+  		background-color: #A900B5;
+  	}
+  	
+  	h3:nth-of-type(3n) {
+  		background-color: #765CFF;
+  	}
+  	
+  	h3:nth-of-type(4n) {
+  		background-color: #EC2B89;
+  	}
+  	
+  	h3:nth-of-type(5n) {
+  		background-color: #FF5C5C;
+  	}
+  */ }
+  article #lever #loading-indicator {
+    width: 2em;
+    fill: #D6D6D6;
+    margin: 6em auto 4em;
+    display: block;
+    animation: spinning 1s infinite ease-in-out; }
+  article #lever h3 {
+    font-size: 1em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    color: white;
+    padding: 0.25em 0.5em;
+    background-color: #FF004D; }
+  article #lever ul {
+    margin-bottom: 2em; }
+    article #lever ul li {
+      display: block; }
+      article #lever ul li a {
+        font-size: 1.5em;
+        font-weight: 500;
+        display: block;
+        padding: 1em 0;
+        transition: .2s;
+        border-bottom: 2px solid #f7f7f7;
+        text-decoration: none;
+        color: #666666;
+        transition: .2s; }
+  article #lever ul li a:hover {
+    padding: 1em 0.25em;
+    background: #f7f7f7; }
+  article #lever ul li:last-child a {
+    border-bottom: none; }
+
+article #jobs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 1em 0; }
+  article #jobs-header h1 {
+    padding: 0; }
+
+#location-info {
+  display: flex;
+  align-items: center; }
+  #location-info span {
+    font-weight: 500;
+    color: #3276FF;
+    margin-left: 0.3em; }
+
+@keyframes spinning {
+  to {
+    transform: rotate(360deg); } }
+/* Media queries
+-------------------------------------------------------------------------------*/
+@media screen and (max-width: 765px) {
+  header {
+    text-align: center; }
+    header #buttons {
+      display: block;
+      float: none;
+      margin-top: 2em; }
+
+  article #lever, article #jobs-header {
+    font-size: 16px; } }
+@media screen and (max-width: 520px) {
+  footer #contact-list {
+    left: -8em; } }
+@media screen and (max-width: 414px) {
+  #audio-button-container {
+    display: none; }
+
+  #app-store-button {
+    padding: .4em 1.4em; }
+
+  header {
+    padding: 4em 1.5em; }
+
+  header h1 {
+    display: block;
+    vertical-align: baseline; }
+
+  header #houseparty-logo {
+    margin-bottom: .5em;
+    height: 2.75em;
+    width: 2.35em; }
+
+  #phone-container {
+    justify-content: center; }
+
+  #phone {
+    border: none !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    margin: 0 0 0 0 !important; }
+    #phone #speaker {
+      display: none; }
+    #phone #button {
+      display: none; }
+    #phone video {
+      width: 100%;
+      height: inherit;
+      margin: 0 0 1em;
+      border: none;
+      background-color: transparent;
+      border-radius: 0; } }
+@media screen and (max-width: 375px) {
+  footer #contact-list {
+    left: -3.6em; } }
