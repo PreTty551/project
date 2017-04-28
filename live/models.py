@@ -15,7 +15,7 @@ from corelib.redis import redis
 from corelib.jiguang import JPush
 
 from user.models import User, Friend
-from .consts import ChannelType, MC_INVITE_PARTY
+from .consts import ChannelType, MC_INVITE_PARTY, MC_PAING
 from socket_server import SocketServer, EventType
 
 
@@ -96,13 +96,13 @@ class Channel(models.Model):
         return ChannelMember.objects.all().count()
         return cls.objects.all().aggregate(Sum("member_count"))["member_count__sum"] or 0
 
-    @property
-    def title(self):
-        if self.name:
-            return self.name
-
+    def title(self, friend_ids=None):
         nicknames = []
-        user_ids = self.get_channel_member()
+        if friend_ids:
+            user_ids = ChannelMember.get_members_order_by_friend(channel_id=self.channel_id, friend_ids=friend_ids)
+        else:
+            user_ids = self.get_channel_member()
+
         for user_id in user_ids:
             user = User.get(user_id)
             if not user:
@@ -126,9 +126,9 @@ class Channel(models.Model):
                 return user.avatar_url
         return ""
 
-    def to_dict(self):
+    def to_dict(self, friend_ids=None):
         return {
-            "title": self.title,
+            "title": self.title(friend_ids=friend_ids),
             "channel_id": self.channel_id,
             "duration_time": self.duration_time,
             "icon": self.icon,
@@ -168,6 +168,14 @@ class ChannelMember(models.Model):
     @classmethod
     def get_channel_member(cls, channel_id):
         return cls.objects.filter(channel_id=channel_id).values_list("user_id", flat=True)
+
+    @classmethod
+    def get_members_order_by_friend(cls, channel_id, friend_ids):
+        member_ids = list(cls.objects.filter(channel_id=channel_id).values_list("user_id", flat=True))
+        friend_member_ids = [member_id for member_id in member_ids if member_id in friend_ids]
+        no_friend_member_ids = [member_id for member_id in member_ids if member_id not in friend_ids]
+        friend_member_ids.extend(no_friend_member_ids)
+        return friend_member_ids
 
     @classmethod
     def add(cls, channel_id, user_id):
@@ -277,6 +285,10 @@ def add_member_after(sender, created, instance, **kwargs):
         InviteParty.objects.filter(to_user_id=instance.user_id, status=0).update(status=1)
         redis.delete(MC_INVITE_PARTY % instance.user_id)
 
+        user = User.get(instance.user_id)
+        user.last_pa_time = time.time()
+        redis.set(MC_PAING % user.id, 1)
+
         refresh(instance.user_id)
 
 
@@ -294,13 +306,17 @@ def delete_member_after(sender, instance, **kwargs):
         if member_count == 0:
             Channel.objects.filter(channel_id=instance.channel_id).delete()
 
+        user = User.get(instance.user_id)
+        user.last_pa_time = time.time()
+        redis.delete(MC_PAING % user.id)
+
         refresh(instance.user_id)
 
 
 @receiver(post_save, sender=Channel)
 def add_channel_after(sender, created, instance, **kwargs):
     if created:
-        push_lock = redis.get("mc:user:%s:pa_push_lock" % request.user.id)
+        push_lock = redis.get("mc:user:%s:pa_push_lock" % instance.creator_id)
         if not push_lock:
             bulk_ids = []
             ids = []
@@ -325,6 +341,9 @@ def add_channel_after(sender, created, instance, **kwargs):
                     fids = Friend.get_friend_ids(user_id=friend_id)
                     party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
                     nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
+                    if not nicknames:
+                        continue
+
                     nicknames = ",".join(nicknames)
                     message = "%s 正在开PA" % nicknames
                     JPush().async_push(user_ids=[friend_id], message=message)
@@ -334,4 +353,4 @@ def add_channel_after(sender, created, instance, **kwargs):
                                                         channel_id=instance.channel_id)
                     i += 1
 
-            redis.get("mc:user:%s:pa_push_lock" % request.user.id, 1, 60)
+            redis.get("mc:user:%s:pa_push_lock" % instance.creator_id)

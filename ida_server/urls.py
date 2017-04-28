@@ -13,10 +13,12 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.conf.urls import url, include
 from django.contrib import admin
 
 from h5 import views
+from invite.views import file_download
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -26,6 +28,7 @@ urlpatterns = [
     url(r'', include('wallet.urls')),
     url(r'^invite/', include('invite.urls')),
     url(r'^h5/$', views.main),
-
-
+    url(r'^apple-app-site-association$', file_download),
 ]
+
+urlpatterns += staticfiles_urlpatterns()

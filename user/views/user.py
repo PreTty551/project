@@ -485,12 +485,12 @@ def ignore(request):
 def invite_party(request):
     receiver_id = request.POST.get("user_id")
     push_lock = redis.get("mc:user:%s:to_user_id:%s:pa_push_lock" % (request.user.id, receiver_id)) or 0
-    if push_lock and int(push_lock) <= 20:
+    if int(push_lock) <= 20:
         icon = ""
-        message = u"%s邀请你来开PA" % request.user.nickname
-        for i in range(push_lock):
-            icon += u"👉"
-        message = u"%s%s" % (icon, message)
+        message = "%s邀请你来开PA" % request.user.nickname
+        for i in list(range(int(push_lock))):
+            icon += "👉"
+        message = "%s%s" % (icon, message)
 
         channel_member = ChannelMember.objects.filter(user_id=request.user.id).first()
         if channel_member:
@@ -501,7 +501,7 @@ def invite_party(request):
             JPush().async_push(user_ids=[receiver_id],
                                message=message,
                                push_type=8,
-                               channel_id=member.channel_id)
+                               channel_id=channel_member.channel_id)
         else:
             InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
             SocketServer().invite_party_out_live(user_id=request.user.id,

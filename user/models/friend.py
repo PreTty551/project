@@ -4,6 +4,7 @@ import time
 from django.db import models, transaction, IntegrityError
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from corelib.utils import natural_time as time_format
 from corelib.redis import redis
@@ -11,6 +12,7 @@ from corelib.mc import hlcache
 
 from user.models import User
 from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY
+from live.consts import MC_PAING
 
 
 class InviteFriend(models.Model):
@@ -41,7 +43,7 @@ class InviteFriend(models.Model):
 
     @classmethod
     def count(cls, user_id):
-        return cls.objects.filter(invited_id=user_id).count()
+        return cls.objects.filter(invited_id=user_id, status=0).count()
 
     @classmethod
     def is_invite_user(cls, user_id, friend_id):
@@ -55,11 +57,6 @@ class InviteFriend(models.Model):
     def get_invited_my_ids(cls, owner_id):
         return list(cls.objects.filter(invited_id=owner_id,
                                        status=0).values_list("user_id", flat=True))
-
-    @classmethod
-    def get_my_invited_ids(cls, owner_id):
-        return list(cls.objects.filter(user_id=owner_id,
-                                       status=0).values_list("invited_id", flat=True))
 
     @classmethod
     def get_my_invited_ids(cls, owner_id):
@@ -194,6 +191,29 @@ class Friend(models.Model):
             "nickname": user.nickname,
             "status": self.status,
         }
+
+
+def friend_dynamic(user_id):
+    user = User.get(user_id)
+    last_pa_time = user.last_pa_time
+    if not last_pa_time:
+        return
+
+    import datetime
+    try:
+        dt = datetime.datetime.fromtimestamp(float(last_pa_time))
+    except:
+        return ""
+
+    d = time_format(timezone.localtime(dt))
+    if redis.get(MC_PAING % user_id):
+        return "正在开PA"
+    elif (datetime.datetime.now() - dt).seconds < 600:
+        return "刚刚离开房间"
+    elif (datetime.datetime.now() - dt).days < 4:
+        return "%s开过PA" % d
+    elif (datetime.datetime.now() - dt).days < 30:
+        return "%s见过TA" % d
 
 
 def common_friend(user_id, to_user_id):
