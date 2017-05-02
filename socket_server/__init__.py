@@ -24,6 +24,7 @@ class EventType(Enum):
     refresh_public = 2
     refresh_private = 3
     refresh_friend = 4
+    channel_lock = 5
 
 
 class SocketServer(object):
@@ -69,6 +70,12 @@ class SocketServer(object):
                                              to_user_id=to_user_id,
                                              content=json.dumps(data))
 
+    def valid(self, user_id, to_user_id):
+        user = User.get(user_id)
+        role = user.push_role(friend_id=to_user_id)
+        if role:
+            return True
+
     def invite_friend(self, user_id, to_user_id, message, **kwargs):
         return self._send_message(user_id=user_id,
                                   to_user_id=to_user_id,
@@ -86,6 +93,8 @@ class SocketServer(object):
                                   icon_url="%s/pa/friend.png" % settings.AVATAR_BASE_URL)
 
     def invite_party_in_live(self, user_id, to_user_id, message, channel_id):
+        if not self.valid():
+            return
         return self._send_message(user_id=user_id,
                                   to_user_id=to_user_id,
                                   box_type=PopBoxType.message.value,
@@ -95,6 +104,8 @@ class SocketServer(object):
                                   icon_url="%s/pa/party.png" % settings.AVATAR_BASE_URL)
 
     def invite_party_out_live(self, user_id, to_user_id, message):
+        if not self.valid():
+            return
         return self._send_message(user_id=user_id,
                                   to_user_id=to_user_id,
                                   box_type=PopBoxType.message.value,

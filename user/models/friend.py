@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+import datetime
 
 from django.db import models, transaction, IntegrityError
 from django.db.models.signals import post_delete, post_save
@@ -8,10 +9,10 @@ from django.utils import timezone
 
 from corelib.utils import natural_time as time_format
 from corelib.redis import redis
-from corelib.mc import hlcache
+from corelib.mc import hlcache, cache
 
 from user.models import User
-from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY
+from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY, MC_FRIEND_LIST
 from live.consts import MC_PAING
 
 
@@ -77,7 +78,9 @@ class Friend(models.Model):
     invisible = models.BooleanField(default=False)
     push = models.BooleanField(default=True)
     memo = models.CharField(max_length=100, default="")
+    is_hint = models.BooleanField(default=True)
     date = models.DateTimeField(auto_now_add=True)
+    update_date = models.DateTimeField(default=timezone.now)
 
     class Meta:
         unique_together = (('user_id', 'friend_id'))
@@ -91,6 +94,11 @@ class Friend(models.Model):
     @hlcache(MC_FRIEND_IDS_KEY % '{user_id}')
     def get_friend_ids(cls, user_id):
         return list(cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True))
+
+    @cache(MC_FRIEND_LIST % '{user_id}')
+    def get_friends_order_by_date(cls, user_id):
+        friends = cls.objects.filter(user_id=user_id).order_by("update_date")
+        return [friend.to_dict() for friend in friends]
 
     @classmethod
     def who_is_friends(cls, owner_id, friend_ids):
@@ -111,10 +119,12 @@ class Friend(models.Model):
     def delete_friend(cls, owner_id, friend_id):
         cls.objects.filter(user_id=owner_id, friend_id=friend_id).delete()
         cls.objects.filter(user_id=friend_id, friend_id=owner_id).delete()
-        redis.hdel(MC_FRIEND_IDS_KEY % owner_id, friend_id)
-        redis.hdel(MC_FRIEND_IDS_KEY % friend_id, owner_id)
-        redis.hdel(REDIS_MEMOS_KEY % owner_id, friend_id)
         return True
+
+    def clear_mc(self):
+        redis.delete(MC_FRIEND_LIST % self.user_id)
+        redis.hdel(MC_FRIEND_IDS_KEY % self.user_id)
+        redis.hdel(REDIS_MEMOS_KEY % self.user_id, self.friend_id)
 
     @classmethod
     def get_memo(cls, owner_id, friend_id):
@@ -165,41 +175,27 @@ class Friend(models.Model):
         return cls.objects.filter(user_id=user_id).count()
 
     @classmethod
-    def get_friends(cls, user_id):
-        friend_ids = cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True)
-        firends = []
-        for friend_id in friend_ids:
-            user = User.get(id=friend_id)
-            firends.append(user)
-
-        return firends
-
-    @classmethod
     def get_friends_order_by_pinyin(cls, user_id):
-        friends = cls.get_friends(user_id=user_id)
+        friend_list = cls.get_friends_order_by_date(user_id=user_id)
         results = {"#": []}
 
-        for friend in friends:
-            if not friend:
-                continue
-
-            pinyin = friend.pinyin
+        for friend_dict in friend_list:
+            pinyin = friend_dict["pinyin"]
             if pinyin[0].isalpha():
                 ll = results.setdefault(pinyin[0].upper(), [])
-                ll.append(friend.basic_info())
+                ll.append(friend_dict)
             else:
-                results["#"].append(friend.basic_info())
+                results["#"].append(friend_dict)
 
         return results
 
     def to_dict(self):
         user = User.get(self.user_id)
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "nickname": user.nickname,
-            "status": self.status,
-        }
+        basic_info = user.basic_info()
+        basic_info["is_hint"] = self.is_hint,
+        basic_info["user_relation"] = UserEnum.friend.value,
+        basic_info["dynamic"] = friend_dynamic(self.user_id)
+        return basic_info
 
 
 def friend_dynamic(user_id):
@@ -208,7 +204,6 @@ def friend_dynamic(user_id):
     if not last_pa_time:
         return
 
-    import datetime
     try:
         dt = datetime.datetime.fromtimestamp(float(last_pa_time))
     except:
@@ -236,11 +231,9 @@ def common_friend(user_id, to_user_id):
 @receiver(post_save, sender=Friend)
 def add_friend_after(sender, created, instance, **kwargs):
     if created:
-        redis.delete(MC_FRIEND_IDS_KEY % instance.user_id)
-        redis.delete(MC_FRIEND_IDS_KEY % instance.friend_id)
+        instance.clear_mc()
 
 
 @receiver(post_delete, sender=Friend)
 def del_friend_after(sender, instance, **kwargs):
-    redis.delete(MC_FRIEND_IDS_KEY % instance.user_id)
-    redis.delete(MC_FRIEND_IDS_KEY % instance.friend_id)
+    instance.clear_mc()

@@ -79,12 +79,6 @@ def ignore(request):
     return HttpResponseServerError()
 
 
-def get_friends(request):
-    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
-    friend_list = [User.get(user_id=friend_id).to_dict() for friend_id in friend_ids]
-    return JsonResponse(friend_list)
-
-
 def get_friends_order_by_pinyin(request):
     friend_list = Friend.get_friends_order_by_pinyin(user_id=request.user.id)
     keys = list(friend_list.keys())
