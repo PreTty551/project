@@ -78,7 +78,7 @@ class Friend(models.Model):
     invisible = models.BooleanField(default=False)
     push = models.BooleanField(default=True)
     memo = models.CharField(max_length=100, default="")
-    is_hint = models.BooleanField(default=True)
+    is_hint = models.BooleanField(default=False)
     date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(default=timezone.now)
 
@@ -95,7 +95,8 @@ class Friend(models.Model):
     def get_friend_ids(cls, user_id):
         return list(cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True))
 
-    @cache(MC_FRIEND_LIST % '{user_id}')
+    # @cache(MC_FRIEND_LIST % '{user_id}')
+    @classmethod
     def get_friends_order_by_date(cls, user_id):
         friends = cls.objects.filter(user_id=user_id).order_by("update_date")
         return [friend.to_dict() for friend in friends]
@@ -145,7 +146,7 @@ class Friend(models.Model):
     def update_push(self, is_push):
         self.push = is_push
         self.save()
-        redis.hset(REDIS_PUSH_KEY % self.user_id, self.user_id, is_invisible)
+        redis.hset(REDIS_PUSH_KEY % self.user_id, self.user_id, is_push)
         return True
 
     @classmethod
@@ -190,11 +191,12 @@ class Friend(models.Model):
         return results
 
     def to_dict(self):
-        user = User.get(self.user_id)
+        user = User.get(self.friend_id)
         basic_info = user.basic_info()
-        basic_info["is_hint"] = self.is_hint,
-        basic_info["user_relation"] = UserEnum.friend.value,
+        basic_info["is_hint"] = self.is_hint
+        basic_info["user_relation"] = UserEnum.friend.value
         basic_info["dynamic"] = friend_dynamic(self.user_id)
+        basic_info["pinyin"] = user.pinyin
         return basic_info
 
 

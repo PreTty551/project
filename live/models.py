@@ -36,8 +36,8 @@ class Channel(models.Model):
             ChannelMember.add(channel_id=channel_id, user_id=user_id)
             ChannelMember.objects.exclude(channel_id=obj.channel_id).filter(user_id=user_id).delete()
             user = User.get(user_id)
-            self.name = user.nickname
-            self.save()
+            obj.name = user.nickname
+            obj.save()
             return obj
         return None
 
@@ -104,9 +104,11 @@ class Channel(models.Model):
     @classmethod
     def get_friend_channels(cls, user_id, channel_type=None, friend_ids=[]):
         if not friend_ids:
-            friend_ids = Firend.get_friend_ids(user_id=user_id)
+            friend_ids = Friend.get_friend_ids(user_id=user_id)
 
-        user_ids = [user_id].extend(friend_ids)
+        user_ids = [user_id]
+        user_ids.extend(friend_ids)
+
         channel_ids = ChannelMember.objects.filter(user_id__in=user_ids).values_list("channel_id", flat=True).distinct()
         channels = []
         for channel_id in channel_ids:

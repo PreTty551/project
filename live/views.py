@@ -18,6 +18,7 @@ from live.models import Channel, ChannelMember, GuessWord, InviteChannel, Invite
 from live.consts import ChannelType
 from user.models import User, Friend, UserContact, Place, guess_know_user, friend_dynamic
 from user.consts import UserEnum
+from widget import FriendListWidget, ChannelListWidget, ChannelInnerListWidget
 
 TEST_USER_IDS = []
 

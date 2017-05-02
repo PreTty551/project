@@ -22,7 +22,7 @@ from corelib.utils import natural_time as time_format
 from corelib.mc import cache
 from corelib.redis import redis
 
-from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY
+from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY
 from .place import Place
 
 
@@ -279,7 +279,7 @@ class User(AbstractUser, PropsMixin):
         detail_info["is_bind_wechat"] = self.is_bind_wechat or 0
         detail_info["is_bind_weibo"] = self.is_bind_weibo or 0
         if user_id:
-            friend = Friend.objects.filter(user_id=self.id, friend_id=user_id).first()
+            friend = Friend.objects.filter(user_id=user_id, friend_id=self.id).first()
             if friend:
                 detail_info["is_invisible"] = friend.invisible
                 detail_info["is_push"] = friend.push

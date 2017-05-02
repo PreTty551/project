@@ -71,6 +71,7 @@ class SocketServer(object):
                                              content=json.dumps(data))
 
     def valid(self, user_id, to_user_id):
+        from user.models import User
         user = User.get(user_id)
         role = user.push_role(friend_id=to_user_id)
         if role:
@@ -93,7 +94,7 @@ class SocketServer(object):
                                   icon_url="%s/pa/friend.png" % settings.AVATAR_BASE_URL)
 
     def invite_party_in_live(self, user_id, to_user_id, message, channel_id):
-        if not self.valid():
+        if not self.valid(user_id=user_id, to_user_id=to_user_id):
             return
         return self._send_message(user_id=user_id,
                                   to_user_id=to_user_id,
