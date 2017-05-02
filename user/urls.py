@@ -25,7 +25,6 @@ urlpatterns = [
     url(r'^user/contact/list/$', views.get_contact_list, name='get_contact_list'),
     url(r'^user/contact/common_friend/$', views.common_contact, name='common_contact'),
 
-    url(r'^user/friend/$', views.get_friends, name='get_friends'),
     url(r'^user/friend/invite/$', views.invite_friend, name='invite_friend'),
     url(r'^user/friend/agree/$', views.agree_friend, name='agree_friend'),
     url(r'^user/friend/delete/$', views.delete_friend, name='delete_friend'),

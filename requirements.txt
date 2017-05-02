@@ -15,3 +15,4 @@ xpinyin==0.5.5
 jpush==3.2.6
 arrow==0.10.0
 gunicorn==19.7.1
+py3compat==0.3

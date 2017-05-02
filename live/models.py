@@ -35,6 +35,9 @@ class Channel(models.Model):
         if obj:
             ChannelMember.add(channel_id=channel_id, user_id=user_id)
             ChannelMember.objects.exclude(channel_id=obj.channel_id).filter(user_id=user_id).delete()
+            user = User.get(user_id)
+            self.name = user.nickname
+            self.save()
             return obj
         return None
 
@@ -60,17 +63,16 @@ class Channel(models.Model):
         if channel:
             ChannelMember.objects.filter(channel_id=channel_id).delete()
 
-            # from answer.utils import send_msg
-            # token = "78c21f9d53c94182867abe411804ba46ec353b7a7426df2f870a1437e9c79fe3"
-            # msg = u"房间%s被清除" % channel_id
-            # send_msg(msg, token)
-
     @classmethod
     def join_channel(cls, channel_id, user_id):
         channel = cls.objects.filter(channel_id=channel_id).first()
         if channel:
             ChannelMember.add(channel_id=channel_id, user_id=user_id)
             ChannelMember.objects.exclude(channel_id=channel.channel_id).filter(user_id=user_id).delete()
+
+            user = User.get(user_id)
+            channel.name = "%s,%s" % (user.nickname, channel.name)
+            channel.save()
             return True
         return False
 
@@ -84,6 +86,9 @@ class Channel(models.Model):
 
     def quit_channel(self, user_id):
         ChannelMember.objects.filter(user_id=user_id, channel_id=self.channel_id).delete()
+        user = User.get(user_id)
+        self.name = self.name.replace(user.nickname, "")
+        self.save()
 
     def get_channel_member(self):
         return ChannelMember.get_channel_member(channel_id=self.channel_id)
@@ -96,20 +101,38 @@ class Channel(models.Model):
         return ChannelMember.objects.all().count()
         return cls.objects.all().aggregate(Sum("member_count"))["member_count__sum"] or 0
 
-    def title(self, friend_ids=None):
-        nicknames = []
-        if friend_ids:
-            user_ids = ChannelMember.get_members_order_by_friend(channel_id=self.channel_id, friend_ids=friend_ids)
-        else:
-            user_ids = self.get_channel_member()
+    @classmethod
+    def get_friend_channels(cls, user_id, channel_type=None, friend_ids=[]):
+        if not friend_ids:
+            friend_ids = Firend.get_friend_ids(user_id=user_id)
 
-        for user_id in user_ids:
-            user = User.get(user_id)
-            if not user:
+        user_ids = [user_id].extend(friend_ids)
+        channel_ids = ChannelMember.objects.filter(user_id__in=user_ids).values_list("channel_id", flat=True).distinct()
+        channels = []
+        for channel_id in channel_ids:
+            channel = Channel.get_channel(channel_id)
+            if not channel:
                 continue
-            nicknames.append(user.nickname)
-        title = ",".join(nicknames)
-        return "%s%s" % ("", title)
+            if channel_type and channel.channel_type != int(channel_type):
+                continue
+            channels.append(channel.to_dict(friend_ids=friend_ids))
+        return channels
+
+    def title(self, friend_ids=None):
+        return self.name
+        # nicknames = []
+        # if friend_ids:
+        #     user_ids = ChannelMember.get_members_order_by_friend(channel_id=self.channel_id, friend_ids=friend_ids)
+        # else:
+        #     user_ids = self.get_channel_member()
+        #
+        # for user_id in user_ids:
+        #     user = User.get(user_id)
+        #     if not user:
+        #         continue
+        #     nicknames.append(user.nickname)
+        # title = ",".join(nicknames)
+        # return "%s%s" % ("", title)
 
     @property
     def duration_time(self):
@@ -128,7 +151,7 @@ class Channel(models.Model):
 
     def to_dict(self, friend_ids=None):
         return {
-            "title": self.title(friend_ids=friend_ids),
+            "title": self.name,
             "channel_id": self.channel_id,
             "duration_time": self.duration_time,
             "icon": self.icon,
@@ -313,44 +336,38 @@ def delete_member_after(sender, instance, **kwargs):
         refresh(instance.user_id)
 
 
-@receiver(post_save, sender=Channel)
-def add_channel_after(sender, created, instance, **kwargs):
-    if created:
-        push_lock = redis.get("mc:user:%s:pa_push_lock" % instance.creator_id)
-        if not push_lock:
-            bulk_ids = []
-            ids = []
-            i = 0
+def party_push(user_id, channel_id):
+    push_lock = redis.get("mc:user:%s:pa_push_lock" % user_id)
+    if not push_lock:
+        bulk_ids = []
+        ids = []
+        i = 0
 
-            user = User.get(id=instance.creator_id)
-            friend_ids = Friend.get_friend_ids(user_id=instance.creator_id)
-            pre_week = timezone.now() - datetime.timedelta(days=7)
-            party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=friend_ids)
-                                                              .values_list("user_id", flat=True).distinct())
-            bulk_user_ids = set(party_user_ids_in_week) ^ set(friend_ids)
+        user = User.get(id=user_id)
+        friend_ids = Friend.get_friend_ids(user_id=user_id)
+        party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
+        no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
 
+        for friend_id in party_friend_ids:
+            fids = Friend.get_friend_ids(user_id=friend_id)
+            party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
+            nicknames = [User.get(id=uid).nickname for uid in party_friend_ids]
+            if nicknames:
+                nicknames = ",".join(nicknames)
+                message = "%s 正在开PA" % nicknames
+                JPush().async_push(user_ids=[friend_id], message=message, push_type=1)
+                SocketServer().invite_party_in_live(user_id=user.id,
+                                                    to_user_id=friend_id,
+                                                    message=message,
+                                                    channel_id=channel_id)
+
+        pre_week = timezone.now() - datetime.timedelta(days=7)
+        party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=no_party_friend_ids)
+                                                          .values_list("user_id", flat=True).distinct())
+        for no_party_id in party_user_ids_in_week:
             message = "%s 正在开PA" % user.nickname
-            JPush().async_push(user_ids=bulk_user_ids, message=message, push_type=1)
-            SocketServer().invite_party_in_live(user_id=user.id,
-                                                to_user_id=bulk_user_ids,
-                                                message=message,
-                                                channel_id=instance.channel_id)
+            JPush().async_batch_push(user_ids=[no_party_id],
+                                     message=message,
+                                     push_type=1)
 
-            for friend_id in party_user_ids_in_week:
-                if i < 11:
-                    fids = Friend.get_friend_ids(user_id=friend_id)
-                    party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
-                    nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
-                    if not nicknames:
-                        continue
-
-                    nicknames = ",".join(nicknames)
-                    message = "%s 正在开PA" % nicknames
-                    JPush().async_push(user_ids=[friend_id], message=message, push_type=1)
-                    SocketServer().invite_party_in_live(user_id=user.id,
-                                                        to_user_id=friend_id,
-                                                        message=message,
-                                                        channel_id=instance.channel_id)
-                    i += 1
-
-            redis.get("mc:user:%s:pa_push_lock" % instance.creator_id)
+        redis.set("mc:user:%s:pa_push_lock" % user_id, 1, 30)

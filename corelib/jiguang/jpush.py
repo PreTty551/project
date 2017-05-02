@@ -46,7 +46,7 @@ class JPush(object):
         ios = self._ios(is_sound=is_sound, sound=sound, push_type=push_type, **kwargs)
         android = self._android(title=title, push_type=push_type, **kwargs)
         push.notification = jpush.notification(alert=message, ios=ios, android=android)
-        push.options = {"apns_production": False}
+        push.options = {"apns_production": True}
         push.platform = ["android", "ios"]
         push.send()
 
@@ -54,3 +54,18 @@ class JPush(object):
                    sound=None, title="通知提醒", **kwargs):
         queue = django_rq.get_queue('high')
         queue.enqueue(self.push, user_ids, message, push_type, is_sound, sound, title, **kwargs)
+
+    def async_batch_push(self, user_ids, message, push_type=0, is_sound=False,
+                         sound=None, title="通知提醒", **kwargs):
+        # query的限制是1000，所以一次发1000个人
+        limit = 0
+        offset = 1000
+        receive_count = len(user_ids)
+        loop_num = receive_count // offset
+        if (receive_count % offset):
+            loop_num += 1
+
+        queue = django_rq.get_queue('high')
+        for i in list(range(loop_num)):
+            queue.enqueue(self.push, user_ids[limit: limit + offset], message, push_type, is_sound, sound, title, **kwargs)
+            limit += 1000

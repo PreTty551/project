@@ -177,7 +177,7 @@ class User(AbstractUser, PropsMixin):
         return self.get_props_item("bind_wechat") or 0
 
     @property
-    def is_bing_weibo(self):
+    def is_bind_weibo(self):
         return self.get_props_item("bind_weibo") or 0
 
     @property
@@ -238,6 +238,18 @@ class User(AbstractUser, PropsMixin):
     @property
     def is_paid(self):
         return self.paid == str(self.id)
+
+    def push_role(self, friend_id):
+        is_invisible = redis.hget(REDIS_INVISIBLE_KEY % self.id, friend_id)
+        if is_invisible:
+            return False
+
+        is_push = redis.hget(REDIS_PUSH_KEY % friend_id, self.id)
+        if is_push:
+            return False
+
+        return True
+
 
     def basic_info(self, user_id=None):
         if user_id:

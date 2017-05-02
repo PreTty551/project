@@ -527,6 +527,11 @@ def ignore(request):
 
 def invite_party(request):
     receiver_id = request.POST.get("user_id")
+
+    push_role = request.user.push_role(friend_id=receiver_id)
+    if not push_role:
+        return JsonResponse()
+
     push_lock = redis.get("mc:user:%s:to_user_id:%s:pa_push_lock" % (request.user.id, receiver_id)) or 0
     if int(push_lock) <= 20:
         icon = ""
@@ -537,6 +542,7 @@ def invite_party(request):
 
         channel_member = ChannelMember.objects.filter(user_id=request.user.id).first()
         if channel_member:
+            Friend.objects.filter(user_id=receiver_id, friend_id=request.user.id).update(is_hint=True)
             SocketServer().invite_party_in_live(user_id=request.user.id,
                                                 to_user_id=receiver_id,
                                                 message=message,
@@ -544,9 +550,12 @@ def invite_party(request):
             JPush().async_push(user_ids=[receiver_id],
                                message=message,
                                push_type=1,
+                               is_sound=True,
+                               sound="push.caf",
                                channel_id=channel_member.channel_id)
         else:
             InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
+            Friend.objects.filter(user_id=receiver_id, friend_id=request.user.id).update(is_hint=True)
             SocketServer().invite_party_out_live(user_id=request.user.id,
                                                  to_user_id=receiver_id,
                                                  message=message)
@@ -612,18 +621,18 @@ def poke(request):
     user_id = request.POST.get("user_id")
 
     push_lock = redis.get("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id)) or 0
-    if push_lock and int(push_lock) <= 20:
+    if int(push_lock) <= 20:
         icon = ""
         message = u"%s捅了你一下" % request.user.nickname
-        for i in range(push_lock):
+        for i in list(range(int(push_lock))):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
 
         SocketServer().invite_party_in_live(user_id=request.user.id,
-                                            to_user_id=receiver_id,
+                                            to_user_id=user_id,
                                             message=message,
                                             channel_id=0)
-
+        JPush().async_push(user_ids=[user_id], message=message)
         redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id), int(push_lock) + 1, 600)
     else:
         return JsonResponse(error={40000: "好了好了，TA收到啦"})
