@@ -70,6 +70,7 @@ class Wallet(models.Model):
         user.minus(amount=amount)
 
         to_user = cls.get(user_id=to_user_id)
+        amount = Decimal(amount) * Decimal("0.7")
         to_user.plus(amount=amount)
         return True
 

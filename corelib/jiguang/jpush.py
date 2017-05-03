@@ -50,7 +50,10 @@ class JPush(object):
         push.notification = jpush.notification(alert=message, ios=ios, android=android)
         push.options = {"apns_production": True}
         push.platform = ["android", "ios"]
-        push.send()
+        try:
+            push.send()
+        except:
+            pass
 
     def async_push(self, user_ids, message, push_type=0, is_sound=False,
                    sound=None, title="通知提醒", badge="", **kwargs):

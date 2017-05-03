@@ -13,6 +13,7 @@ from corelib.redis import redis
 from user.models import User, UserContact, InviteFriend, Friend, ContactError
 from user.models import Ignore
 from socket_server import SocketServer, EventType
+from live.models import ChannelMember, Channel
 
 
 def invite_friend(request):

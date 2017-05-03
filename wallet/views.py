@@ -51,7 +51,7 @@ def wechat_recharge(request):
         return HttpResponseBadRequest()
 
     try:
-        notify_url = "http://api1.gouhuoapp.com/wallet/wechat_recharge_callback/"
+        notify_url = "https://api.gouhuoapp.com/wallet/wechat_recharge_callback/"
         out_trade_no = random_str()
         wechat = WechatSDK()
         amount = get_related_amount(amount)

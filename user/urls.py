@@ -38,7 +38,7 @@ urlpatterns = [
     url(r'^user/ignore/$', views.ignore, name='ignore'),
     url(r'^user/rong_token/$', views.rong_token, name='rong_token'),
     url(r'^user/search/$', views.search, name='search'),
-    url(r'^user/invite_party/$', views.invite_party, name='invite_party'),
+    #url(r'^user/invite_party/$', views.invite_party, name='invite_party'),
 
     url(r'^user/quit_app/$', views.quit_app, name='quit_app'),
     url(r'^user/online_and_offine/callback/$', views.user_online_and_offine_callback, name='online_and_offine'),
@@ -55,7 +55,7 @@ urlpatterns = [
     url(r'^user/poke/$', views.poke, name='poke'),
 
     url(r'^rongcloud/push/$', views.rongcloud_push, name='rongcloud_push'),
-    url(r'^user/logout/$', views.logout, name='logout'),
+    url(r'^user/logout/$', views.user_logout, name='logout'),
     url(r'^user/ios/check_version/$', views.check_ios_version, name='check_ios_version'),
-
+    url(r'^load_balancing/$', views.load_balancing, name='load_balancing'),
 ]

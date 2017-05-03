@@ -113,16 +113,16 @@ class User(AbstractUser, PropsMixin):
         verbose_name = u'用户'
         verbose_name_plural = u'用户列表'
 
-    def __getattr__(self, attr):
-        try:
-            return object.__getattr__(self, attr)
-        except AttributeError:
-            return ""
-
-    def __str__(self):
-        return "<User(id=%s, nickname=%s)>" % (self.id, self.nickname)
-
-    __repr__ = __str__
+    # def __getattr__(self, attr):
+    #     try:
+    #         return object.__getattr__(self, attr)
+    #     except AttributeError:
+    #         return ""
+    #
+    # def __str__(self):
+    #     return "<User(id=%s, nickname=%s)>" % (self.id, self.nickname)
+    #
+    # __repr__ = __str__
 
     @property
     def _props_db_key(self):

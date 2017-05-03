@@ -532,51 +532,6 @@ def ignore(request):
     return JsonResponse()
 
 
-def invite_party(request):
-    receiver_id = request.POST.get("user_id")
-
-    push_role = request.user.push_role(friend_id=receiver_id)
-    if not push_role:
-        return JsonResponse()
-
-    push_lock = redis.get("mc:user:%s:to_user_id:%s:pa_push_lock" % (request.user.id, receiver_id)) or 0
-    if int(push_lock) <= 20:
-        icon = ""
-        message = "%s邀请你来开PA" % request.user.nickname
-        for i in list(range(int(push_lock))):
-            icon += "👉"
-        message = "%s%s" % (icon, message)
-
-        channel_member = ChannelMember.objects.filter(user_id=request.user.id).first()
-        if channel_member:
-            Friend.objects.filter(user_id=receiver_id, friend_id=request.user.id).update(is_hint=True)
-            Friend.objects.filter(user_id=request.user.id, friend_id=receiver_id).update(is_hint=False)
-            SocketServer().invite_party_in_live(user_id=request.user.id,
-                                                to_user_id=receiver_id,
-                                                message=message,
-                                                channel_id=channel_member.channel_id)
-            JPush().async_push(user_ids=[receiver_id],
-                               message=message,
-                               push_type=1,
-                               is_sound=True,
-                               sound="push.caf",
-                               channel_id=channel_member.channel_id)
-        else:
-            InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
-            Friend.objects.filter(user_id=receiver_id, friend_id=request.user.id).update(is_hint=True)
-            Friend.objects.filter(user_id=request.user.id, friend_id=receiver_id).update(is_hint=False)
-            SocketServer().invite_party_out_live(user_id=request.user.id,
-                                                 to_user_id=receiver_id,
-                                                 message=message)
-            JPush().async_push(user_ids=[receiver_id],
-                               message=message)
-
-        redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (request.user.id, receiver_id), int(push_lock) + 1, 600)
-    else:
-        return JsonResponse({"error": {"return_code": 40000, "return_msg": "知道了知道了, 对方已经收到了"}})
-    return JsonResponse()
-
-
 def quit_app(request):
     request.user.offline()
     return JsonResponse()
@@ -632,26 +587,70 @@ def add_user_location(request):
 def poke(request):
     user_id = request.POST.get("user_id")
 
-    push_lock = redis.get("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id)) or 0
+    my = ChannelMember.objects.filter(user_id=request.user.id).first()
+    if my:
+        user = ChannelMember.objects.filter(user_id=user_id).first()
+        if user and user.channel_id == my.channel_id:
+            return _poke(request.user, user_id)
+        else:
+            return _invite_party(request.user, user_id, my.channel_id)
+    else:
+        return _poke(request.user, user_id)
+
+
+def _poke(owner, user_id):
+    push_lock = redis.get("mc:user:%s:to_user_id:%s:poke_lock" % (owner.id, user_id)) or 0
     if int(push_lock) <= 20:
         icon = ""
-        message = u"%s捅了你一下" % request.user.nickname
+        message = u"%s 捅了你一下" % owner.nickname
         for i in list(range(int(push_lock))):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
 
-        Friend.objects.filter(user_id=user_id, friend_id=request.user.id).update(is_hint=True)
-        Friend.objects.filter(user_id=request.user.id, friend_id=user_id).update(is_hint=False)
+        Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
+        Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
 
-        SocketServer().invite_party_in_live(user_id=request.user.id,
+        SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,
                                             channel_id=0)
         JPush().async_push(user_ids=[user_id], message=message)
-        Friend.objects.filter(user_id=request.user.id, friend_id=user_id).update(is_hint=False)
-        redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id), int(push_lock) + 1, 600)
+        Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
+        redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:
         return JsonResponse(error={40000: "好了好了，TA收到啦"})
+    return JsonResponse()
+
+
+def _invite_party(owner, user_id, channel_id):
+    push_role = owner.push_role(friend_id=user_id)
+    if not push_role:
+        return JsonResponse()
+
+    push_lock = redis.get("mc:user:%s:to_user_id:%s:pa_push_lock" % (owner.id, user_id)) or 0
+    if int(push_lock) <= 20:
+        icon = ""
+        message = "%s 邀请你来开PA" % owner.nickname
+        for i in list(range(int(push_lock))):
+            icon += "👉"
+        message = "%s%s" % (icon, message)
+
+        Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
+        Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
+        SocketServer().invite_party_in_live(user_id=owner.id,
+                                            to_user_id=user_id,
+                                            message=message,
+                                            channel_id=channel_id)
+        JPush().async_push(user_ids=[user_id],
+                           message=message,
+                           push_type=1,
+                           is_sound=True,
+                           sound="push.caf",
+                           channel_id=channel_id)
+
+        redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
+    else:
+        return JsonResponse({"error": {"return_code": 40000, "return_msg": "知道了知道了, 对方已经收到了"}})
     return JsonResponse()
 
 
@@ -664,7 +663,11 @@ def rongcloud_push(request):
     return JsonResponse()
 
 
-def logout(request):
+def user_logout(request):
     request.user.offline()
     logout(request)
+    return JsonResponse()
+
+
+def load_balancing(request):
     return JsonResponse()

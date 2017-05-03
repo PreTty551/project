@@ -215,13 +215,13 @@ def lock_channel(request):
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         channel.lock()
-        agora = Agora(user_id=request.user.id)
         data = {
-            "type": 5,
+            "type": 6,
             "data": {
                 "is_lock": True,
             }
         }
+        agora = Agora(user_id=request.user.id)
         agora.send_cannel_msg(channel_id=channel_id, **data)
         return JsonResponse()
     return HttpResponseBadRequest()
@@ -240,6 +240,7 @@ def unlock_channel(request):
                 "is_lock": False,
             }
         }
+        agora = Agora(user_id=request.user.id)
         agora.send_cannel_msg(channel_id=channel_id, **data)
         return JsonResponse()
     return HttpResponseBadRequest()
