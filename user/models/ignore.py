@@ -17,4 +17,4 @@ class Ignore(models.Model):
 
     @classmethod
     def add(cls, owner_id, ignore_id, ignore_type):
-        return cls.objects.filter(owner_id=owner_id, ignore_id=ignore_id, ignore_type=ignore_type)
+        return cls.objects.create(owner_id=owner_id, ignore_id=ignore_id, ignore_type=ignore_type)

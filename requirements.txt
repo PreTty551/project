@@ -1,4 +1,4 @@
-Django==1.11
+Django==1.10.6
 redis==2.10.5
 qiniu==7.1.1
 phonenumbers==8.3.3

@@ -377,8 +377,15 @@ def get_profile(request):
 
 
 def rong_token(request):
-    if request.user.rong_token:
-        return JsonResponse({"token": request.user.rong_token})
+    refresh = request.GET.get("refresh")
+    if refresh:
+        token = request.user.create_rong_token()
+        request.user.rong_token = token
+        request.user.save()
+        return JsonResponse({"token": token})
+    else:
+        if request.user.rong_token:
+            return JsonResponse({"token": request.user.rong_token})
 
     token = request.user.create_rong_token()
     request.user.rong_token = token
@@ -421,7 +428,7 @@ def bind_weibo(request):
     access_token = request.POST.get("access_token")
     third_id = request.POST.get("third_id")
 
-    third_user = ThirdUser.objects.filter(third_id=third_id, third_name="wb").frist()
+    third_user = ThirdUser.objects.filter(third_id=third_id, third_name="wb").first()
     if third_user:
         user = User.get(id=request.user.id)
         if third_user.mobile == user.mobile:
@@ -429,11 +436,11 @@ def bind_weibo(request):
         else:
             return JsonResponse(error=LoginError.DUPLICATE_BING)
 
-    request.user.binding_wechat(third_id=third_id)
+    request.user.binding_weibo(third_id=third_id)
     return JsonResponse()
 
 
-def unbind_wechat(reqeust):
+def unbind_wechat(request):
     is_success = request.user.unbinding_wechat()
     if is_success:
         return JsonResponse()
@@ -486,9 +493,9 @@ def search(request):
     content = request.POST.get("content")
     page = int(request.POST.get("page", 1))
 
-    user_list = list(User.objects.filter(paid=content))
+    user_list = list(User.objects.filter(paid=content).exclude(id=request.user.id))
     if not user_list:
-        user_list = User.objects.filter(nickname__startswith=content)
+        user_list = User.objects.filter(nickname__startswith=content).exclude(id=request.user.id)
 
     results = {"user_list": [], "paginator": {}}
     user_list, paginator_dict = paginator(user_list, page, 30)
@@ -543,6 +550,7 @@ def invite_party(request):
         channel_member = ChannelMember.objects.filter(user_id=request.user.id).first()
         if channel_member:
             Friend.objects.filter(user_id=receiver_id, friend_id=request.user.id).update(is_hint=True)
+            Friend.objects.filter(user_id=request.user.id, friend_id=receiver_id).update(is_hint=False)
             SocketServer().invite_party_in_live(user_id=request.user.id,
                                                 to_user_id=receiver_id,
                                                 message=message,
@@ -556,6 +564,7 @@ def invite_party(request):
         else:
             InviteParty.add(user_id=request.user.id, to_user_id=receiver_id, party_type=1)
             Friend.objects.filter(user_id=receiver_id, friend_id=request.user.id).update(is_hint=True)
+            Friend.objects.filter(user_id=request.user.id, friend_id=receiver_id).update(is_hint=False)
             SocketServer().invite_party_out_live(user_id=request.user.id,
                                                  to_user_id=receiver_id,
                                                  message=message)
@@ -564,7 +573,7 @@ def invite_party(request):
 
         redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (request.user.id, receiver_id), int(push_lock) + 1, 600)
     else:
-        return JsonResponse({"error": {"return_code":4000, "return_msg": "知道了知道了, 对方已经收到了"}})
+        return JsonResponse({"error": {"return_code": 40000, "return_msg": "知道了知道了, 对方已经收到了"}})
     return JsonResponse()
 
 
@@ -591,6 +600,9 @@ def user_online_and_offine_callback(request):
         time = body["time"]
 
         user = User.get(user_id)
+        if not user:
+            return JsonResponse()
+
         if int(status) == 0:
             user.online()
         else:
@@ -628,11 +640,15 @@ def poke(request):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
 
+        Friend.objects.filter(user_id=user_id, friend_id=request.user.id).update(is_hint=True)
+        Friend.objects.filter(user_id=request.user.id, friend_id=user_id).update(is_hint=False)
+
         SocketServer().invite_party_in_live(user_id=request.user.id,
                                             to_user_id=user_id,
                                             message=message,
                                             channel_id=0)
         JPush().async_push(user_ids=[user_id], message=message)
+        Friend.objects.filter(user_id=request.user.id, friend_id=user_id).update(is_hint=False)
         redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id), int(push_lock) + 1, 600)
     else:
         return JsonResponse(error={40000: "好了好了，TA收到啦"})
@@ -644,5 +660,5 @@ def rongcloud_push(request):
     message = request.POST.get("message", "")
 
     message = "%s: %s" % (request.user.nickname, message)
-    JPush().async_push(user_ids=[to_user_id], message=message)
+    JPush().async_push(user_ids=[to_user_id], message=message, badge="+1")
     return JsonResponse()

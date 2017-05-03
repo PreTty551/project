@@ -18,7 +18,7 @@ class JPush(object):
         self.client = jpush.JPush(self.app_key, self.master_secret)
         self.client.set_logging("DEBUG")
 
-    def _ios(self, is_sound, sound, push_type, **kwargs):
+    def _ios(self, is_sound, sound, push_type, badge, **kwargs):
         _ = {
             "extras": {
                 "type": push_type,
@@ -27,6 +27,8 @@ class JPush(object):
         }
         if is_sound and sound:
             _["sound"] = sound
+        if badge:
+            _["badge"] = badge
         return _
 
     def _android(self, title, push_type, **kwargs):
@@ -39,11 +41,11 @@ class JPush(object):
         }
 
     def push(self, user_ids, message, push_type=0, is_sound=False,
-             sound=None, title="通知提醒", **kwargs):
+             sound=None, title="通知提醒", badge="", **kwargs):
 
         push = self.client.create_push()
         push.audience = jpush.audience({"alias": user_ids})
-        ios = self._ios(is_sound=is_sound, sound=sound, push_type=push_type, **kwargs)
+        ios = self._ios(is_sound=is_sound, sound=sound, push_type=push_type, badge=badge, **kwargs)
         android = self._android(title=title, push_type=push_type, **kwargs)
         push.notification = jpush.notification(alert=message, ios=ios, android=android)
         push.options = {"apns_production": True}
@@ -51,12 +53,12 @@ class JPush(object):
         push.send()
 
     def async_push(self, user_ids, message, push_type=0, is_sound=False,
-                   sound=None, title="通知提醒", **kwargs):
+                   sound=None, title="通知提醒", badge="", **kwargs):
         queue = django_rq.get_queue('high')
-        queue.enqueue(self.push, user_ids, message, push_type, is_sound, sound, title, **kwargs)
+        queue.enqueue(self.push, user_ids, message, push_type, is_sound, sound, title, badge, **kwargs)
 
     def async_batch_push(self, user_ids, message, push_type=0, is_sound=False,
-                         sound=None, title="通知提醒", **kwargs):
+                         sound=None, title="通知提醒", badge="", **kwargs):
         # query的限制是1000，所以一次发1000个人
         limit = 0
         offset = 1000
@@ -67,5 +69,5 @@ class JPush(object):
 
         queue = django_rq.get_queue('high')
         for i in list(range(loop_num)):
-            queue.enqueue(self.push, user_ids[limit: limit + offset], message, push_type, is_sound, sound, title, **kwargs)
+            queue.enqueue(self.push, user_ids[limit: limit + offset], message, push_type, is_sound, sound, title, badge, **kwargs)
             limit += 1000

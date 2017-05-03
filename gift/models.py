@@ -34,7 +34,7 @@ class Gift(models.Model):
         return {
             "id": self.id,
             "name": self.name,
-            "amount": self.amount,
+            "amount": self.amount / 100,
             "size": self.size,
             "icon": self.id,
         }
@@ -108,7 +108,7 @@ def send_gift(owner_id, to_user_id, gift_id, amount, channel_id, record_msg="礼
                     "time": int(time.time() * 1000),
                     "gift_size": gift.size,
                     "avatar_url": user.avatar_url,
-                    "icon": 1
+                    "icon": int(gift_id)
                 }
             }
 

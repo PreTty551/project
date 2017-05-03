@@ -86,9 +86,6 @@ class Channel(models.Model):
 
     def quit_channel(self, user_id):
         ChannelMember.objects.filter(user_id=user_id, channel_id=self.channel_id).delete()
-        user = User.get(user_id)
-        self.name = self.name.replace(user.nickname, "")
-        self.save()
 
     def get_channel_member(self):
         return ChannelMember.get_channel_member(channel_id=self.channel_id)
@@ -140,7 +137,8 @@ class Channel(models.Model):
     def duration_time(self):
         timedelta = timezone.now() - self.date
         minute = int((timedelta.seconds / 60) + timedelta.days * 24 * 60)
-        return "当前%s人, 进行了%s分钟" % (self.member_count, minute)
+        number = len(self.name.split(","))
+        return "当前%s人, 进行了%s分钟" % (number, minute)
 
     @property
     def icon(self):
@@ -303,12 +301,8 @@ def add_member_after(sender, created, instance, **kwargs):
                                     channel_id=instance.channel_id,
                                     status=1)
 
-        channel = Channel.get_channel(channel_id=instance.channel_id)
-        channel.member_count = F("member_count") + 1
-        channel.save()
-
-        InviteParty.objects.filter(to_user_id=instance.user_id, status=0).update(status=1)
-        redis.delete(MC_INVITE_PARTY % instance.user_id)
+        Friend.objects.filter(friend_id=instance.user_id).update(update_date=timezone.now())
+        Friend.objects.filter(user_id=instance.user_id).update(is_hint=False)
 
         user = User.get(instance.user_id)
         user.last_pa_time = time.time()
@@ -324,12 +318,16 @@ def delete_member_after(sender, instance, **kwargs):
 
     channel = Channel.get_channel(channel_id=instance.channel_id)
     if channel:
-        channel.member_count = F("member_count") - 1
-        channel.save()
-
-        member_count = ChannelMember.objects.filter(channel_id=instance.channel_id).count()
-        if member_count == 0:
+        count = ChannelMember.objects.filter(channel_id=instance.channel_id).count()
+        if count == 0:
             Channel.objects.filter(channel_id=instance.channel_id).delete()
+        else:
+            user = User.get(instance.user_id)
+            name = channel.name.replace("%s," % user.nickname, "").replace(",%s" % user.nickname, "")
+            name = name.strip(",")
+            if name:
+                channel.name = name
+                channel.save()
 
         user = User.get(instance.user_id)
         user.last_pa_time = time.time()
@@ -346,14 +344,19 @@ def party_push(user_id, channel_id):
         i = 0
 
         user = User.get(id=user_id)
-        friend_ids = Friend.get_friend_ids(user_id=user_id)
+        friend_ids = Friend.get_friends_by_online_push(user_id=user_id)
         party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
         no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
 
         for friend_id in party_friend_ids:
             fids = Friend.get_friend_ids(user_id=friend_id)
+            if int(user_id) in fids:
+                fids.remove(int(user_id))
+            if int(friend_id) in fids:
+                fids.remove(int(friend_id))
+
             party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
-            nicknames = [User.get(id=uid).nickname for uid in party_friend_ids]
+            nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
             if nicknames:
                 nicknames = ",".join(nicknames)
                 message = "%s 正在开PA" % nicknames

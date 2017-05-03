@@ -105,7 +105,7 @@ class SocketServer(object):
                                   icon_url="%s/pa/party.png" % settings.AVATAR_BASE_URL)
 
     def invite_party_out_live(self, user_id, to_user_id, message):
-        if not self.valid():
+        if not self.valid(user_id=user_id, to_user_id=to_user_id):
             return
         return self._send_message(user_id=user_id,
                                   to_user_id=to_user_id,

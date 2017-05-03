@@ -91,15 +91,19 @@ class Friend(models.Model):
         return friend_id in friend_ids
 
     @classmethod
-    @hlcache(MC_FRIEND_IDS_KEY % '{user_id}')
+    # @hlcache(MC_FRIEND_IDS_KEY % '{user_id}')
     def get_friend_ids(cls, user_id):
         return list(cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True))
 
     # @cache(MC_FRIEND_LIST % '{user_id}')
     @classmethod
     def get_friends_order_by_date(cls, user_id):
-        friends = cls.objects.filter(user_id=user_id).order_by("update_date")
+        friends = cls.objects.filter(user_id=user_id).order_by("-update_date")
         return [friend.to_dict() for friend in friends]
+
+    @classmethod
+    def get_friends_by_online_push(cls, user_id):
+        return list(cls.objects.filter(user_id=user_id, is_push=1).values_list("friend_id", flat=True))
 
     @classmethod
     def who_is_friends(cls, owner_id, friend_ids):
@@ -124,8 +128,7 @@ class Friend(models.Model):
 
     def clear_mc(self):
         redis.delete(MC_FRIEND_LIST % self.user_id)
-        redis.hdel(MC_FRIEND_IDS_KEY % self.user_id)
-        redis.hdel(REDIS_MEMOS_KEY % self.user_id, self.friend_id)
+        redis.hdel(MC_FRIEND_IDS_KEY % self.user_id, self.friend_id)
 
     @classmethod
     def get_memo(cls, owner_id, friend_id):
@@ -195,7 +198,7 @@ class Friend(models.Model):
         basic_info = user.basic_info()
         basic_info["is_hint"] = self.is_hint
         basic_info["user_relation"] = UserEnum.friend.value
-        basic_info["dynamic"] = friend_dynamic(self.user_id)
+        basic_info["dynamic"] = friend_dynamic(user.id)
         basic_info["pinyin"] = user.pinyin
         return basic_info
 
@@ -222,7 +225,7 @@ def friend_dynamic(user_id):
         return "%s见过TA" % d
 
 
-def common_friend(user_id, to_user_id):
+def common_friends(user_id, to_user_id):
     user_ids = Friend.get_friend_ids(user_id)
     to_user_id = Friend.get_friend_ids(to_user_id)
 

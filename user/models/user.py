@@ -174,11 +174,11 @@ class User(AbstractUser, PropsMixin):
 
     @property
     def is_bind_wechat(self):
-        return self.get_props_item("bind_wechat") or 0
+        return self.get_props_item("is_bind_wechat") or 0
 
     @property
     def is_bind_weibo(self):
-        return self.get_props_item("bind_weibo") or 0
+        return self.get_props_item("is_bind_weibo") or 0
 
     @property
     def localtime(self):
@@ -250,7 +250,6 @@ class User(AbstractUser, PropsMixin):
 
         return True
 
-
     def basic_info(self, user_id=None):
         if user_id:
             memo = Friend.get_memo(user_id=self.id, friend_id=user_id)
@@ -268,22 +267,22 @@ class User(AbstractUser, PropsMixin):
             "is_contact": self.is_contact
         }
 
-    def detail_info(self, user_id=None):
-        from .friend import common_friend, Friend
-        common_friends = common_friend(self.id, user_id)
-        common_friends = ",".join(common_friends)
+        def detail_info(self, user_id=None):
+        from .friend import common_friends, Friend
         detail_info = self.basic_info()
-        detail_info["gift_count"] = self.gift_count
-        detail_info["common_friends"] = common_friends if common_friends else ""
-        detail_info["is_paid"] = self.is_paid
-        detail_info["is_bind_wechat"] = self.is_bind_wechat or 0
-        detail_info["is_bind_weibo"] = self.is_bind_weibo or 0
         if user_id:
             friend = Friend.objects.filter(user_id=user_id, friend_id=self.id).first()
             if friend:
                 detail_info["is_invisible"] = friend.invisible
                 detail_info["is_push"] = friend.push
-            detail_info["user_relation"] = self.check_friend_relation(user_id=user_id)
+                detail_info["user_relation"] = UserEnum.friend.value
+            else:
+                detail_info["user_relation"] = self.check_friend_relation(user_id=user_id)
+                detail_info["gift_count"] = self.gift_count
+                detail_info["common_friends"] = common_friends(user_id=user_id, to_user_id=self.id) or ""
+                detail_info["is_paid"] = self.is_paid
+                detail_info["is_bind_wechat"] = self.is_bind_wechat or 0
+                detail_info["is_bind_weibo"] = self.is_bind_weibo or 0
 
             place = Place.get(user_id=self.id)
             if place:
@@ -291,7 +290,15 @@ class User(AbstractUser, PropsMixin):
                 if dis:
                     detail_info["location"] = u"%s公里" % dis
 
-        return detail_info
+            return detail_info
+
+        else:
+            detail_info["gift_count"] = self.gift_count
+            detail_info["is_paid"] = self.is_paid
+            detail_info["is_bind_wechat"] = self.is_bind_wechat or 0
+            detail_info["is_bind_weibo"] = self.is_bind_weibo or 0
+
+            return detail_info
 
 auth_models.User = User
 
