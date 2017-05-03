@@ -17,6 +17,16 @@ from socket_server import SocketServer, EventType
 
 def invite_friend(request):
     invited_id = request.POST.get("invited_id")
+
+    user1 = ChannelMember.objects.filter(user_id=invited_id).first()
+    user2 = ChannelMember.objects.filter(user_id=request.user.id).first()
+    if user1 and user2:
+        if user1.channel_id == user2.channel_id:
+            channel = Channel.objects.filter(channel_id=user1.channel_id).first()
+            ChannelAddFriendLog.objects.create(user_id=request.user.id,
+                                               friend_id=invited_id,
+                                               channel_type=channel.channel_type)
+
     if InviteFriend.objects.filter(user_id=invited_id, invited_id=request.user.id).first():
         Friend.add(user_id=request.user.id, friend_id=invited_id)
     else:

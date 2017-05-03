@@ -22,6 +22,9 @@ class ChannelAddFriendLog(models.Model):
     channel_type = models.SmallIntegerField()
     date = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = "channel_add_friend_log"
+
 
 class InviteFriend(models.Model):
     user_id = models.IntegerField()
