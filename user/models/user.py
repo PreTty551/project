@@ -267,7 +267,7 @@ class User(AbstractUser, PropsMixin):
             "is_contact": self.is_contact
         }
 
-        def detail_info(self, user_id=None):
+    def detail_info(self, user_id=None):
         from .friend import common_friends, Friend
         detail_info = self.basic_info()
         if user_id:

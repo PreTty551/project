@@ -103,7 +103,7 @@ class Friend(models.Model):
 
     @classmethod
     def get_friends_by_online_push(cls, user_id):
-        return list(cls.objects.filter(user_id=user_id, is_push=1).values_list("friend_id", flat=True))
+        return list(cls.objects.filter(user_id=user_id, push=1).values_list("friend_id", flat=True))
 
     @classmethod
     def who_is_friends(cls, owner_id, friend_ids):

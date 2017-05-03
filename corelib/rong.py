@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # coding=utf-8
 
 import os
@@ -11,6 +10,9 @@ import hashlib
 
 import datetime
 import requests
+
+from django.conf import settings
+
 
 
 class ConnectionError(Exception):
@@ -206,13 +208,13 @@ class ApiClient(object):
         :return: {'app-key':'xxx','nonce':'xxx','timestamp':'xxx','signature':'xxx'}
         """
 
-        nonce = str(random.random())
+        nonce = str(random.random()).encode('utf-8')
         timestamp = str(
             int(time.time()) * 1000
-        )
+        ).encode('utf-8')
 
         signature = hashlib.sha1(
-            self._app_secret + nonce + timestamp
+            self._app_secret.encode('utf-8') + nonce + timestamp
         ).hexdigest()
 
         return {
@@ -254,9 +256,7 @@ class ApiClient(object):
     def call_api(self, action, params=None, sms_api_host=None, **kwargs):
         """
         调用API的通用方法，有关SSL证书验证问题请参阅
-
         http://www.python-requests.org/en/latest/user/advanced/#ssl-cert-verification
-
         :param action: Method Name，
         :param params: Dictionary,form params for api.
         :param timeout: (optional) Float describing the timeout of the request.
@@ -277,12 +277,10 @@ class ApiClient(object):
 
         """ 获取token
         http://docs.rongcloud.cn/server.html#_获取_Token_方法
-
         :param user_id:
         :param name:
         :param portrait_uri:
         :return: {"code":200, "userId":"jlk456j5", "token":"sfd9823ihufi"}
-
         """
         return self.call_api(
             action=self.ACTION_USER_TOKEN,
@@ -368,7 +366,6 @@ class ApiClient(object):
         """ 发送会话消息
         http://docs.rongcloud.cn/server.html#_融云内置消息类型表
         http://docs.rongcloud.cn/server.html#_发送会话消息_方法
-
         :param from_user_id:发送人用户 Id
         :param to_user_id:接收用户 Id，提供多个本参数可以实现向多人发送消息。
         :param object_name:消息类型,目前包括如下类型 ["RC:TxtMsg","RC:ImgMsg","RC:VcMsg","RC:LocMsg"]
@@ -399,7 +396,6 @@ class ApiClient(object):
                                push_content=None, push_data=None):
         """发送系统消息
         http://docs.rongcloud.cn/server.html#_发送系统消息_方法
-
         :param from_user_id:发送人用户 Id
         :param to_user_id:接收用户 Id，提供多个本参数可以实现向多人发送消息。
         :param object_name:消息类型,目前包括如下类型 ["RC:TxtMsg","RC:ImgMsg","RC:VcMsg","RC:LocMsg"]
@@ -426,7 +422,6 @@ class ApiClient(object):
                               content, push_content=None, push_data=None):
         """以一个用户身份向群组发送消息
         http://docs.rongcloud.cn/server.html#_发送群组消息_方法
-
         :param from_user_id:发送人用户 Id
         :param to_group_id:接收群Id，提供多个本参数可以实现向多群发送消息。（必传）
         :param object_name:消息类型,目前包括如下类型 ["RC:TxtMsg","RC:ImgMsg","RC:VcMsg","RC:LocMsg"]
@@ -503,8 +498,6 @@ class ApiClient(object):
     def group_dismiss(self, user_id, group_id):
         """将该群解散，所有用户都无法再接收该群的消息。
         http://docs.rongcloud.cn/server.html#_解散群组_方法
-
-
         :param user_id: 操作解散群的用户 Id。
         :param group_id:要解散的群 Id。
         :return:{"code":200}
@@ -533,11 +526,9 @@ class ApiClient(object):
     def chatroom_destroy(self, chatroom_id_list=None):
         """销毁聊天室 方法
         当提交参数chatroomId多个时表示销毁多个聊天室
-
         http://docs.rongcloud.cn/server.html#_销毁聊天室_方法
         :param chatroom_id_list:要销毁的聊天室 Id。
         :return:{"code":200}
-
         """
         params = {
             "chatroomId": chatroom_id_list
@@ -547,9 +538,7 @@ class ApiClient(object):
 
     def chatroom_query(self, chatroom_id_list=None):
         """查询聊天室信息 方法
-
         http://docs.rongcloud.cn/server.html#_查询聊天室信息_方法
-
         :param chatroom_id_list:当提交多个时表示查询多个聊天室， 如果为None ，则查询所有聊天室
         :return:{"code":200,"chatRooms":[{"chatroomId":"id1001","name":"name1","time":"2014-01-01 1:1:1"},{"chatroomId":"id1002","name":"name2","time":"2014-01-01 1:1:2"}]}
         """
@@ -562,12 +551,13 @@ class ApiClient(object):
 
     def chatroom_user_query(self, chatroom_id):
         """查询聊天室内用户 方法
-
         http://docs.rongcloud.cn/server.html#_查询聊天室内用户_方法
-
         :param chatroom_id:要查询的聊天室id
         :return:{"code":200,"users":[{"id":"uid1"},{"id":"uid2"}]}
         """
         return self.call_api(action=self.ACTION_CHATROOM_USER_QUERY, params={
             "chatroomId": chatroom_id
         })
+
+
+client = ApiClient(settings.RONGCLOUD_APP_KEY, settings.RONGCLOUD_APP_SECRET)

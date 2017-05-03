@@ -662,3 +662,9 @@ def rongcloud_push(request):
     message = "%s: %s" % (request.user.nickname, message)
     JPush().async_push(user_ids=[to_user_id], message=message, badge="+1")
     return JsonResponse()
+
+
+def logout(request):
+    request.user.offline()
+    logout(request)
+    return JsonResponse()

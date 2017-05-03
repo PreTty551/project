@@ -55,4 +55,7 @@ urlpatterns = [
     url(r'^user/poke/$', views.poke, name='poke'),
 
     url(r'^rongcloud/push/$', views.rongcloud_push, name='rongcloud_push'),
+    url(r'^user/logout/$', views.logout, name='logout'),
+    url(r'^user/ios/check_version/$', views.check_ios_version, name='check_ios_version'),
+
 ]
