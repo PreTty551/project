@@ -4,6 +4,7 @@ from user import views
 urlpatterns = [
     url(r'^user/login/sms_code/request/$', views.request_sms_code, name='request_sms_code'),
     url(r'^user/login/sms_code/verify/$', views.verify_sms_code, name='verify_sms_code'),
+    url(r'^user/login/voice_code/request/$', views.request_voice_code, name='request_voice_code'),
     url(r'^user/register/$', views.register, name='register'),
     url(r'^user/login/weibo/$', views.wb_user_login, name='wb_user_login'),
     url(r'^user/login/wechat/$', views.wx_user_login, name='wx_user_login'),
@@ -58,5 +59,6 @@ urlpatterns = [
     url(r'^user/logout/$', views.user_logout, name='logout'),
     url(r'^user/ios/check_version/$', views.check_ios_version, name='check_ios_version'),
     url(r'^load_balancing/$', views.load_balancing, name='load_balancing'),
+    url(r'^user/kill_app/$', views.kill_app, name='kill_app'),
     url(r'^kaipa/$', views.tianmo, name='load_balancing'),
 ]

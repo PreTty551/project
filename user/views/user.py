@@ -589,11 +589,12 @@ def poke(request):
 
     my = ChannelMember.objects.filter(user_id=request.user.id).first()
     if my:
+        channel = Channel.objects.filter(channel_id=my.channel_id).first()
         user = ChannelMember.objects.filter(user_id=user_id).first()
         if user and user.channel_id == my.channel_id:
             return _poke(request.user, user_id)
         else:
-            return _invite_party(request.user, user_id, my.channel_id)
+            return _invite_party(request.user, user_id, my.channel_id, channel.channel_type)
     else:
         return _poke(request.user, user_id)
 
@@ -622,7 +623,7 @@ def _poke(owner, user_id):
     return JsonResponse()
 
 
-def _invite_party(owner, user_id, channel_id):
+def _invite_party(owner, user_id, channel_id, channel_type):
     push_role = owner.push_role(friend_id=user_id)
     if not push_role:
         return JsonResponse()
@@ -646,7 +647,8 @@ def _invite_party(owner, user_id, channel_id):
                            push_type=1,
                            is_sound=True,
                            sound="push.caf",
-                           channel_id=channel_id)
+                           channel_id=channel_id,
+                           channel_type=channel_type)
 
         redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:

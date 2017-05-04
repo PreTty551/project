@@ -346,7 +346,6 @@ def delete_member_after(sender, instance, **kwargs):
         user.last_pa_time = time.time()
         redis.delete(MC_PAING % user.id)
 
-        channel = Channel.objects.filter(channel_id=instance.channel_id).first()
         if channel.channel_type == 2:
             refresh_public(instance.user_id)
         else:
