@@ -203,7 +203,7 @@ def user_online_callback(request):
     is_online = request.POST.get("is_online", True)
 
     if not bool(is_online):
-        ChannelMember.clear_channel(user_id=user_id)
+        request.user.offline()
 
     return JsonResponse()
 

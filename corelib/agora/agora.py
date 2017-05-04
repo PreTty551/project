@@ -77,7 +77,7 @@ class Agora(object):
         self._call("channel_sendmsg", account=str(self.user_id), kargs=json.dumps(_))
 
     def subscribe_online(self):
-        self._call("subscribe_online", url="https://gouhuoapp.com/api/v2/agora/user_online_callback/")
+        self._call("subscribe_online", url="https://api.gouhuoapp.com/agora/user_online_callback/")
 
     def query_online(self):
         """res = {'account': '3', 'result': 'ok', 'is_online': True}"""

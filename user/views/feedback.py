@@ -11,7 +11,7 @@ def add_feedback(request):
     metrics = request.POST.get("metrics")
     grade = request.POST.get("grade")
 
-    FeedBack.objects.create(user_id=request.user.id, content=content, grade=grade)
+    FeedBack.objects.create(user_id=request.user.id, content=metrics, grade=grade)
     return JsonResponse()
 
 

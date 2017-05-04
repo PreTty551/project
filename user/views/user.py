@@ -647,12 +647,12 @@ def _invite_party(owner, user_id, channel_id, channel_type):
                            push_type=1,
                            is_sound=True,
                            sound="push.caf",
-                           channel_id=channel_id,
-                           channel_type=channel_type)
+                           channel_id=str(channel_id),
+                           channel_type=str(channel_type))
 
         redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:
-        return JsonResponse({"error": {"return_code": 40000, "return_msg": "知道了知道了, 对方已经收到了"}})
+        return JsonResponse(error={40000: "好了好了，TA收到啦"})
     return JsonResponse()
 
 
