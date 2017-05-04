@@ -285,6 +285,15 @@ def refresh(user_id):
                                event_type=EventType.refresh_inner_home.value)
 
 
+def refresh_public(user_id):
+    channel_ids = list(Channel.objects.filter(channel_type=2).values_list("channel_id", flat=True))
+    member_ids = list(ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True))
+    SocketServer().refresh(user_id=user_id,
+                           to_user_id=set(member_ids),
+                           message="refresh",
+                           event_type=EventType.refresh_public.value)
+
+
 @receiver(post_save, sender=InviteParty)
 def add_invite_party(sender, created, instance, **kwargs):
     if created:
@@ -308,7 +317,11 @@ def add_member_after(sender, created, instance, **kwargs):
         user.last_pa_time = time.time()
         redis.set(MC_PAING % user.id, 1)
 
-        refresh(instance.user_id)
+        channel = Channel.objects.filter(channel_id=instance.channel_id).first()
+        if channel.channel_type == 2:
+            refresh_public(instance.user_id)
+        else:
+            refresh(instance.user_id)
 
 
 @receiver(post_delete, sender=ChannelMember)
@@ -333,7 +346,11 @@ def delete_member_after(sender, instance, **kwargs):
         user.last_pa_time = time.time()
         redis.delete(MC_PAING % user.id)
 
-        refresh(instance.user_id)
+        channel = Channel.objects.filter(channel_id=instance.channel_id).first()
+        if channel.channel_type == 2:
+            refresh_public(instance.user_id)
+        else:
+            refresh(instance.user_id)
 
 
 def party_push(user_id, channel_id):
