@@ -78,3 +78,8 @@ class Agora(object):
 
     def subscribe_online(self):
         self._call("subscribe_online", url="https://gouhuoapp.com/api/v2/agora/user_online_callback/")
+
+    def query_online(self):
+        """res = {'account': '3', 'result': 'ok', 'is_online': True}"""
+        res = self._call("query_online", account=str(self.user_id))
+        return res["is_online"]

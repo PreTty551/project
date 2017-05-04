@@ -17,6 +17,7 @@ from live.models import ChannelMember, Channel
 
 
 def invite_friend(request):
+    from user.models import ChannelAddFriendLog
     invited_id = request.POST.get("invited_id")
 
     user1 = ChannelMember.objects.filter(user_id=invited_id).first()

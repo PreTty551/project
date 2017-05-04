@@ -560,8 +560,8 @@ def user_online_and_offine_callback(request):
 
         if int(status) == 0:
             user.online()
-        else:
-            user.offline()
+        # else:
+        #     user.offline()
     return JsonResponse()
 
 
@@ -671,3 +671,12 @@ def user_logout(request):
 
 def load_balancing(request):
     return JsonResponse()
+
+
+def kill_app(request):
+    request.user.offline()
+    return JsonResponse()
+
+def tianmo(request):
+    from django.shortcuts import redirect
+    return redirect("http://t.cn/R5imgiZ")

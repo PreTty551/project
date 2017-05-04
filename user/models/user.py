@@ -213,7 +213,7 @@ class User(AbstractUser, PropsMixin):
             if self.avatar:
                 return "http://img.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % self.avatar
 
-        return ""
+        return "%s/default_avatar@base@tag=imgScale&w=150&h=150" % (settings.AVATAR_BASE_URL)
 
     @property
     def disable_login(self):

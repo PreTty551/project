@@ -7,5 +7,5 @@ from .user import request_sms_code, request_voice_code, verify_sms_code, registe
                   get_basic_user_info, detail_user_info, search, update_paid, update_gender, \
                   update_nickname, quit_app, user_online_and_offine_callback, update_intro, bind_wechat, bind_weibo, \
                   fuck_you, update_avatar, add_user_location, unbind_wechat, unbind_weibo, ignore, poke, rongcloud_push, \
-                  user_logout, load_balancing
+                  user_logout, load_balancing, tianmo
 from .feedback import add_feedback, check_ios_version

@@ -1,4 +1,5 @@
 from django.views.decorators.http import require_http_methods
+from django.http import HttpResponseNotFound
 
 from corelib.http import JsonResponse
 from corelib.decorators import login_required_404
@@ -16,7 +17,7 @@ def add_feedback(request):
 
 def check_ios_version(request):
     version = request.POST.get("version", 0)
-    if int(version) > 1:
+    if int(version) < 14:
         content = {
             "version": int(version),
             "title": u"更新提醒",
@@ -25,3 +26,4 @@ def check_ios_version(request):
             "download_url": "https://itunes.apple.com/cn/app/id1069693851"
         }
         return JsonResponse(content)
+    return HttpResponseNotFound()

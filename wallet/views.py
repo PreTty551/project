@@ -12,6 +12,7 @@ from corelib.paginator import paginator
 from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount, Withdrawals, WalletRecord
 from wallet.error_handle import WalletError
 from user.models import User
+from gift.models import Gift
 
 
 def wallet(request):
@@ -119,6 +120,10 @@ def wallet_record(request):
     page = int(request.POST.get("page", 1))
 
     record_list = WalletRecord.objects.filter(owner_id=request.user.id)
+    gifts = list(Gift.objects.values_list("id", "name"))
+    gift_dict = {}
+    for k, v in gifts:
+        gift_dict[k] = v
 
     results = {"record_list": [], "paginator": {}}
     record_list, paginator_dict = paginator(record_list, page, 30)
@@ -126,8 +131,8 @@ def wallet_record(request):
     for record in record_list:
         user = User.get(record.owner_id)
         basic_info = user.basic_info()
-        basic_info["record_msg"] = "%s - %s" % (user.nickname, record.type)
-        basic_info["amount"] = Decimal(record.amount) // 100
+        basic_info["record_msg"] = "%s - %s" % (user.nickname, gift_dict[record.type])
+        basic_info["amount"] = Decimal(record.amount) / 100
         basic_info["type"] = record.type
         basic_info["category"] = record.category
 

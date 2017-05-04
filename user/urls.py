@@ -58,4 +58,5 @@ urlpatterns = [
     url(r'^user/logout/$', views.user_logout, name='logout'),
     url(r'^user/ios/check_version/$', views.check_ios_version, name='check_ios_version'),
     url(r'^load_balancing/$', views.load_balancing, name='load_balancing'),
+    url(r'^kaipa/$', views.tianmo, name='load_balancing'),
 ]

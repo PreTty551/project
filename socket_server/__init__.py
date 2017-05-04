@@ -24,7 +24,6 @@ class EventType(Enum):
     refresh_public = 2
     refresh_private = 3
     refresh_friend = 4
-    channel_lock = 5
 
 
 class SocketServer(object):
