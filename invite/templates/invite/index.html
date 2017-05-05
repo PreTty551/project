@@ -4,7 +4,7 @@
 <body class="layout-default">
   <div id="top_area" style="position:absolute;top:10px;display:none;z-index:100;">
     <div style="position:absolute;margin-top:25px;margin-left:80px">{{user.nickname|truncatechars:6}}邀请你加入Party</div>
-    <a href="https://gouhuoapp.com/invite/download/?channel_id={{channel.channel_id}}&channel_type={{channel.channel_type}}">
+    <a href="https://api.gouhuoapp.com/invite/download/?channel_id={{channel.channel_id}}&channel_type={{channel.channel_type}}">
       <img src="/static/top_bar.png" />
     </a>
   </div>
@@ -31,7 +31,7 @@
       </div>
     </div>
     <div style="position:absolute;bottom:-10px;">
-      <a href="https://gouhuoapp.com/invite/download/?channel_id={{channel.channel_id}}&channel_type={{channel.channel_type}}">
+      <a href="https://api.gouhuoapp.com/invite/download/?channel_id={{channel.channel_id}}&channel_type={{channel.channel_type}}">
         <img src="/static/bottom_bar.png" />
       </a>
     </div>
