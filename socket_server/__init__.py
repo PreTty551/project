@@ -1,9 +1,11 @@
 import json
 import time
+import django_rq
 
 from enum import Enum, unique
 from corelib.rongcloud import RongCloud
 from django.conf import settings
+
 
 @unique
 class PopBoxType(Enum):
@@ -52,9 +54,8 @@ class SocketServer(object):
             },
             "time": int(time.time() * 1000)
         }
-        return self.client.send_inner_message(user_id=user_id,
-                                              to_user_id=to_user_id,
-                                              content=json.dumps(data))
+        queue = django_rq.get_queue('high')
+        queue.enqueue(self.client.send_inner_message, user_id, to_user_id, json.dumps(data))
 
     def _send_event(self, user_id, to_user_id, event_type, message, **kwargs):
         data = {
@@ -65,9 +66,8 @@ class SocketServer(object):
             },
             "time": int(time.time() * 1000)
         }
-        return self.client.send_hide_message(user_id=user_id,
-                                             to_user_id=to_user_id,
-                                             content=json.dumps(data))
+        queue = django_rq.get_queue('high')
+        queue.enqueue(self.client.send_hide_message, user_id, to_user_id, json.dumps(data))
 
     def valid(self, user_id, to_user_id):
         from user.models import User

@@ -647,8 +647,8 @@ def _invite_party(owner, user_id, channel_id, channel_type):
                            push_type=1,
                            is_sound=True,
                            sound="push.caf",
-                           channel_id=str(channel_id),
-                           channel_type=str(channel_type))
+                           channel_id=channel_id,
+                           channel_type=channel_type)
 
         redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:

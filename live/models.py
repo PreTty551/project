@@ -28,16 +28,19 @@ class Channel(models.Model):
     is_lock = models.BooleanField(default=False)
     date = models.DateTimeField('date', auto_now_add=True)
 
+    class Meta:
+        db_table = 'channel'
+
     @classmethod
-    @transaction.atomic()
     def _add(cls, channel_id, user_id, channel_type):
         obj = cls.objects.create(creator_id=user_id, channel_id=channel_id, channel_type=channel_type)
         if obj:
-            ChannelMember.add(channel_id=channel_id, user_id=user_id)
-            ChannelMember.objects.exclude(channel_id=obj.channel_id).filter(user_id=user_id).delete()
             user = User.get(user_id)
             obj.name = user.nickname
             obj.save()
+
+            ChannelMember.add(channel_id=channel_id, user_id=user_id)
+            ChannelMember.objects.exclude(channel_id=obj.channel_id).filter(user_id=user_id).delete()
             return obj
         return None
 
@@ -71,7 +74,9 @@ class Channel(models.Model):
             ChannelMember.objects.exclude(channel_id=channel.channel_id).filter(user_id=user_id).delete()
 
             user = User.get(user_id)
-            channel.name = "%s,%s" % (user.nickname, channel.name)
+            name = channel.name.replace("%s," % user.nickname, "").replace(",%s" % user.nickname, "")
+            name = name.strip(",")
+            channel.name = "%s,%s" % (user.nickname, name)
             channel.save()
             return True
         return False
@@ -119,19 +124,6 @@ class Channel(models.Model):
 
     def title(self, friend_ids=None):
         return self.name
-        # nicknames = []
-        # if friend_ids:
-        #     user_ids = ChannelMember.get_members_order_by_friend(channel_id=self.channel_id, friend_ids=friend_ids)
-        # else:
-        #     user_ids = self.get_channel_member()
-        #
-        # for user_id in user_ids:
-        #     user = User.get(user_id)
-        #     if not user:
-        #         continue
-        #     nicknames.append(user.nickname)
-        # title = ",".join(nicknames)
-        # return "%s%s" % ("", title)
 
     @property
     def duration_time(self):
@@ -162,26 +154,13 @@ class Channel(models.Model):
         }
 
 
-class InviteChannel(models.Model):
-    user_id = models.IntegerField()
-    to_user_id = models.IntegerField()
-    channel_id = models.CharField(max_length=50)
-    status = models.SmallIntegerField()
-    date = models.DateTimeField(auto_now_add=True)
-
-    @classmethod
-    def add(cls, user_id, to_user_id, channel_id):
-        return cls.objects.create(user_id=user_id,
-                                  to_user_id=to_user_id,
-                                  channel_id=channel_id)
-
-
 class ChannelMember(models.Model):
     channel_id = models.CharField(max_length=50)
     user_id = models.IntegerField()
     date = models.DateTimeField('date', auto_now_add=True)
 
     class Meta:
+        db_table = "channel_member"
         unique_together = (('channel_id', 'user_id'))
 
     @classmethod
@@ -352,7 +331,7 @@ def delete_member_after(sender, instance, **kwargs):
             refresh(instance.user_id)
 
 
-def party_push(user_id, channel_id):
+def party_push(user_id, channel_id, channel_type):
     push_lock = redis.get("mc:user:%s:pa_push_lock" % user_id)
     if not push_lock:
         bulk_ids = []
@@ -364,7 +343,11 @@ def party_push(user_id, channel_id):
         party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
         no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
 
-        for friend_id in party_friend_ids:
+        pre_week = timezone.now() - datetime.timedelta(days=7)
+        party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=no_party_friend_ids)
+                                                          .values_list("user_id", flat=True).distinct())
+
+        for friend_id in party_user_ids_in_week:
             fids = Friend.get_friend_ids(user_id=friend_id)
             if int(user_id) in fids:
                 fids.remove(int(user_id))
@@ -376,19 +359,19 @@ def party_push(user_id, channel_id):
             if nicknames:
                 nicknames = ",".join(nicknames)
                 message = "%s 正在开PA" % nicknames
-                JPush().async_push(user_ids=[friend_id], message=message, push_type=1)
+                JPush().async_push(user_ids=[friend_id],
+                                   message=message,
+                                   push_type=1,
+                                   channel_id=channel_id,
+                                   channel_type=channel_type)
                 SocketServer().invite_party_in_live(user_id=user.id,
                                                     to_user_id=friend_id,
                                                     message=message,
                                                     channel_id=channel_id)
 
-        pre_week = timezone.now() - datetime.timedelta(days=7)
-        party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=no_party_friend_ids)
-                                                          .values_list("user_id", flat=True).distinct())
-        for no_party_id in party_user_ids_in_week:
-            message = "%s 正在开PA" % user.nickname
-            JPush().async_batch_push(user_ids=[no_party_id],
-                                     message=message,
-                                     push_type=1)
+        message = "%s 正在开PA" % user.nickname
+        JPush().async_batch_push(user_ids=[party_friend_ids],
+                                 message=message,
+                                 push_type=1, channel_id=channel_id, channel_type=channel_type)
 
-        redis.set("mc:user:%s:pa_push_lock" % user_id, 1, 30)
+        redis.set("mc:user:%s:pa_push_lock" % user_id, 1, 60)
