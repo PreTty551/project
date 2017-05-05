@@ -226,6 +226,12 @@ def friend_dynamic(user_id):
         return "%s开过PA" % d
     elif (datetime.datetime.now() - dt).days < 30:
         return "%s见过TA" % d
+    else:
+        friend = Friend.objects.filter(user_id=owner_id, friend_id=user_id).first()
+        if friend:
+            date_str = time_format(timezone.localtime(friend.date))
+            return "%s成为朋友" % date_str
+    return ""
 
 
 def common_friends(user_id, to_user_id):

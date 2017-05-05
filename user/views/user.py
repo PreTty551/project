@@ -260,6 +260,26 @@ def third_request_sms_code(request):
         return JsonResponse(error=LoginError.REQUEST_SMS_CODE)
 
 
+def third_request_voice_code(request):
+    mobile = request.POST.get("mobile", "")
+    third_name = request.POST.get("third_name", "")
+    if not mobile:
+        return HttpResponseBadRequest()
+
+    third_user = User.objects.filter(mobile=mobile).first()
+    if third_user:
+        return JsonResponse(error=LoginError.MOBILE_ALREADY_USED)
+
+    try:
+        jsms = JSMS(mobile=mobile)
+        is_success, error_dict = jsms.request_voice_code()
+        if is_success:
+            return JsonResponse()
+        return JsonResponse(error=error_dict)
+    except Exception as e:
+        return JsonResponse(error=LoginError.REQUEST_SMS_CODE)
+
+
 def third_verify_sms_code(request):
     """1男0女"""
     temp_third_id = request.POST.get("temp_third_id")
