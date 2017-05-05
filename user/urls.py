@@ -61,5 +61,7 @@ urlpatterns = [
     url(r'^user/ios/check_version/$', views.check_ios_version, name='check_ios_version'),
     url(r'^load_balancing/$', views.load_balancing, name='load_balancing'),
     url(r'^user/kill_app/$', views.kill_app, name='kill_app'),
-    url(r'^kaipa/$', views.tianmo, name='load_balancing'),
+    url(r'^kaipa/$', views.tianmo, name='kaipa'),
+    url(r'^api/v2/version/ios/$', views.say_ios, name='say_ios'),
+
 ]

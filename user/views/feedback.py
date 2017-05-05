@@ -27,3 +27,17 @@ def check_ios_version(request):
         }
         return JsonResponse(content)
     return HttpResponseNotFound()
+
+
+def say_ios(request):
+    code = 1
+    results = {
+        "code_name": "v1.5.20",
+        "code": code,
+        "title": u"更新提醒",
+        "content": u"SAY更新了，立即更新体验Party的新功能吧！",
+        "is_force_update": False,
+        "download_url": "https://itunes.apple.com/cn/app/id1069693851"
+    }
+
+    return JsonResponse({'results': results, "response": {"status_code": 200}})
