@@ -31,7 +31,7 @@ def pa(request, user_id):
 
 
 def download(request):
-    return redirect('https://fir.im/say')
+    return redirect('https://itunes.apple.com/app/say-视频群聊/id1069693851')
 
 
 def file_download(request):
