@@ -1,5 +1,5 @@
 from django.views.decorators.http import require_http_methods
-from django.http import HttpResponseNotFound
+from django.http import HttpResponseNotFound, JsonResponse as JR
 
 from corelib.http import JsonResponse
 from corelib.decorators import login_required_404
@@ -30,14 +30,14 @@ def check_ios_version(request):
 
 
 def say_ios(request):
-    code = 1
+    code = 10000
     results = {
         "code_name": "v1.5.20",
         "code": code,
-        "title": u"更新提醒",
-        "content": u"SAY更新了，立即更新体验Party的新功能吧！",
-        "is_force_update": False,
+        "title": u"重大更新",
+        "content": u"SAY更名为「开PA」，快前往应用商店下载吧！",
+        "is_force_update": True,
         "download_url": "https://itunes.apple.com/cn/app/id1069693851"
     }
 
-    return JsonResponse({'results': results, "response": {"status_code": 200}})
+    return JR({'results': results, "response": {"status_code": 200}})
