@@ -1,13 +1,10 @@
-# -*- coding: utf-8 -*-
 from django.core.management.base import BaseCommand
-import time
+import datetime
 
-from corelib.redis_store import redis
+from corelib.redis import redis
+from corelib.agora import Agora
 
-from livemedia.models import Channel, ChannelMember
-
-
-CHANNEL_EXPIRE_TIME = 120
+from live.models import Channel, ChannelMember
 
 
 class Command(BaseCommand):
@@ -17,13 +14,10 @@ class Command(BaseCommand):
         pass
 
     def handle(self, *args, **options):
-        closed_channels = redis.zrange("amumu:socket:closed_clients", 0, -1, withscores=True)
-        for user_id, score in closed_channels:
-            # 过期
-            if (int(time.time()) - CHANNEL_EXPIRE_TIME) > score:
-                member = ChannelMember.objects.filter(user_id=user_id).first()
-                if member:
-                    member.delete()
-                redis.zrem("amumu:socket:closed_clients", user_id)
-            else:
-                break
+        members = ChannelMember.objects.all()
+        for member in members:
+            agora = Agora(member.user_id)
+            is_online = agora.query_online()
+            if not is_online:
+                ChannelMember.objects.filter(user_id=member.user_id).delete()
+                print("clear user: %s, date: %s" % (member.user_id, datetime.datetime.now()))
