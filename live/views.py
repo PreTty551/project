@@ -14,7 +14,7 @@ from corelib.http import JsonResponse
 from corelib.websocket import Websocket
 from corelib.redis import redis
 
-from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, party_push
+from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog
 from live.consts import ChannelType
 from user.models import User, Friend, UserContact, Place, guess_know_user, friend_dynamic
 from user.consts import UserEnum
@@ -118,7 +118,6 @@ def create_channel(request):
     if channel:
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
-        party_push(user_id=request.user.id, channel_id=channel.channel_id)
         return JsonResponse({"channel_id": channel.channel_id, "channel_key": channel_key})
 
 

@@ -60,7 +60,6 @@ class Channel(models.Model):
         pass
 
     @classmethod
-    @transaction.atomic()
     def delete_channel(cls, channel_id):
         channel = cls.objects.filter(channel_id=channel_id).first()
         if channel:
@@ -301,6 +300,8 @@ def add_member_after(sender, created, instance, **kwargs):
             refresh_public(instance.user_id)
         else:
             refresh(instance.user_id)
+
+        party_push(instance.user_id, instance.channel_id, channel.channel_type)
 
 
 @receiver(post_delete, sender=ChannelMember)
