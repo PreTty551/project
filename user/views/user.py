@@ -370,8 +370,14 @@ def check_login(request):
 def get_profile(request):
     user = User.get(id=request.user.id)
     invite_friend_ids = InviteFriend.get_invited_my_ids(owner_id=request.user.id)
+    ignore_user_ids = list(Ignore.objects.filter(owner_id=request.user.id, ignore_type=1)
+                                         .values_list("ignore_id", flat=True))
+
     invite_friends = []
     for friend_id in invite_friend_ids:
+        if friend_id in ignore_user_ids:
+            continue
+
         u = User.get(friend_id)
         basic_info = u.basic_info()
         basic_info["user_relation"] = UserEnum.be_invite.value
