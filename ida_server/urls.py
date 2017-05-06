@@ -29,6 +29,7 @@ urlpatterns = [
     url(r'^invite/', include('invite.urls')),
     url(r'^h5/$', views.main),
     url(r'^apple-app-site-association$', file_download),
+    url(r'^clause/$', views.clause),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

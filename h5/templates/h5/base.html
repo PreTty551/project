@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+{% load staticfiles %}
+<html lang="zh-CN">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <meta name="renderer" content="webkit">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="grey" />
+  <meta name="format-detection" content="telephone=no;address=no;email=no"/>
+  <title>{% block title %}SAY{% endblock %}</title>
+  <meta name="keywords" content="回答 提问 答案 评论">
+  <meta name="description" content="下载SAY">
+  <link rel="stylesheet" href="{% block css %}{% endblock %}" charset="utf-8"/>
+</head>
+<body>
+<div class="wrap">
+  {% block content %}
+
+  {% endblock %}
+</div>
+{% block libjs %}
+<script src="http://7xp90p.com2.z0.glb.qiniucdn.com/js/zepto.min.js"></script>
+<script src="https://res.wx.qq.com/open/js/jweixin-1.0.0.js" charset="utf-8"></script>
+{% endblock %}
+{% block js %}{% endblock %}
+<script language="javascript" type="text/javascript" src="http://js.users.51.la/18777009.js"></script>
+<script src="http://s4.cnzz.com/z_stat.php?id=1258837314&web_id=1258837314" language="JavaScript"></script>
+</body>
+</html>
