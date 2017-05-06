@@ -102,7 +102,7 @@ class UserContact(models.Model):
 
     @classmethod
     def get_contacts_out_app(cls, owner_id):
-        ignore_user_ids = Ignore.objects.filter(ignore_type=2).values_list("ignore_id", flat=True)
+        ignore_user_ids = list(Ignore.objects.filter(ignore_type=2).values_list("ignore_id", flat=True))
         all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
         mobile_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                       .exclude(id__in=ignore_user_ids)

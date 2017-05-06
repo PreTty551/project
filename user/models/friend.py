@@ -116,10 +116,14 @@ class Friend(models.Model):
     @classmethod
     @transaction.atomic()
     def add(cls, user_id, friend_id):
-        Friend.objects.create(user_id=user_id, friend_id=friend_id)
-        Friend.objects.create(user_id=friend_id, friend_id=user_id)
-        InviteFriend.objects.filter(user_id=user_id, invited_id=friend_id).delete()
-        InviteFriend.objects.filter(user_id=friend_id, invited_id=user_id).delete()
+        try:
+            Friend.objects.create(user_id=user_id, friend_id=friend_id)
+            Friend.objects.create(user_id=friend_id, friend_id=user_id)
+            InviteFriend.objects.filter(user_id=user_id, invited_id=friend_id).delete()
+            InviteFriend.objects.filter(user_id=friend_id, invited_id=user_id).delete()
+        except:
+            pass
+
         return True
 
     @classmethod
