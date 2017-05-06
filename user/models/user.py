@@ -132,7 +132,7 @@ class User(AbstractUser, PropsMixin):
         super(User, self).save(*args, **kwargs)
 
     @classmethod
-    #@cache("user:%s" % '{id}')
+    @cache(MC_USER_KEY % '{id}')
     def get(cls, id):
         return cls.objects.filter(id=id).first()
 
@@ -209,7 +209,7 @@ class User(AbstractUser, PropsMixin):
         if ".jpg" in self.avatar:
             return "%s/%s@base@tag=imgScale&w=150&h=150" % (settings.AVATAR_BASE_URL, self.avatar)
 
-        if self.id < 160000:
+        if self.id < 170104:
             if self.avatar:
                 return "http://img.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % self.avatar
 
@@ -352,3 +352,13 @@ def del_thirduser_after(sender, instance, **kwargs):
         user.set_props_item("is_bind_wechat", 0)
     elif instance.third_name == "wb":
         user.set_props_item("is_bind_weibo", 0)
+
+
+@receiver(post_save, sender=User)
+def save_user_after(sender, created, instance, **kwargs):
+    redis.delete(MC_USER_KEY % instance.id)
+
+
+@receiver(post_delete, sender=User)
+def delele_user_after(sender, instance, **kwargs):
+    redis.delete(MC_USER_KEY % instance.id)
