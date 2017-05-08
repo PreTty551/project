@@ -218,9 +218,7 @@ def wb_user_login(request):
     else:
         old_user = TempThirdUser.objects.filter(third_id=third_id).first()
         if old_user:
-            old_user.third_id = user_info["uid"]
-            old_user.avatar = user_info["avatar"]
-            old_user.save()
+            old_user.third_id = third_id
             return JsonResponse({"temp_third_id": old_user.id, "is_new_user": True})
         else:
             try:
@@ -392,10 +390,11 @@ def get_profile(request):
         two_degrees.append(basic_info)
     out_app_contacts = UserContact.recommend_contacts(request.user.id, 20)
 
+    invite_friend_count = InviteFriend.objects.filter(invited_id=request.user.id, status=0).exclude(user_id__in=ignore_user_ids).count()
     results = {}
     results["user"] = user.basic_info()
     results["friend_count"] = Friend.count(user_id=request.user.id)
-    results["friend_invite_count"] = InviteFriend.count(user_id=request.user.id)
+    results["friend_invite_count"] = invite_friend_count
     results["two_degree"] = guess_know_user(request.user.id)
     results["out_app_contacts"] = out_app_contacts
     results["invite_friends"] = invite_friends
@@ -635,14 +634,13 @@ def _poke(owner, user_id):
         message = u"%s%s" % (icon, message)
 
         Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
-        Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
+        Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False, update_date=timezone.now())
 
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,
                                             channel_id=0)
         JPush().async_push(user_ids=[user_id], message=message)
-        Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
         redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:
         return JsonResponse(error={40000: "好了好了，TA收到啦"})
@@ -662,7 +660,7 @@ def _invite_party(owner, user_id, channel_id, channel_type):
             icon += "👉"
         message = "%s%s" % (icon, message)
 
-        Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
+        Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True, update_date=timezone.now())
         Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
@@ -704,6 +702,7 @@ def load_balancing(request):
 def kill_app(request):
     request.user.offline()
     return JsonResponse()
+
 
 def tianmo(request):
     from django.shortcuts import redirect

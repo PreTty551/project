@@ -94,11 +94,13 @@ def ignore(request):
 def get_friends_order_by_pinyin(request):
     friend_list = Friend.get_friends_order_by_pinyin(user_id=request.user.id)
     keys = list(friend_list.keys())
-    if "#" in keys:
+    has_other = "#" in keys
+
+    if has_other:
         keys.remove("#")
 
     sorted_keys = sorted(keys)
-    if "#" in keys:
+    if has_other:
         sorted_keys.append("#")
     return JsonResponse({"friend_list": friend_list, "keys": sorted_keys})
 
@@ -148,5 +150,7 @@ def who_is_friends(request):
 
 
 def unagree_friend_count(request):
-    count = InviteFriend.objects.filter(invited_id=request.user.id, status=0).count()
+    ignore_user_ids = list(Ignore.objects.filter(owner_id=request.user.id, ignore_type=1)
+                                         .values_list("ignore_id", flat=True))
+    count = InviteFriend.objects.filter(invited_id=request.user.id, status=0).exclude(user_id__in=ignore_user_ids).count()
     return JsonResponse({"unagree_count": count})

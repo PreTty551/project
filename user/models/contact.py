@@ -131,7 +131,8 @@ class UserContact(models.Model):
         for contact in common_contacts:
             _ = contacts.setdefault(contact.mobile, [])
             _.append(contact.user_id)
-            contacts_map[contact.mobile] = (contact.name, contact.id)
+            uc = UserContact.objects.filter(mobile=contact.mobile, user_id=owner_id).first()
+            contacts_map[contact.mobile] = (uc.name, uc.id)
             user_ids.append(contact.user_id)
 
         results = []

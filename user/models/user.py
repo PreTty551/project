@@ -262,7 +262,7 @@ class User(AbstractUser, PropsMixin):
             "avatar_url": self.avatar_url,
             "gender": self.gender,
             "intro": self.intro or "",
-            "paid": self.paid,
+            "paid": str(self.paid),
             "is_paid": self.is_paid,
             "is_contact": self.is_contact
         }
