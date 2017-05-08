@@ -21,19 +21,30 @@ def wallet(request):
 
 
 def wallet_record(request):
-    page = request.POST.get("page", 1)
+    page = int(request.POST.get("page", 1))
 
-    record_list = WalletRecord.objects.filter(owner_id=request.user.id)
+    record_list = WalletRecord.objects.filter(owner_id=request.user.id).order_by("-id")
+    gifts = list(Gift.objects.values_list("id", "name"))
+    gift_dict = {}
+    for k, v in gifts:
+        gift_dict[k] = v
 
     results = {"record_list": [], "paginator": {}}
     record_list, paginator_dict = paginator(record_list, page, 30)
-    # user_list = [user.basic_info() for user in record_list]
     records = []
     for record in record_list:
         user = User.get(record.owner_id)
         basic_info = user.basic_info()
-        basic_info["record_msg"] = "%s - %s" % (user.nickname, record.type)
-        basic_info["amount"] = record.amount
+
+        if record.category == 1:
+            recode_msg = "%s - %s" % (user.nickname, gift_dict[record.out_trade_no])
+        elif record.category == 2:
+            recode_msg = "账户 - 充值"
+        elif record.category == 3:
+            recode_msg = "账户 - 提现"
+
+        basic_info["record_msg"] = recode_msg
+        basic_info["amount"] = Decimal(record.amount) / 100
         basic_info["type"] = record.type
         basic_info["category"] = record.category
 
@@ -114,33 +125,6 @@ def apply_withdrawal_to_wechat(request):
                 return JsonResponse(error={"return_code": e.result_code, "return_msg": e.errmsg})
         return JsonResponse(error=WalletError.WITHDRAWAL_FAIL)
     return HttpResponseServerError()
-
-
-def wallet_record(request):
-    page = int(request.POST.get("page", 1))
-
-    record_list = WalletRecord.objects.filter(owner_id=request.user.id)
-    gifts = list(Gift.objects.values_list("id", "name"))
-    gift_dict = {}
-    for k, v in gifts:
-        gift_dict[k] = v
-
-    results = {"record_list": [], "paginator": {}}
-    record_list, paginator_dict = paginator(record_list, page, 30)
-    records = []
-    for record in record_list:
-        user = User.get(record.owner_id)
-        basic_info = user.basic_info()
-        basic_info["record_msg"] = "%s - %s" % (user.nickname, gift_dict[record.type])
-        basic_info["amount"] = Decimal(record.amount) / 100
-        basic_info["type"] = record.type
-        basic_info["category"] = record.category
-
-        records.append(basic_info)
-
-    results["paginator"] = paginator_dict
-    results["record_list"] = records
-    return JsonResponse(results)
 
 
 def is_disable(request):

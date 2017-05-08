@@ -5,12 +5,14 @@ from django.db import models, transaction
 from django.db.models import F
 
 from decimal import Decimal
+from corelib.utils import random_str
 
 from wallet.consts import MIN_TRANSFER_AMOUNT, MAX_TRANSFER_AMOUNT
 from wallet.consts import MIN_WITHDRAWALS_AMOUNT, MAX_WITHDRAWALS_AMOUNT
 from wallet.consts import WITHDRAWAL_APPLY, WITHDRAWAL_SUCCESS, WITHDRAWAL_FAIL
 from wallet.consts import RECHARGE_CATEGORY
 from wallet.error_handle import WalletError
+from .wechat import WechatSDK
 
 
 class Wallet(models.Model):
@@ -124,10 +126,10 @@ class WalletRecharge(models.Model):
 
                 WalletRecord.objects.create(owner_id=wr.user_id,
                                             user_id=wr.user_id,
-                                            out_trade_no=out_trade_no,
+                                            out_trade_no=wr.id,
                                             amount=wr.amount,
                                             category=RECHARGE_CATEGORY,
-                                            type=1,
+                                            type=2,
                                             desc="充值")
                 return True
 
@@ -156,15 +158,10 @@ class Withdrawals(models.Model):
 
     @classmethod
     def enterprise_pay(cls, openid, amount):
-        recode = wechat_pay.transfer.transfer(user_id=obj.openid,
-                                              amount=wechat_amount,
-                                              desc="账户提现",
-                                              check_name="NO_CHECK")
-
-        if recode["return_code"] == "SUCCESS" and recode["result_code"] == "SUCCESS":
-            return True, recode
-        else:
-            return False, recode
+        is_success, reason = WechatSDK().enterprise_pay(openid=openid,
+                                                        amount=str(int(amount)),
+                                                        desc="账户提现")
+        return is_success, reason
 
     @classmethod
     def withdrawal(cls):
@@ -172,12 +169,20 @@ class Withdrawals(models.Model):
         for wr in withdrawal_recodes:
             is_success, recode = cls.enterprise_pay(openid=wr.openid, amount=wr.amount)
             if is_success:
-                Withdrawals.objects.filter(user_id=obj.user_id).update(status=WITHDRAWAL_SUCCESS)
+                Withdrawals.objects.filter(user_id=wr.user_id).update(status=WITHDRAWAL_SUCCESS)
                 wallet = Wallet.get(user_id=wr.user_id)
                 wallet.minus(amount=wr.amount)
+
+                WalletRecord.objects.create(owner_id=wr.user_id,
+                                            user_id=wr.user_id,
+                                            out_trade_no=withdrawal_recodes.id,
+                                            amount=wr.amount,
+                                            category=3,
+                                            type=1,
+                                            desc="提现")
             else:
-                Withdrawals.objects.filter(user_id=obj.user_id).update(wechat_recode=recode["err_code"],
-                                                                       status=WITHDRAWAL_FAIL)
+                Withdrawals.objects.filter(user_id=wr.user_id).update(wechat_recode=recode["err_code"],
+                                                                      status=WITHDRAWAL_FAIL)
 
 
 def get_related_amount(amount):

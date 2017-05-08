@@ -46,10 +46,10 @@ class WechatSDK(object):
         return dict_to_xml(res)
 
     def enterprise_pay(self, openid, amount, desc, check_name="NO_CHECK"):
-        recode = wechat_pay.transfer.transfer(user_id=openid,
-                                              amount=amount,
-                                              desc=desc,
-                                              check_name=check_name)
+        recode = self.wechatpay.transfer.transfer(user_id=openid,
+                                                  amount=int(amount),
+                                                  desc=desc,
+                                                  check_name=check_name)
 
         if recode["return_code"] == "SUCCESS" and recode["result_code"] == "SUCCESS":
             return True, None
