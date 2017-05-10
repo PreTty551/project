@@ -12,7 +12,8 @@ from corelib.redis import redis
 from corelib.mc import hlcache, cache
 
 from user.models import User
-from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY, MC_FRIEND_LIST
+from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY, \
+                        MC_FRIEND_LIST, MC_INVITE_MY_FRIEND_IDS, MC_MY_INVITE_FRIEND_IDS
 from live.consts import MC_PAING
 
 
@@ -273,11 +274,11 @@ def delete_friend_after(sender, instance, **kwargs):
 @receiver(post_save, sender=InviteFriend)
 def save_invite_after(sender, created, instance, **kwargs):
     if created:
-        mc.delete(MC_INVITE_MY_FRIEND_IDS % instance.user_id)
-        mc.delete(MC_MY_INVITE_FRIEND_IDS % instance.user_id)
+        redis.delete(MC_INVITE_MY_FRIEND_IDS % instance.invited_id)
+        redis.delete(MC_MY_INVITE_FRIEND_IDS % instance.user_id)
 
 
 @receiver(post_delete, sender=InviteFriend)
 def delete_invite_after(sender, instance, **kwargs):
-    mc.delete(MC_INVITE_MY_FRIEND_IDS % instance.user_id)
-    mc.delete(MC_MY_INVITE_FRIEND_IDS % instance.user_id)
+    redis.delete(MC_INVITE_MY_FRIEND_IDS % instance.invited_id)
+    redis.delete(MC_MY_INVITE_FRIEND_IDS % instance.user_id)
