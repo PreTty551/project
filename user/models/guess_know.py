@@ -1,3 +1,5 @@
+import random
+
 from .contact import UserContact
 from .ignore import Ignore
 from .friend import Friend, InviteFriend
@@ -55,7 +57,7 @@ def guess_know_user(user_id):
     if user_id in user_ids:
         user_ids.remove(user_id)
 
-        results = []
+    results = []
     two_degrees = two_degree_relation(user_id=user_id)[:10]
     for user_id, common_friend_count in two_degrees:
         if user_id in invited_my_ids:
