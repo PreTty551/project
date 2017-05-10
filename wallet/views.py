@@ -9,7 +9,7 @@ from corelib.utils import random_str
 from corelib.wechat import OAuth
 from corelib.paginator import paginator
 
-from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount, Withdrawals, WalletRecord
+from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount, Withdrawals, WalletRecord, yuan
 from wallet.error_handle import WalletError
 from user.models import User
 from gift.models import Gift, GiftOrder
@@ -21,7 +21,7 @@ def wallet(request):
 
 
 def wallet_record(request):
-    page = int(request.POST.get("page", 1))
+    page = int(request.GET.get("page", 1))
 
     record_list = WalletRecord.objects.filter(owner_id=request.user.id).order_by("-id")
     gifts = list(Gift.objects.values_list("id", "name"))
@@ -48,7 +48,7 @@ def wallet_record(request):
             recode_msg = "账户 - 提现"
 
         basic_info["record_msg"] = recode_msg
-        basic_info["amount"] = Decimal(record.amount) / 100
+        basic_info["amount"] = yuan(record.amount)
         basic_info["type"] = record.type
         basic_info["category"] = record.category
         basic_info["time"] = record.date
