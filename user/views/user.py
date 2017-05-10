@@ -22,6 +22,7 @@ from corelib.rongcloud import RongCloud
 from corelib.jiguang import JPush
 from corelib.redis import redis
 from corelib.kingsoft.ks3 import KS3
+from corelib.twilio import Twilio
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
 from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place
@@ -34,6 +35,7 @@ from wallet.models import is_disable_wallet
 @require_http_methods(["POST"])
 def request_sms_code(request):
     mobile = request.POST.get("mobile", "")
+    country_code = request.POST.get("country_code", "86")
     if not mobile:
         return HttpResponseBadRequest()
 
@@ -41,10 +43,16 @@ def request_sms_code(request):
         return JsonResponse()
 
     try:
-        jsms = JSMS(mobile=mobile)
-        is_success, error_dict = jsms.request_code()
-        if is_success:
-            return JsonResponse()
+        if country_code == "86":
+            jsms = JSMS(mobile=mobile)
+            is_success, error_dict = jsms.request_code()
+            if is_success:
+                return JsonResponse()
+        else:
+            is_success = Twilio.send_sms(mobile=mobile, country_code=country_code)
+            if is_success:
+                return JsonResponse()
+
         return JsonResponse(error=error_dict)
     except Exception as e:
         return JsonResponse(error=LoginError.REQUEST_SMS_CODE)
@@ -74,6 +82,7 @@ def verify_sms_code(request):
     mobile = request.POST.get('mobile', '')
     universal_code = datetime.datetime.now().strftime("%y%m%d")
     universal_code = "%s67" % universal_code[:4]
+    country_code = request.POST.get("country_code", "86")
 
     if not mobile or not code:
         return HttpResponseBadRequest()
@@ -98,8 +107,11 @@ def verify_sms_code(request):
         if is_universal_code:
             is_success, error_dict = True, {}
         else:
-            jsms = JSMS(mobile=mobile)
-            is_success, error_dict = jsms.valid(code=code)
+            if country_code == "86":
+                jsms = JSMS(mobile=mobile)
+                is_success, error_dict = jsms.valid(code=code)
+            else:
+                is_success = Twilio.valid_sms(mobile=mobile, country_code=country_code, code=code)
     except Exception as e:
         return JsonResponse(error=LoginError.SMS_CODE_ERROR)
 
@@ -241,6 +253,7 @@ def wb_user_login(request):
 def third_request_sms_code(request):
     mobile = request.POST.get("mobile", "")
     third_name = request.POST.get("third_name", "")
+    country_code = request.POST.get("country_code", "86")
     if not mobile:
         return HttpResponseBadRequest()
 
@@ -249,10 +262,16 @@ def third_request_sms_code(request):
         return JsonResponse(error=LoginError.MOBILE_ALREADY_USED)
 
     try:
-        jsms = JSMS(mobile=mobile)
-        is_success, error_dict = jsms.request_code()
-        if is_success:
-            return JsonResponse()
+        if country_code == "86":
+            jsms = JSMS(mobile=mobile)
+            is_success, error_dict = jsms.request_code()
+            if is_success:
+                return JsonResponse()
+        else:
+            is_success = Twilio.send_sms(mobile=mobile, country_code=country_code)
+            if is_success:
+                return JsonResponse()
+
         return JsonResponse(error=error_dict)
     except Exception as e:
         return JsonResponse(error=LoginError.REQUEST_SMS_CODE)
@@ -285,10 +304,14 @@ def third_verify_sms_code(request):
     mobile = request.POST.get("mobile", "")
     platform = request.POST.get("platform", "")
     version = request.POST.get("version", "")
+    country_code = request.POST.get("country_code", "86")
 
     try:
-        jsms = JSMS(mobile=mobile)
-        is_success, error_dict = jsms.valid(code=code)
+        if country_code == "86":
+            jsms = JSMS(mobile=mobile)
+            is_success, error_dict = jsms.valid(code=code)
+        else:
+            is_success = Twilio.valid_sms(mobile=mobile, country_code=country_code, code=code)
     except Exception as e:
         return JsonResponse(error=LoginError.SMS_CODE_ERROR)
 
@@ -716,4 +739,5 @@ def kill_app(request):
 
 def tianmo(request):
     from django.shortcuts import redirect
+    redis.incr("tianmo")
     return redirect("http://t.cn/R5imgiZ")
