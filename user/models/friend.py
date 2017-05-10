@@ -65,11 +65,13 @@ class InviteFriend(models.Model):
         return True if cls.objects.filter(user_id=user_id, invited_id=friend_id, status=0).first() else False
 
     @classmethod
+    @hlcache(MC_INVITE_MY_FRIEND_IDS % '{owner_id}')
     def get_invited_my_ids(cls, owner_id):
         return list(cls.objects.filter(invited_id=owner_id,
                                        status=0).values_list("user_id", flat=True))
 
     @classmethod
+    @hlcache(MC_MY_INVITE_FRIEND_IDS % '{owner_id}')
     def get_my_invited_ids(cls, owner_id):
         return list(cls.objects.filter(user_id=owner_id,
                                        status=0).values_list("invited_id", flat=True))
@@ -94,15 +96,26 @@ class Friend(models.Model):
         return friend_id in friend_ids
 
     @classmethod
-    # @hlcache(MC_FRIEND_IDS_KEY % '{user_id}')
+    @hlcache(MC_FRIEND_IDS_KEY % '{user_id}')
     def get_friend_ids(cls, user_id):
         return list(cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True))
 
     # @cache(MC_FRIEND_LIST % '{user_id}')
     @classmethod
     def get_friends_order_by_date(cls, user_id):
-        friends = cls.objects.filter(user_id=user_id).order_by("-update_date")
-        return [friend.to_dict() for friend in friends]
+        from live.models import ChannelMember
+        friends = cls.objects.filter(user_id=user_id).order_by("-is_hint", "-update_date")
+        party_user_list = list(ChannelMember.objects.values_list("user_id", flat=True))
+        poke_friend_list = []
+        normal_friend_list = []
+        for friend in friends:
+            if friend.id in party_user_list:
+                poke_friend_list.append(friend)
+            else:
+                normal_friend_list.append(friend)
+
+        poke_friend_list.extend(normal_friend_list)
+        return [friend.to_dict() for friend in poke_friend_list]
 
     @classmethod
     def get_friends_by_online_push(cls, user_id):
@@ -135,7 +148,7 @@ class Friend(models.Model):
 
     def clear_mc(self):
         redis.delete(MC_FRIEND_LIST % self.user_id)
-        redis.hdel(MC_FRIEND_IDS_KEY % self.user_id, self.friend_id)
+        redis.delete(MC_FRIEND_IDS_KEY % self.user_id)
 
     @classmethod
     def get_memo(cls, owner_id, friend_id):
@@ -247,11 +260,24 @@ def common_friends(user_id, to_user_id):
 
 
 @receiver(post_save, sender=Friend)
-def add_friend_after(sender, created, instance, **kwargs):
+def save_friend_after(sender, created, instance, **kwargs):
     if created:
         instance.clear_mc()
 
 
 @receiver(post_delete, sender=Friend)
-def del_friend_after(sender, instance, **kwargs):
+def delete_friend_after(sender, instance, **kwargs):
     instance.clear_mc()
+
+
+@receiver(post_save, sender=InviteFriend)
+def save_invite_after(sender, created, instance, **kwargs):
+    if created:
+        mc.delete(MC_INVITE_MY_FRIEND_IDS % instance.user_id)
+        mc.delete(MC_MY_INVITE_FRIEND_IDS % instance.user_id)
+
+
+@receiver(post_delete, sender=InviteFriend)
+def delete_invite_after(sender, instance, **kwargs):
+    mc.delete(MC_INVITE_MY_FRIEND_IDS % instance.user_id)
+    mc.delete(MC_MY_INVITE_FRIEND_IDS % instance.user_id)

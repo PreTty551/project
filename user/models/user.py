@@ -279,7 +279,9 @@ class User(AbstractUser, PropsMixin):
             else:
                 detail_info["user_relation"] = self.check_friend_relation(user_id=user_id)
                 detail_info["gift_count"] = self.gift_count
-                detail_info["common_friends"] = common_friends(user_id=user_id, to_user_id=self.id) or ""
+                common_friends = common_friends(user_id=user_id, to_user_id=self.id)
+                common_friend_str = ",".join(common_friends)
+                detail_info["common_friends"] = common_friend_str or ""
                 detail_info["is_paid"] = self.is_paid
                 detail_info["is_bind_wechat"] = self.is_bind_wechat or 0
                 detail_info["is_bind_weibo"] = self.is_bind_weibo or 0

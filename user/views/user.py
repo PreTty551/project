@@ -368,7 +368,7 @@ def check_login(request):
 def get_profile(request):
     user = User.get(id=request.user.id)
     invite_friend_ids = InviteFriend.get_invited_my_ids(owner_id=request.user.id)
-    ignore_user_ids = list(Ignore.objects.filter(owner_id=request.user.id, ignore_type=1)
+    ignore_user_ids = list(Ignore.objects.filter(owner_id=request.user.id, ignore_type__in=[1, 3])
                                          .values_list("ignore_id", flat=True))
 
     invite_friends = []
@@ -485,32 +485,41 @@ def update_paid(request):
     if user:
         return JsonResponse(error=LoginError.PA_ALREADY_USED)
 
-    User.objects.filter(id=request.user.id).update(paid=paid)
+    user.paid = paid
+    user.save()
     return JsonResponse()
 
 
 def update_gender(request):
     gender = request.POST.get("gender")
-    User.objects.filter(id=request.user.id).update(gender=gender)
+    user = User.objects.filter(id=request.user.id).first()
+    user.gender = gender
+    user.save()
     return JsonResponse()
 
 
 def update_nickname(request):
     nickname = request.POST.get("nickname")
-    User.objects.filter(id=request.user.id).update(nickname=nickname)
+    user = User.objects.filter(id=request.user.id).first()
+    user.nickname = nickname
+    user.save()
     return JsonResponse()
 
 
 def update_intro(request):
     intro = request.POST.get("intro")
-    User.objects.filter(id=request.user.id).update(intro=intro)
+    user = User.objects.filter(id=request.user.id).first()
+    user.intro = intro
+    user.save()
     return JsonResponse()
 
 
 def update_avatar(request):
     photo = request.FILES['photo']
     avatar = KS3().upload_avatar(img_content=photo.read(), user_id=request.user.id)
-    User.objects.filter(id=request.user.id).update(avatar=avatar)
+    user = User.objects.filter(id=request.user.id).first()
+    user.avatar = avatar
+    user.save()
     return JsonResponse()
 
 
@@ -700,7 +709,8 @@ def load_balancing(request):
 
 
 def kill_app(request):
-    request.user.offline()
+    if request.user and request.user.is_authenticated():
+        request.user.offline()
     return JsonResponse()
 
 

@@ -35,6 +35,7 @@ urlpatterns = [
     url(r'^user/friend/pinyin/$', views.get_friends_order_by_pinyin, name='get_friends_order_by_pinyin'),
     url(r'^user/friend/memo/update/$', views.update_user_memo, name='update_user_memo'),
     url(r'^user/friend/whos/$', views.who_is_friends, name='who_is_friends'),
+    url(r'^user/friend/relation/$', views.friend_relation, name='friend_relation'),
     url(r'^user/unagree_count/$', views.unagree_friend_count, name='unagree_friend_count'),
 
     url(r'^user/ignore/$', views.ignore, name='ignore'),

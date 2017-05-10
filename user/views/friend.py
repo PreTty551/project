@@ -11,7 +11,7 @@ from corelib.jiguang import JPush
 from corelib.redis import redis
 
 from user.models import User, UserContact, InviteFriend, Friend, ContactError
-from user.models import Ignore
+from user.models import Ignore, common_friends
 from socket_server import SocketServer, EventType
 from live.models import ChannelMember, Channel
 
@@ -150,7 +150,15 @@ def who_is_friends(request):
 
 
 def unagree_friend_count(request):
-    ignore_user_ids = list(Ignore.objects.filter(owner_id=request.user.id, ignore_type=1)
+    ignore_user_ids = list(Ignore.objects.filter(owner_id=request.user.id, ignore_type__in=[1, 3])
                                          .values_list("ignore_id", flat=True))
     count = InviteFriend.objects.filter(invited_id=request.user.id, status=0).exclude(user_id__in=ignore_user_ids).count()
     return JsonResponse({"unagree_count": count})
+
+
+def friend_relation(request):
+    user_id = request.GET.get("user_id", "")
+    common_friend_list = common_friends(user_id=request.user.id, to_user_id=user_id)
+    is_friend = Friend.is_friend(owner_id=request.user.id, friend_id=user_id)
+    common_friend = common_friend_list[0] if common_friend_list else ""
+    return JsonResponse({"is_friend": is_friend, "common_friend": common_friend})
