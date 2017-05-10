@@ -167,9 +167,9 @@ def quit_channel(request):
     content = request.POST.get("content", "")
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
+        last_pa_time = request.user.last_pa_time
         channel.quit_channel(user_id=request.user.id)
 
-        last_pa_time = request.user.last_pa_time
         if not last_pa_time:
             return
 
