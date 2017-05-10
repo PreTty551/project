@@ -35,7 +35,12 @@ def two_degree_relation(user_id):
 
 
 def guess_know_user(user_id):
-    all_mobile_list = list(UserContact.objects.filter(user_id=user_id).values_list("mobile", flat=True))
+    contacts = UserContact.objects.filter(user_id=user_id)
+    contacts_dict = {}
+    for contact in contacts:
+        contacts_dict[contact.mobile] = contact.name
+
+    all_mobile_list = contacts_dict.keys()
     friend_ids = Friend.get_friend_ids(user_id=user_id)
     invited_my_ids = InviteFriend.get_invited_my_ids(owner_id=user_id)
     my_invited_ids = InviteFriend.get_my_invited_ids(owner_id=user_id)
@@ -50,17 +55,13 @@ def guess_know_user(user_id):
     if user_id in user_ids:
         user_ids.remove(user_id)
 
-    results = []
-    users = [User.get(id=user_id) for user_id in user_ids[:10]]
-    for user in users:
-        basic_info = user.basic_info()
-        basic_info["reason"] = "通讯录好友"
-        basic_info["user_relation"] = UserEnum.nothing.value
-        results.append(basic_info)
-
+        results = []
     two_degrees = two_degree_relation(user_id=user_id)[:10]
     for user_id, common_friend_count in two_degrees:
         if user_id in invited_my_ids:
+            continue
+
+        if user_id in my_invited_ids:
             continue
 
         user = User.get(id=user_id)
@@ -69,4 +70,17 @@ def guess_know_user(user_id):
         basic_info["user_relation"] = UserEnum.nothing.value
         results.append(basic_info)
 
+    user_ids = random.sample(user_ids, len(user_ids))
+    users = [User.get(id=user_id) for user_id in user_ids[:10]]
+    for user in users:
+        contact_name = contacts_dict.get(user.mobile, "")
+        if contact_name:
+            nickname = "%s(%s)" % (user.nickname, contact_name)
+        else:
+            nickname = user.nickname
+        basic_info = user.basic_info()
+        basic_info["nickname"] = nickname
+        basic_info["reason"] = "通讯录好友"
+        basic_info["user_relation"] = UserEnum.nothing.value
+        results.append(basic_info)
     return results
