@@ -12,7 +12,7 @@ from corelib.paginator import paginator
 from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount, Withdrawals, WalletRecord
 from wallet.error_handle import WalletError
 from user.models import User
-from gift.models import Gift
+from gift.models import Gift, GiftOrder
 
 
 def wallet(request):
@@ -37,7 +37,11 @@ def wallet_record(request):
         basic_info = user.basic_info()
 
         if record.category == 1:
-            recode_msg = "%s - %s" % (user.nickname, gift_dict[record.out_trade_no])
+            gift_order = GiftOrder.objects.filter(id=record.out_trade_no).first()
+            if not gift_order:
+                continue
+
+            recode_msg = "%s - %s" % (user.nickname, gift_dict[gift_order.gift_id])
         elif record.category == 2:
             recode_msg = "账户 - 充值"
         elif record.category == 3:
@@ -47,6 +51,7 @@ def wallet_record(request):
         basic_info["amount"] = Decimal(record.amount) / 100
         basic_info["type"] = record.type
         basic_info["category"] = record.category
+        basic_info["time"] = record.date
 
         records.append(basic_info)
 

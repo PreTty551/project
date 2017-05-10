@@ -175,7 +175,7 @@ class Withdrawals(models.Model):
 
                 WalletRecord.objects.create(owner_id=wr.user_id,
                                             user_id=wr.user_id,
-                                            out_trade_no=withdrawal_recodes.id,
+                                            out_trade_no=wr.id,
                                             amount=wr.amount,
                                             category=3,
                                             type=1,
