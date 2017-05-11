@@ -47,6 +47,8 @@ def wallet_record(request):
         elif record.category == 3:
             recode_msg = "账户 - 提现"
 
+        from wallet.models import yuan
+
         basic_info["record_msg"] = recode_msg
         basic_info["amount"] = yuan(record.amount)
         basic_info["type"] = record.type
