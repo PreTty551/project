@@ -170,38 +170,38 @@ def wx_user_login(request):
     third_user = ThirdUser.objects.filter(third_id=user_info["openid"]).first()
     if third_user:
         user = User.objects.filter(mobile=third_user.mobile).first()
-        user.set_password(user.username)
-        user.save()
-        if user.disable_login:
-            return JsonResponse(error=LoginError.DISABLE_LOGIN)
+        if user:
+            user.set_password(user.username)
+            user.save()
+            if user.disable_login:
+                return JsonResponse(error=LoginError.DISABLE_LOGIN)
 
-        # 登录
-        if _login(request, user):
-            basic_info = user.basic_info()
-            basic_info["is_bind_wechat"] = user.is_bind_wechat
-            basic_info["is_bind_weibo"] = user.is_bind_weibo
-            basic_info["is_disable_wallet"] = is_disable_wallet(request.user)
-            basic_info["is_new_user"] = False
-            return JsonResponse(basic_info)
-    else:
-        old_user = TempThirdUser.objects.filter(wx_unionid=user_info["unionid"]).first()
-        if old_user:
-            old_user.third_id = user_info["openid"]
-            old_user.wx_unionid = user_info["unionid"]
-            old_user.avatar = user_info["headimgurl"]
-            old_user.save()
-            return JsonResponse({"temp_third_id": old_user.id, "is_new_user": True})
+            # 登录
+            if _login(request, user):
+                basic_info = user.basic_info()
+                basic_info["is_bind_wechat"] = user.is_bind_wechat
+                basic_info["is_bind_weibo"] = user.is_bind_weibo
+                basic_info["is_disable_wallet"] = is_disable_wallet(request.user)
+                basic_info["is_new_user"] = False
+                return JsonResponse(basic_info)
 
-        sex = int(user_info["sex"])
-        gender = 0 if sex == 2 else sex
-        temp_third_user = TempThirdUser.objects.create(third_id=user_info["openid"],
-                                                       third_name="wx",
-                                                       gender=gender,
-                                                       nickname=user_info["nickname"],
-                                                       avatar=user_info["headimgurl"])
+    old_user = TempThirdUser.objects.filter(wx_unionid=user_info["unionid"]).first()
+    if old_user:
+        old_user.third_id = user_info["openid"]
+        old_user.wx_unionid = user_info["unionid"]
+        old_user.avatar = user_info["headimgurl"]
+        old_user.save()
+        return JsonResponse({"temp_third_id": old_user.id, "is_new_user": True})
 
-        return JsonResponse({"temp_third_id": temp_third_user.id, "is_new_user": True})
-    return JsonResponse(error=LoginError.WX_LOGIN)
+    sex = int(user_info["sex"])
+    gender = 0 if sex == 2 else sex
+    temp_third_user = TempThirdUser.objects.create(third_id=user_info["openid"],
+                                                   third_name="wx",
+                                                   gender=gender,
+                                                   nickname=user_info["nickname"],
+                                                   avatar=user_info["headimgurl"])
+
+    return JsonResponse({"temp_third_id": temp_third_user.id, "is_new_user": True})
 
 
 def wb_user_login(request):
@@ -312,6 +312,8 @@ def third_verify_sms_code(request):
             is_success, error_dict = jsms.valid(code=code)
         else:
             is_success = Twilio.valid_sms(mobile=mobile, country_code=country_code, code=code)
+            if not is_success:
+                error_dict = {50014: "验证码不正确, 请重新输入"}
     except Exception as e:
         return JsonResponse(error=LoginError.SMS_CODE_ERROR)
 
