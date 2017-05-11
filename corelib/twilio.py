@@ -12,7 +12,8 @@ class Twilio(object):
         data = {
             "phone_number": mobile,
             "country_code": country_code,
-            "via": "sms"
+            "via": "sms",
+            "code_length": 6
         }
         res = requests.post(cls.SEND_API, data=data).json()
         if res["success"]:
