@@ -73,6 +73,9 @@ def wechat_recharge(request):
     """ 微信充值 """
     amount = request.POST.get("amount")
 
+    if request.user.id in [170954, 156846, 170968, 170970, 170974, 170969]:
+        return JsonResponse(error=WalletError.RECHARGE_FAIL)
+
     if not amount:
         return HttpResponseBadRequest()
 
@@ -117,7 +120,8 @@ def client_recharge_callback(request):
     if valid_sign != sign:
         return HttpResponseServerError()
 
-    if order_res["return_code"] == "SUCCESS" and order_res["return_msg"] == "OK":
+    if order_res["return_code"] == "SUCCESS" and order_res["result_code"] == "SUCCESS" \
+           and order_res["trade_state"] == "SUCCESS":
         is_success = WalletRecharge.recharge_callback(out_trade_no=out_trade_no)
         if is_success:
             return JsonResponse()
@@ -128,6 +132,9 @@ def client_recharge_callback(request):
 def apply_withdrawal_to_wechat(request):
     code = request.POST.get("code")
     amount = request.POST.get("amount")
+
+    if request.user.id in [170954, 156846, 170968, 170970, 170974, 170969]:
+        return HttpResponseServerError()
 
     wallet = Wallet.get(user_id=request.user.id)
     error = wallet.withdrawals_validate(amount)
