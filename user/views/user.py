@@ -59,6 +59,7 @@ def request_sms_code(request):
         return JsonResponse(error=LoginError.REQUEST_SMS_CODE)
 
 
+@require_http_methods(["POST"])
 def request_voice_code(request):
     mobile = request.POST.get("mobile", "")
     if not mobile:
@@ -391,6 +392,7 @@ def check_login(request):
     return JsonResponse(basic_info)
 
 
+@login_required_404
 def get_profile(request):
     user = User.get(id=request.user.id)
     invite_friend_ids = InviteFriend.get_invited_my_ids(owner_id=request.user.id)
@@ -444,6 +446,7 @@ def rong_token(request):
     return JsonResponse({"token": token})
 
 
+@login_required_404
 def get_basic_user_info(request):
     user_id = request.GET.get("user_id")
     if user_id:
@@ -454,6 +457,7 @@ def get_basic_user_info(request):
     return HttpResponseBadRequest()
 
 
+@login_required_404
 def bind_wechat(request):
     code = request.POST.get("code")
     user_info = OAuth().get_user_info(code=code)
@@ -475,6 +479,7 @@ def bind_wechat(request):
     return JsonResponse()
 
 
+@login_required_404
 def bind_weibo(request):
     access_token = request.POST.get("access_token")
     third_id = request.POST.get("third_id")
@@ -491,6 +496,7 @@ def bind_weibo(request):
     return JsonResponse()
 
 
+@login_required_404
 def unbind_wechat(request):
     is_success = request.user.unbinding_wechat()
     if is_success:
@@ -498,6 +504,7 @@ def unbind_wechat(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def unbind_weibo(request):
     is_success = request.user.unbinding_weibo()
     if is_success:
@@ -505,6 +512,7 @@ def unbind_weibo(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def update_paid(request):
     paid = request.POST.get("paid", "")
     user = User.objects.filter(paid=paid).first()
@@ -519,6 +527,7 @@ def update_paid(request):
     return JsonResponse(error=LoginError.RE_PAID_ERROR)
 
 
+@login_required_404
 def update_gender(request):
     gender = request.POST.get("gender")
     user = User.objects.filter(id=request.user.id).first()
@@ -527,6 +536,7 @@ def update_gender(request):
     return JsonResponse()
 
 
+@login_required_404
 def update_nickname(request):
     nickname = request.POST.get("nickname")
     user = User.objects.filter(id=request.user.id).first()
@@ -535,6 +545,7 @@ def update_nickname(request):
     return JsonResponse()
 
 
+@login_required_404
 def update_intro(request):
     intro = request.POST.get("intro")
     user = User.objects.filter(id=request.user.id).first()
@@ -543,6 +554,7 @@ def update_intro(request):
     return JsonResponse()
 
 
+@login_required_404
 def update_avatar(request):
     photo = request.FILES['photo']
     avatar = KS3().upload_avatar(img_content=photo.read(), user_id=request.user.id)
@@ -552,6 +564,7 @@ def update_avatar(request):
     return JsonResponse()
 
 
+@login_required_404
 def search(request):
     content = request.POST.get("content")
     page = int(request.POST.get("page", 1))
@@ -574,6 +587,7 @@ def search(request):
     return JsonResponse(results)
 
 
+@login_required_404
 def detail_user_info(request):
     user_id = request.GET.get("user_id")
 
@@ -586,6 +600,7 @@ def detail_user_info(request):
     return JsonResponse(detail_info)
 
 
+@login_required_404
 def ignore(request):
     ignore_id = request.POST.get("ignore_id")
     ignore_type = request.POST.get("ignore_type")
@@ -595,6 +610,7 @@ def ignore(request):
     return JsonResponse()
 
 
+@login_required_404
 def quit_app(request):
     request.user.offline()
     return JsonResponse()
@@ -639,6 +655,7 @@ def fuck_you(request):
     return JsonResponse(data)
 
 
+@login_required_404
 def add_user_location(request):
     lon = request.POST.get("lon", "")
     lat = request.POST.get("lat", "")
@@ -647,6 +664,7 @@ def add_user_location(request):
     return JsonResponse()
 
 
+@login_required_404
 def poke(request):
     user_id = request.POST.get("user_id")
 
@@ -718,6 +736,7 @@ def _invite_party(owner, user_id, channel_id, channel_type):
     return JsonResponse()
 
 
+@login_required_404
 def rongcloud_push(request):
     to_user_id = request.POST.get("to_user_id")
     message = request.POST.get("message", "")
@@ -727,6 +746,7 @@ def rongcloud_push(request):
     return JsonResponse()
 
 
+@login_required_404
 def user_logout(request):
     request.user.offline()
     logout(request)
@@ -737,6 +757,7 @@ def load_balancing(request):
     return JsonResponse()
 
 
+@login_required_404
 def kill_app(request):
     if request.user and request.user.is_authenticated():
         request.user.offline()

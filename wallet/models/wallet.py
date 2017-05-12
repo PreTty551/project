@@ -170,8 +170,8 @@ class Withdrawals(models.Model):
             is_success, recode = cls.enterprise_pay(openid=wr.openid, amount=wr.amount)
             if is_success:
                 Withdrawals.objects.filter(user_id=wr.user_id).update(status=WITHDRAWAL_SUCCESS)
-                wallet = Wallet.get(user_id=wr.user_id)
-                wallet.minus(amount=wr.amount)
+                # wallet = Wallet.get(user_id=wr.user_id)
+                # wallet.minus(amount=wr.amount)
 
                 WalletRecord.objects.create(owner_id=wr.user_id,
                                             user_id=wr.user_id,

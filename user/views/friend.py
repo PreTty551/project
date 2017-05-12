@@ -16,6 +16,7 @@ from socket_server import SocketServer, EventType
 from live.models import ChannelMember, Channel
 
 
+@login_required_404
 def invite_friend(request):
     from user.models import ChannelAddFriendLog
     invited_id = request.POST.get("invited_id")
@@ -52,6 +53,7 @@ def invite_friend(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def agree_friend(request):
     invited_id = request.POST.get("invited_id")
     is_success = InviteFriend.agree(user_id=request.user.id,
@@ -70,6 +72,7 @@ def agree_friend(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def delete_friend(request):
     friend_id = request.POST.get("friend_id")
     is_success = Friend.delete_friend(owner_id=request.user.id, friend_id=friend_id)
@@ -82,6 +85,7 @@ def delete_friend(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def ignore(request):
     user_id = request.POST.get("user_id")
     ignore_type = request.POST.get("ignore_type")
@@ -91,6 +95,7 @@ def ignore(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def get_friends_order_by_pinyin(request):
     friend_list = Friend.get_friends_order_by_pinyin(user_id=request.user.id)
     keys = list(friend_list.keys())
@@ -105,6 +110,7 @@ def get_friends_order_by_pinyin(request):
     return JsonResponse({"friend_list": friend_list, "keys": sorted_keys})
 
 
+@login_required_404
 def update_user_memo(request):
     friend_id = request.POST.get("friend_id")
     memo = request.POST.get("memo")
@@ -117,6 +123,7 @@ def update_user_memo(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def update_invisible(request):
     friend_id = request.POST.get("friend_id")
     invisible = request.POST.get("invisible")
@@ -129,6 +136,7 @@ def update_invisible(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def update_push(request):
     friend_id = request.POST.get("friend_id")
     push = request.POST.get("push")
@@ -141,6 +149,7 @@ def update_push(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def who_is_friends(request):
     friend_ids = request.GET.get("friend_ids", "")
     friend_ids = friend_ids.split(",")
@@ -149,6 +158,7 @@ def who_is_friends(request):
     return JsonResponse({"friend_ids": friend_ids})
 
 
+@login_required_404
 def unagree_friend_count(request):
     ignore_user_ids = list(Ignore.objects.filter(owner_id=request.user.id, ignore_type__in=[1, 3])
                                          .values_list("ignore_id", flat=True))
@@ -156,6 +166,7 @@ def unagree_friend_count(request):
     return JsonResponse({"unagree_count": count})
 
 
+@login_required_404
 def friend_relation(request):
     user_id = request.GET.get("user_id", "")
     common_friend_list = common_friends(user_id=request.user.id, to_user_id=user_id)

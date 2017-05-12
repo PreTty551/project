@@ -7,6 +7,7 @@ from corelib.decorators import login_required_404
 from user.models import FeedBack
 
 
+@login_required_404
 def add_feedback(request):
     metrics = request.POST.get("metrics")
     grade = request.POST.get("grade")

@@ -39,6 +39,7 @@ def home_list(request):
                          "guess_contacts": guess_contacts})
 
 
+@login_required_404
 def refresh_home_list(request):
     friend_list = FriendListWidget.list(user_id=request.user.id)
     channel_list = ChannelListWidget.list(user_id=request.user.id)
@@ -63,6 +64,7 @@ def channel_inner_list(request):
                          "guess_contacts": guess_contacts})
 
 
+@login_required_404
 def refresh_list(request):
     friend_list = FriendListWidget.list(user_id=request.user.id)
     channel_list = ChannelInnerListWidget.list(user_id=request.user.id)
@@ -71,6 +73,7 @@ def refresh_list(request):
                          "friends": friend_list})
 
 
+@login_required_404
 def near_channel_list(request):
     """
     这里有两种实现方式, 后续可以根据需求或数据量调整

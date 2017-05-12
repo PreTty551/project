@@ -13,11 +13,13 @@ from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE
 from user.models import User, UserContact, InviteFriend, Friend, ContactError
 
 
+@login_required_404
 def get_contacts(request):
     contact_list = UserContact.get_all_contact(user_id=request.user.id)
     return JsonResponse(contact_list)
 
 
+@login_required_404
 def get_contact_list(request):
     contacts = UserContact.get_all_contact(user_id=request.user.id)
     all_mobile_list = list(UserContact.objects.filter(user_id=request.user.id).values_list("mobile", flat=True))
@@ -65,6 +67,7 @@ def update_user_contact(request):
     return JsonResponse()
 
 
+@login_required_404
 def common_contact(request):
     mobile = request.GET.get("mobile", "")
     count = UserContact.objects.filter(mobile=mobile).count()
