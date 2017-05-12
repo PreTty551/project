@@ -39,7 +39,12 @@ class InviteFriend(models.Model):
     @classmethod
     def add(cls, user_id, invited_id):
         try:
-            cls.objects.create(user_id=user_id, invited_id=invited_id)
+            invite = cls.objects.filter(user_id=user_id, invited_id=invited_id).first()
+            if invite:
+                invite.status = 0
+                invite.save()
+            else:
+                cls.objects.create(user_id=user_id, invited_id=invited_id)
         except IntegrityError:
             pass
         return True
@@ -94,7 +99,7 @@ class Friend(models.Model):
     @classmethod
     def is_friend(cls, owner_id, friend_id):
         friend_ids = cls.get_friend_ids(user_id=owner_id)
-        return friend_id in friend_ids
+        return int(friend_id) in friend_ids
 
     @classmethod
     @hlcache(MC_FRIEND_IDS_KEY % '{user_id}')
@@ -273,9 +278,8 @@ def delete_friend_after(sender, instance, **kwargs):
 
 @receiver(post_save, sender=InviteFriend)
 def save_invite_after(sender, created, instance, **kwargs):
-    if created:
-        redis.delete(MC_INVITE_MY_FRIEND_IDS % instance.invited_id)
-        redis.delete(MC_MY_INVITE_FRIEND_IDS % instance.user_id)
+    redis.delete(MC_INVITE_MY_FRIEND_IDS % instance.invited_id)
+    redis.delete(MC_MY_INVITE_FRIEND_IDS % instance.user_id)
 
 
 @receiver(post_delete, sender=InviteFriend)
