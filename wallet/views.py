@@ -94,7 +94,8 @@ def wechat_recharge(request):
             WalletRecharge.objects.create(user_id=request.user.id,
                                           out_trade_no=out_trade_no,
                                           amount=amount)
-            send_msg_to_dingding("%s 准备充值%s分" % (request.user.id, amount))
+            token = "f733841a6d71aee77fdc15b29758469451407eeb49b7a9fa47e140f2dab15947"
+            send_msg_to_dingding("%s 准备充值%s元" % (request.user.id, amount / 100), token)
             return JsonResponse({"return_code": "SUCCESS",
                                  "appapi_params": appapi_params,
                                  "out_trade_no": out_trade_no})
