@@ -301,7 +301,9 @@ def add_member_after(sender, created, instance, **kwargs):
         else:
             refresh(instance.user_id)
 
-        party_push(instance.user_id, instance.channel_id, channel.channel_type)
+        count = ChannelMember.objects.filter(user_id=instance.user_id).count()
+        if count > 1:
+            party_push(instance.user_id, instance.channel_id, channel.channel_type)
 
 
 @receiver(post_delete, sender=ChannelMember)
