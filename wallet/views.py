@@ -2,6 +2,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseBadRequest, HttpResponseServerError, \
         HttpResponseNotFound, HttpResponse
+from django.conf import settings
 
 from wechatpy.pay.utils import calculate_signature
 

@@ -22,6 +22,12 @@ def gift_transfer(request):
     gift_id = request.POST.get("gift_id")
     channel_id = request.POST.get("channel_id")
 
+    if request.user.id in [170954, 156846, 170968, 170970, 170974]:
+        return JsonResponse(error=GiftError.TRANSFER_GIFT_ERROR)
+
+    if int(to_user_id) in [170954, 156846, 170968, 170970, 170974]:
+        return JsonResponse(error=GiftError.TRANSFER_GIFT_ERROR)
+
     amount = Gift.get(gift_id).amount
     wallet = Wallet.get(user_id=request.user.id)
     valid = wallet.validate(amount=amount)
