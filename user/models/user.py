@@ -197,7 +197,7 @@ class User(AbstractUser, PropsMixin):
     last_pa_time = property(_get_last_pa_time, _set_last_pa_time)
 
     def _get_gift_count(self):
-        return self.get_props_item("gift_count")
+        return self.get_props_item("gift_count") or 0
 
     def _set_gift_count(self, value):
         return self.set_props_item("gift_count", value)

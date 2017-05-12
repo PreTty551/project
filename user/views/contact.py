@@ -53,18 +53,15 @@ def add_user_contact(request):
 def update_user_contact(request):
     contact = request.POST.get("contact")
     contact_list = json.loads(contact)
-    contact_list = UserContact.clean_contact(contact_list=contact_list)
-    my_all_contact = UserContact.get_all_contact(user_id=request.user.id)
-    new_contact_list = [o for o in contact_list if o not in my_all_contact]
-    for uc in new_contact_list:
-        obj = UserContact.objects.filter(user_id=request.user.id, mobile=uc["mobile"]).first()
-        if obj:
-            obj.name = uc["name"]
-            obj.save()
-        else:
-            UserContact.objects.create(name=uc["name"],
-                                       mobile=uc["mobile"],
-                                       user_id=request.user.id)
+    UserContact.objects.filter(user_id=request.user.id).delete()
+    is_success = UserContact.bulk_add(contact_list=contact_list, user_id=request.user.id)
+    user = User.get(request.user.id)
+    if is_success:
+        user.is_contact = 1
+        user.save()
+        return JsonResponse()
+    user.is_contact = 0
+    user.save()
     return JsonResponse()
 
 

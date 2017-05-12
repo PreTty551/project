@@ -124,6 +124,11 @@ class UserContact(models.Model):
         mobile_ids = User.objects.filter(mobile__in=all_mobile_list).values_list("mobile", flat=True)
         mobile_ids = set(mobile_ids) ^ set(all_mobile_list)
 
+        my_contact_dict = {}
+        my_contact_list = UserContact.objects.filter(user_id=owner_id)
+        for contact in my_contact_list:
+            my_contact_dict[contact.mobile] = (contact.name, contact.id)
+
         common_contacts = UserContact.objects.filter(mobile__in=mobile_ids).exclude(user_id=owner_id)
         contacts = {}
         contacts_map = {}
@@ -131,8 +136,7 @@ class UserContact(models.Model):
         for contact in common_contacts:
             _ = contacts.setdefault(contact.mobile, [])
             _.append(contact.user_id)
-            uc = UserContact.objects.filter(mobile=contact.mobile, user_id=owner_id).first()
-            contacts_map[contact.mobile] = (uc.name, uc.id)
+            contacts_map[contact.mobile] = my_contact_dict[contact.mobile]
             user_ids.append(contact.user_id)
 
         results = []
@@ -145,7 +149,6 @@ class UserContact(models.Model):
             results.append((mobile, rate))
 
         sorted_results = sorted(results, key=lambda item: item[1])
-        # RecommendContact.objects.create()
         if limit is not None:
             sorted_results = sorted_results[:limit]
 
