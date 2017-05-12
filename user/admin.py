@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from user.models import BanUser
+from user.models import BanUser, User
 
 
 @admin.register(BanUser)
