@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import re
 import json
 import datetime
 import django_rq
@@ -505,14 +506,17 @@ def unbind_weibo(request):
 
 
 def update_paid(request):
-    paid = request.POST.get("paid")
+    paid = request.POST.get("paid", "")
     user = User.objects.filter(paid=paid).first()
     if user:
         return JsonResponse(error=LoginError.PA_ALREADY_USED)
 
-    user.paid = paid
-    user.save()
-    return JsonResponse()
+    r = re.match("^[a-zA-Z][a-zA-Z0-9_]{3,16}$", paid)
+    if r:
+        request.user.paid = paid
+        request.user.save()
+        return JsonResponse()
+    return JsonResponse(error=LoginError.RE_PAID_ERROR)
 
 
 def update_gender(request):

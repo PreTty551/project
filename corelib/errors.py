@@ -42,3 +42,4 @@ class LoginError(BaseError):
     REGISTER_ERROR = ErrorCodeField(10012, ugettext("注册失败"))
     PA_ALREADY_USED = ErrorCodeField(10013, ugettext("Pa已使用"))
     DUPLICATE_BING = ErrorCodeField(10014, ugettext("绑定失败, 账号已被绑定"))
+    RE_PAID_ERROR = ErrorCodeField(10015, ugettext("PA号必须以字母开头，长度为3～16个字符，只能使用字母、数字和下划线。"))
