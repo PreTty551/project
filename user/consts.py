@@ -17,7 +17,7 @@ EMOJI_LIST = [u"😀", u"😁", u"😃", u"😄", u"😇", u"😉", u"😊", u"�
 # cache keys
 MC_USER_KEY = "user:%s"
 MC_IS_FRIEND_KEY = "u:%s:f:%s"
-MC_FRIEND_IDS_KEY = "u:%s:fs"
+MC_FRIEND_IDS_KEY = "user:%s:fs"
 MC_FRIEND_LIST = "u:%s:fl"
 MC_INVITE_MY_FRIEND_IDS = "inv:my:%s:ids"
 MC_MY_INVITE_FRIEND_IDS = "my:inv:%s:ids"
