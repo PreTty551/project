@@ -79,24 +79,25 @@ def near_channel_list(request):
     """
     channel_ids = list(Channel.objects.filter(channel_type=ChannelType.public.value).values_list("id", flat=True))
     user_ids = list(ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True))
-    place = Place.get(user_id=request.user.id)
+    # place = Place.get(user_id=request.user.id)
+    # channels = []
+    # if place:
+    #     user_locations = place.get_multi_user_dis(user_ids=user_ids)
+    #     if user_locations:
+    #         sorted_user_ids = sorted(user_locations.items(), key=lambda item: item[1])
+    #
+    #         for user_id in sorted_user_ids:
+    #             channel_member = ChannelMember.objects.filter(channel_type=ChannelType.normal.value,
+    #                                                           user_id=user_id).frist()
+    #             channel = Channel.get_channel(channel_id=channel_member.channel_id)
+    #             if not channel:
+    #                 continue
+    #
+    #             channels.append(channel.to_dict())
+
+    # limit = 100 - len(channels)
     channels = []
-    if place:
-        user_locations = place.get_multi_user_dis(user_ids=user_ids)
-        if user_locations:
-            sorted_user_ids = sorted(user_locations.items(), key=lambda item: item[1])
-
-            for user_id in sorted_user_ids:
-                channel_member = ChannelMember.objects.filter(channel_type=ChannelType.normal.value,
-                                                              user_id=user_id).frist()
-                channel = Channel.get_channel(channel_id=channel_member.channel_id)
-                if not channel:
-                    continue
-
-                channels.append(channel.to_dict())
-
-    limit = 100 - len(channels)
-    channel_list = Channel.objects.filter(channel_type=ChannelType.public.value).order_by("-id")[:limit]
+    channel_list = Channel.objects.filter(channel_type=ChannelType.public.value).order_by("-id")[:100]
     for channel in channel_list:
         channels.append(channel.to_dict())
 
