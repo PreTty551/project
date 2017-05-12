@@ -2,6 +2,7 @@
 from django.conf import settings
 
 from wechatpy.pay import WeChatPay
+from wechatpy.pay.utils import calculate_signature
 
 from corelib.utils import dict_to_xml, random_str
 
@@ -31,8 +32,19 @@ class WechatSDK(object):
         appapi_params = self.wechatpay.order.get_appapi_params(prepay_id=wechat_order["prepay_id"])
         return appapi_params
 
+    def query_order(self, order):
+        try:
+            return self.wechatpay.order.query(out_trade_no=order)
+        except:
+            return {}
+
     def transfer_callback(self, request_body, func):
         result = self.wechatpay.parse_payment_result(xml=request_body)
+        sign = result.pop("sign")
+        valid_sign = calculate_signature(result, settings.WECHAT_OPEN_MCH_KEY)
+        if valid_sign != sign:
+            return
+
         if result["return_code"] == "SUCCESS":
             res = {"return_code": "SUCCESS"}
             try:

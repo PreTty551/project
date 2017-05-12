@@ -3,11 +3,14 @@ from django.shortcuts import render
 from django.http import HttpResponseBadRequest, HttpResponseServerError, \
         HttpResponseNotFound, HttpResponse
 
+from wechatpy.pay.utils import calculate_signature
+
 from decimal import Decimal
 from corelib.http import JsonResponse
 from corelib.utils import random_str
 from corelib.wechat import OAuth
 from corelib.paginator import paginator
+from corelib.decorators import login_required_404
 
 from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount, Withdrawals, WalletRecord, yuan
 from wallet.error_handle import WalletError
@@ -15,11 +18,13 @@ from user.models import User
 from gift.models import Gift, GiftOrder
 
 
+@login_required_404
 def wallet(request):
     wallet = Wallet.get(user_id=request.user.id)
     return JsonResponse(wallet.to_dict())
 
 
+@login_required_404
 def wallet_record(request):
     page = int(request.GET.get("page", 1))
 
@@ -62,6 +67,7 @@ def wallet_record(request):
     return JsonResponse(results)
 
 
+@login_required_404
 def wechat_recharge(request):
     """ 微信充值 """
     amount = request.POST.get("amount")
@@ -98,14 +104,26 @@ def wechat_recharge_callback(request):
     return HttpResponse(xml)
 
 
+@login_required_404
 def client_recharge_callback(request):
     out_trade_no = request.POST.get("out_trade_no")
-    is_success = WalletRecharge.recharge_callback(out_trade_no=out_trade_no)
-    if is_success:
-        return JsonResponse()
+    order_res = WechatSDK().query_order(out_trade_no)
+    if not order_res:
+        return HttpResponseServerError()
+
+    sign = order_res.pop("sign")
+    valid_sign = calculate_signature(order_res, settings.WECHAT_OPEN_MCH_KEY)
+    if valid_sign != sign:
+        return HttpResponseServerError()
+
+    if order_res["return_code"] == "SUCCESS" and order_res["return_msg"] == "OK":
+        is_success = WalletRecharge.recharge_callback(out_trade_no=out_trade_no)
+        if is_success:
+            return JsonResponse()
     return HttpResponseServerError()
 
 
+@login_required_404
 def apply_withdrawal_to_wechat(request):
     code = request.POST.get("code")
     amount = request.POST.get("amount")
@@ -134,6 +152,7 @@ def apply_withdrawal_to_wechat(request):
     return HttpResponseServerError()
 
 
+@login_required_404
 def is_disable(request):
     if request.user.id == 45:
         return JsonResponse({"disable": True})
