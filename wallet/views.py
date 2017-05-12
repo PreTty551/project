@@ -12,6 +12,7 @@ from corelib.utils import random_str
 from corelib.wechat import OAuth
 from corelib.paginator import paginator
 from corelib.decorators import login_required_404
+from corelib.utils import send_msg_to_dingding
 
 from wallet.models import Wallet, WechatSDK, WalletRecharge, get_related_amount, Withdrawals, WalletRecord, yuan
 from wallet.error_handle import WalletError
@@ -93,6 +94,7 @@ def wechat_recharge(request):
             WalletRecharge.objects.create(user_id=request.user.id,
                                           out_trade_no=out_trade_no,
                                           amount=amount)
+            send_msg_to_dingding("%s 准备充值%s分" % (request.user.id, amount))
             return JsonResponse({"return_code": "SUCCESS",
                                  "appapi_params": appapi_params,
                                  "out_trade_no": out_trade_no})

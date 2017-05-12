@@ -1,6 +1,8 @@
 import datetime
 import random
 import arrow
+import json
+import psutil
 
 
 def random_str(num=10):
@@ -26,3 +28,10 @@ def natural_time(localtime):
     if localtime:
         return arrow.get(localtime).humanize(locale='zh_CN')
     return ''
+
+
+def send_msg_to_dingding(msg_info, access_token):
+    payload = json.dumps({"msgtype": "text", "text": {"content": "%s" % msg_info}})
+    p1 = psutil.Popen(["curl", "-X", "POST", "-H", "Content-Type: application/json", "--data", payload,
+                      "https://oapi.dingtalk.com/robot/send?access_token=%s" % access_token])
+    p1.communicate()
