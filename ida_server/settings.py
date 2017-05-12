@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'live',
     'gift',
     'wallet',
-    'h5'
+    'h5',
+    'ida'
 
 ]
 
@@ -183,7 +184,7 @@ LOGGING = {
 
 LANGUAGE_CODE = 'zh-hans'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
