@@ -129,6 +129,8 @@ class Channel(models.Model):
         timedelta = timezone.now() - self.date
         minute = int((timedelta.seconds / 60) + timedelta.days * 24 * 60)
         number = len(self.name.split(","))
+        if minute < 1:
+            return "当前%s人, 刚刚开PA" % number
         return "当前%s人, 进行了%s分钟" % (number, minute)
 
     @property
@@ -284,6 +286,10 @@ def add_invite_party(sender, created, instance, **kwargs):
 @receiver(post_save, sender=ChannelMember)
 def add_member_after(sender, created, instance, **kwargs):
     if created:
+        push_lock = redis.get("mc:user:%s:pa_push_lock" % instance.user_id)
+        if push_lock:
+            redis.set("mc:user:%s:pa_push_lock" % instance.user_id, 1, 300)
+
         LiveMediaLog.objects.create(user_id=instance.user_id,
                                     channel_id=instance.channel_id,
                                     status=1)
@@ -342,39 +348,40 @@ def party_push(user_id, channel_id, channel_type):
         i = 0
 
         user = User.get(id=user_id)
-        friend_ids = Friend.get_friends_by_online_push(user_id=user_id)
-        party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
-        no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
+        # friend_ids = Friend.get_friends_by_online_push(user_id=user_id)
+        # party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
+        # no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
+        #
+        # pre_week = timezone.now() - datetime.timedelta(days=7)
+        # party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=no_party_friend_ids)
+        #                                                   .values_list("user_id", flat=True).distinct())
 
-        pre_week = timezone.now() - datetime.timedelta(days=7)
-        party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=no_party_friend_ids)
-                                                          .values_list("user_id", flat=True).distinct())
+        # for friend_id in party_user_ids_in_week:
+        #     fids = Friend.get_friend_ids(user_id=friend_id)
+        #     if int(user_id) in fids:
+        #         fids.remove(int(user_id))
+        #     if int(friend_id) in fids:
+        #         fids.remove(int(friend_id))
+        #
+        #     party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
+        #     nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
+        #     if nicknames:
+        #         nicknames = ",".join(nicknames)
+        #         message = "%s 正在开PA" % nicknames
+        #         JPush().async_push(user_ids=[friend_id],
+        #                            message=message,
+        #                            push_type=1,
+        #                            channel_id=channel_id,
+        #                            channel_type=channel_type)
+        #         SocketServer().invite_party_in_live(user_id=user.id,
+        #                                             to_user_id=friend_id,
+        #                                             message=message,
+        #                                             channel_id=channel_id)
 
-        for friend_id in party_user_ids_in_week:
-            fids = Friend.get_friend_ids(user_id=friend_id)
-            if int(user_id) in fids:
-                fids.remove(int(user_id))
-            if int(friend_id) in fids:
-                fids.remove(int(friend_id))
-
-            party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
-            nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
-            if nicknames:
-                nicknames = ",".join(nicknames)
-                message = "%s 正在开PA" % nicknames
-                JPush().async_push(user_ids=[friend_id],
-                                   message=message,
-                                   push_type=1,
-                                   channel_id=channel_id,
-                                   channel_type=channel_type)
-                SocketServer().invite_party_in_live(user_id=user.id,
-                                                    to_user_id=friend_id,
-                                                    message=message,
-                                                    channel_id=channel_id)
-
+        party_friend_ids = Friend.get_friend_ids(user_id=user_id)
         message = "%s 正在开PA" % user.nickname
-        JPush().async_batch_push(user_ids=[party_friend_ids],
+        JPush().async_batch_push(user_ids=party_friend_ids,
                                  message=message,
                                  push_type=1, channel_id=channel_id, channel_type=channel_type)
 
-        redis.set("mc:user:%s:pa_push_lock" % user_id, 1, 60)
+        redis.set("mc:user:%s:pa_push_lock" % user_id, 1, 300)
