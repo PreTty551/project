@@ -224,16 +224,17 @@ class Friend(models.Model):
         basic_info = user.basic_info()
         basic_info["is_hint"] = self.is_hint
         basic_info["user_relation"] = UserEnum.friend.value
-        basic_info["dynamic"] = friend_dynamic(user.id)
+        basic_info["dynamic"] = friend_dynamic(owner_id=self.user_id, user_id=user.id)
         basic_info["pinyin"] = user.pinyin
         return basic_info
 
 
-def friend_dynamic(user_id):
+def friend_dynamic(owner_id, user_id):
     user = User.get(user_id)
     last_pa_time = user.last_pa_time
     if not last_pa_time:
-        return
+        if redis.get("mc:u:%s:f:%s:gg" % (owner_id, user_id)):
+            return "TA刚刚通过你的好友申请"
 
     try:
         dt = datetime.datetime.fromtimestamp(float(last_pa_time))
@@ -268,6 +269,8 @@ def common_friends(user_id, to_user_id):
 @receiver(post_save, sender=Friend)
 def save_friend_after(sender, created, instance, **kwargs):
     if created:
+        redis.set("mc:u:%s:f:%s:gg" % (instance.user_id, instance.friend_id), int(time.time()), 3600)
+        redis.set("mc:u:%s:f:%s:gg" % (instance.friend_id, instance.user_id), int(time.time()), 3600)
         instance.clear_mc()
 
 
