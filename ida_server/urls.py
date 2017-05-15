@@ -22,6 +22,7 @@ from invite.views import file_download
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^admin/django-rq/', include('django_rq.urls')),
     url(r'', include('user.urls')),
     url(r'', include('live.urls')),
     url(r'', include('gift.urls')),
