@@ -15,7 +15,7 @@ from corelib.redis import redis
 from corelib.jiguang import JPush
 
 from user.models import User, Friend
-from .consts import ChannelType, MC_INVITE_PARTY, MC_PAING
+from .consts import ChannelType, MC_INVITE_PARTY
 from socket_server import SocketServer, EventType
 
 
@@ -299,7 +299,7 @@ def add_member_after(sender, created, instance, **kwargs):
 
         user = User.get(instance.user_id)
         user.last_pa_time = time.time()
-        redis.set(MC_PAING % user.id, 1)
+        user.paing = 1
 
         channel = Channel.objects.filter(channel_id=instance.channel_id).first()
         if channel.channel_type == 2:
@@ -332,7 +332,7 @@ def delete_member_after(sender, instance, **kwargs):
 
         user = User.get(instance.user_id)
         user.last_pa_time = time.time()
-        redis.delete(MC_PAING % user.id)
+        user.paing = 0
 
         if channel.channel_type == 2:
             refresh_public(instance.user_id)

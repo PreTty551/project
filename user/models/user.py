@@ -153,6 +153,10 @@ class User(AbstractUser, PropsMixin):
         return redis.hget(REDIS_ONLINE_USERS_KEY, self.id)
 
     @classmethod
+    def get_profile(cls, user_id):
+        return redis.hgetall("db:user:%s" % user_id)
+
+    @classmethod
     def get_online_ids(cls):
         return [int(user_id) for user_id in redis.hkeys(REDIS_ONLINE_USERS_KEY)]
 
@@ -203,6 +207,14 @@ class User(AbstractUser, PropsMixin):
         return self.set_props_item("gift_count", value)
 
     gift_count = property(_get_gift_count, _set_gift_count)
+
+    def _get_paing(self):
+        return self.get_props_item("paing") or 0
+
+    def _set_ping(self, value):
+        return self.set_props_item("paing", value)
+
+    paing = property(_get_paing, _set_ping)
 
     @property
     def avatar_url(self):

@@ -5,7 +5,6 @@ ChannelType = Enum("ChannelType", ("normal", "public", "private"))
 
 # MC_POKES_KEY = "u:%s:pokes"
 MC_INVITE_PARTY = "u:%s:invite_party"
-MC_PAING = "mc:u:%s:paing"
 
 DIRTY_GAME_QUESTIONS = u"""
 你裸睡还是穿着衣服睡？

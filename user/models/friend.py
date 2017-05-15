@@ -14,7 +14,6 @@ from corelib.mc import hlcache, cache
 from user.models import User
 from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY, \
                         MC_FRIEND_LIST, MC_INVITE_MY_FRIEND_IDS, MC_MY_INVITE_FRIEND_IDS
-from live.consts import MC_PAING
 
 
 class ChannelAddFriendLog(models.Model):
@@ -224,37 +223,42 @@ class Friend(models.Model):
         basic_info = user.basic_info()
         basic_info["is_hint"] = self.is_hint
         basic_info["user_relation"] = UserEnum.friend.value
-        basic_info["dynamic"] = friend_dynamic(owner_id=self.user_id, user_id=user.id)
+        basic_info["dynamic"] = friend_dynamic(owner_id=self.user_id,
+                                               user_id=user.id,
+                                               add_friend_time=self.date)
         basic_info["pinyin"] = user.pinyin
         return basic_info
 
 
-def friend_dynamic(owner_id, user_id):
-    user = User.get(user_id)
-    last_pa_time = user.last_pa_time
-    if not last_pa_time:
-        if redis.get("mc:u:%s:f:%s:gg" % (owner_id, user_id)):
-            return "TA刚刚通过你的好友申请"
+def friend_dynamic(owner_id, user_id, add_friend_time):
+    friend_profile = User.get_profile(user_id=user_id)
 
+    last_pa_time = friend_profile.get("last_pa_time", 0)
     try:
         dt = datetime.datetime.fromtimestamp(float(last_pa_time))
     except:
         return ""
 
+    now = datetime.datetime.now()
+    # 没有开过Pa或者开Pa的时间小于新加的好友的时间
+    if not dt:
+        if now < add_friend_time + datetime.timedelta(seconds=3600):
+            return "TA刚刚通过你的好友申请"
+    elif dt < add_friend_time:
+        return "TA刚刚通过你的好友申请"
+
     d = time_format(timezone.localtime(dt))
-    if redis.get(MC_PAING % user_id):
+    if friend_profile.get("paing"):
         return "正在开PA"
-    elif (datetime.datetime.now() - dt).seconds < 600:
+    elif (now - dt).seconds < 600:
         return "刚刚离开房间"
-    elif (datetime.datetime.now() - dt).days < 4:
+    elif (now - dt).days < 4:
         return "%s开过PA" % d
-    elif (datetime.datetime.now() - dt).days < 30:
+    elif (now - dt).days < 30:
         return "%s见过TA" % d
     else:
-        friend = Friend.objects.filter(user_id=owner_id, friend_id=user_id).first()
-        if friend:
-            date_str = time_format(timezone.localtime(friend.date))
-            return "%s成为朋友" % date_str
+        date_str = time_format(timezone.localtime(add_friend_time))
+        return "%s成为朋友" % date_str
     return ""
 
 
@@ -269,8 +273,6 @@ def common_friends(user_id, to_user_id):
 @receiver(post_save, sender=Friend)
 def save_friend_after(sender, created, instance, **kwargs):
     if created:
-        redis.set("mc:u:%s:f:%s:gg" % (instance.user_id, instance.friend_id), int(time.time()), 3600)
-        redis.set("mc:u:%s:f:%s:gg" % (instance.friend_id, instance.user_id), int(time.time()), 3600)
         instance.clear_mc()
 
 
