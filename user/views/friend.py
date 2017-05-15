@@ -86,16 +86,6 @@ def delete_friend(request):
 
 
 @login_required_404
-def ignore(request):
-    user_id = request.POST.get("user_id")
-    ignore_type = request.POST.get("ignore_type")
-    ignore = Ignore.add(owner_id=request.user.id, user_id=user_id, ignore_type=ignore_type)
-    if ignore:
-        return JsonResponse()
-    return HttpResponseServerError()
-
-
-@login_required_404
 def get_friends_order_by_pinyin(request):
     friend_list = Friend.get_friends_order_by_pinyin(user_id=request.user.id)
     keys = list(friend_list.keys())

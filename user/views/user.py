@@ -607,6 +607,9 @@ def ignore(request):
     Ignore.add(owner_id=request.user.id,
                ignore_id=ignore_id,
                ignore_type=ignore_type)
+
+    if int(ignore_type) == 3:
+        SocketServer().refresh(user_id=request.user.id, to_user_id=request.user.id, message="ignore", event_type=4)
     return JsonResponse()
 
 
