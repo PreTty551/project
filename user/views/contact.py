@@ -24,6 +24,7 @@ def get_contact_list(request):
     contacts = UserContact.get_all_contact(user_id=request.user.id)
     all_mobile_list = list(UserContact.objects.filter(user_id=request.user.id).values_list("mobile", flat=True))
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    friend_ids.append(request.user.id)
     user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                 .exclude(id__in=friend_ids)
                                 .values_list("id", flat=True))
