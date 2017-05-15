@@ -154,7 +154,11 @@ class User(AbstractUser, PropsMixin):
 
     @classmethod
     def get_profile(cls, user_id):
-        return redis.hgetall("db:user:%s" % user_id)
+        _ = redis.hgetall("db:user:%s" % user_id)
+        profile = {}
+        for k, v in _.items():
+            profile[k.encode()] = v.encode()
+        return profile
 
     @classmethod
     def get_online_ids(cls):
@@ -263,13 +267,9 @@ class User(AbstractUser, PropsMixin):
         return True
 
     def basic_info(self, user_id=None):
-        if user_id:
-            memo = Friend.get_memo(user_id=self.id, friend_id=user_id)
-        else:
-            memo = self.nickname
         return {
             "id": self.id,
-            "display_nickname": memo,
+            "display_nickname": "",
             "nickname": self.nickname,
             "avatar_url": self.avatar_url,
             "gender": self.gender,

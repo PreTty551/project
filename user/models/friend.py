@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import time
 import datetime
+import pytz
 
 from django.db import models, transaction, IntegrityError
 from django.db.models.signals import post_delete, post_save
@@ -234,12 +235,12 @@ def friend_dynamic(owner_id, user_id, add_friend_time):
     friend_profile = User.get_profile(user_id=user_id)
 
     last_pa_time = friend_profile.get("last_pa_time", 0)
-    try:
-        dt = datetime.datetime.fromtimestamp(float(last_pa_time))
-    except:
-        return ""
+    if last_pa_time:
+        dt = datetime.datetime.utcfromtimestamp(float(last_pa_time)).replace(tzinfo=pytz.utc)
+    else:
+        dt = None
 
-    now = datetime.datetime.now()
+    now = timezone.now()
     # 没有开过Pa或者开Pa的时间小于新加的好友的时间
     if not dt:
         if now < add_friend_time + datetime.timedelta(seconds=3600):
@@ -247,19 +248,19 @@ def friend_dynamic(owner_id, user_id, add_friend_time):
     elif dt < add_friend_time:
         return "TA刚刚通过你的好友申请"
 
-    d = time_format(timezone.localtime(dt))
-    if friend_profile.get("paing"):
-        return "正在开PA"
-    elif (now - dt).seconds < 600:
-        return "刚刚离开房间"
-    elif (now - dt).days < 4:
-        return "%s开过PA" % d
-    elif (now - dt).days < 30:
-        return "%s见过TA" % d
-    else:
-        date_str = time_format(timezone.localtime(add_friend_time))
-        return "%s成为朋友" % date_str
-    return ""
+    if dt:
+        d = time_format(timezone.localtime(dt))
+        if int(friend_profile.get("paing", 0)):
+            return "正在开PA"
+        elif (now - dt).seconds < 600:
+            return "刚刚离开房间"
+        elif (now - dt).days < 4:
+            return "%s开过PA" % d
+        elif (now - dt).days < 30:
+            return "%s见过TA" % d
+
+    date_str = time_format(timezone.localtime(add_friend_time))
+    return "%s成为朋友" % date_str
 
 
 def common_friends(user_id, to_user_id):
