@@ -29,7 +29,7 @@ class ChannelAddFriendLog(models.Model):
 
 class InviteFriend(models.Model):
     user_id = models.IntegerField()
-    invited_id = models.IntegerField()
+    invited_id = models.IntegerField(db_index=True)
     status = models.SmallIntegerField(default=0)
     date = models.DateTimeField(auto_now_add=True)
 
