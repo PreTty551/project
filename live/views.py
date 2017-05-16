@@ -329,3 +329,22 @@ def poke(request):
 
         redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (request.user.id, user_id), int(push_lock) + 1, 600)
     return JsonResponse()
+
+
+def bg(request):
+    member = ChannelMember.objects.filter(user_id=request.user.id).first()
+    if member:
+        log = LiveMediaLog.objects.filter(user_id=request.user.id,
+                                          channel_id=member.channel_id,
+                                          type=2, status=1).first()
+        if log:
+            log.status = 2
+            log.save()
+            return JsonResponse()
+
+        LiveMediaLog.objects.create(user_id=request.user.id,
+                                    channel_id=member.channel_id,
+                                    channel_type=member.channel_type,
+                                    type=2,
+                                    status=1)
+        return JsonResponse()

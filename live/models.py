@@ -193,8 +193,10 @@ class ChannelMember(models.Model):
 
 
 class LiveMediaLog(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.IntegerField(db_index=True)
     channel_id = models.CharField(max_length=50)
+    channel_type = models.SmallIntegerField(default=0)
+    type = models.SmallIntegerField(default=1)
     status = models.SmallIntegerField()
     date = models.DateTimeField('date', auto_now_add=True)
     end_date = models.DateTimeField('end_date', default=datetime.datetime.now)
