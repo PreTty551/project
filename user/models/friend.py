@@ -51,7 +51,10 @@ class InviteFriend(models.Model):
 
     @classmethod
     def agree(cls, user_id, invited_id):
-        cls.objects.filter(user_id=invited_id, invited_id=user_id).update(status=1)
+        invite = cls.objects.filter(user_id=invited_id, invited_id=user_id).first()
+        if invite:
+            invite.status = 1
+            invite.save()
         return Friend.add(user_id=invited_id, friend_id=user_id)
 
     @classmethod
