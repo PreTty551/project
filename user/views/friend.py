@@ -61,8 +61,8 @@ def agree_friend(request):
         is_success = InviteFriend.agree(user_id=request.user.id,
                                         invited_id=invited_id)
     except:
-        Friend.objects.filter(user_id=invited_id, invited_id=request.user.id).delete()
-        Friend.objects.filter(user_id=request.user.id, invited_id=invited_id).delete()
+        Friend.objects.filter(user_id=invited_id, friend_id=request.user.id).delete()
+        Friend.objects.filter(user_id=request.user.id, friend_id=invited_id).delete()
         is_success = InviteFriend.agree(user_id=request.user.id,
                                         invited_id=invited_id)
 
