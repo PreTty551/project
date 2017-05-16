@@ -42,17 +42,14 @@ def guess_know_user(user_id):
     for contact in contacts:
         contacts_dict[contact.mobile] = contact.name
 
-    all_mobile_list = contacts_dict.keys()
+    all_mobile_list = list(contacts_dict.keys())
     friend_ids = Friend.get_friend_ids(user_id=user_id)
     invited_my_ids = InviteFriend.get_invited_my_ids(owner_id=user_id)
     my_invited_ids = InviteFriend.get_my_invited_ids(owner_id=user_id)
     ignore_ids = list(Ignore.objects.filter(owner_id=user_id, ignore_type=1).values_list("ignore_id", flat=True))
-    user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
-                                .exclude(id__in=friend_ids)
-                                .exclude(id__in=invited_my_ids)
-                                .exclude(id__in=my_invited_ids)
-                                .exclude(id__in=ignore_ids)
-                                .values_list("id", flat=True))
+    user_ids = list(User.objects.filter(mobile__in=all_mobile_list).values_list("id", flat=True))
+    if user_ids:
+        user_ids = list(set(user_ids) ^ set(friend_ids) ^ set(invited_my_ids) ^ set(my_invited_ids) ^ set(ignore_ids))
 
     if user_id in user_ids:
         user_ids.remove(user_id)
