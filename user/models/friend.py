@@ -84,17 +84,14 @@ class InviteFriend(models.Model):
 
 
 class Friend(models.Model):
-    user_id = models.IntegerField()
-    friend_id = models.IntegerField()
+    user_id = models.IntegerField(db_index=True)
+    friend_id = models.IntegerField(db_index=True)
     invisible = models.BooleanField(default=False)
     push = models.BooleanField(default=True)
     memo = models.CharField(max_length=100, default="")
     is_hint = models.BooleanField(default=False)
     date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        unique_together = (('user_id', 'friend_id'))
 
     @classmethod
     def is_friend(cls, owner_id, friend_id):
@@ -133,20 +130,13 @@ class Friend(models.Model):
         return list(quertset.values_list("friend_id", flat=True))
 
     @classmethod
-    @transaction.atomic()
     def add(cls, user_id, friend_id):
-        try:
-            Friend.objects.create(user_id=user_id, friend_id=friend_id)
-            Friend.objects.create(user_id=friend_id, friend_id=user_id)
-            InviteFriend.objects.filter(user_id=user_id, invited_id=friend_id).delete()
-            InviteFriend.objects.filter(user_id=friend_id, invited_id=user_id).delete()
-        except:
-            pass
+        Friend.objects.create(user_id=user_id, friend_id=friend_id)
+        Friend.objects.create(user_id=friend_id, friend_id=user_id)
 
         return True
 
     @classmethod
-    @transaction.atomic()
     def delete_friend(cls, owner_id, friend_id):
         cls.objects.filter(user_id=owner_id, friend_id=friend_id).delete()
         cls.objects.filter(user_id=friend_id, friend_id=owner_id).delete()

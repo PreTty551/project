@@ -56,8 +56,16 @@ def invite_friend(request):
 @login_required_404
 def agree_friend(request):
     invited_id = request.POST.get("invited_id")
-    is_success = InviteFriend.agree(user_id=request.user.id,
-                                    invited_id=invited_id)
+
+    try:
+        is_success = InviteFriend.agree(user_id=request.user.id,
+                                        invited_id=invited_id)
+    except:
+        Friend.objects.filter(user_id=invited_id, invited_id=request.user.id).delete()
+        Friend.objects.filter(user_id=request.user.id, invited_id=invited_id).delete()
+        is_success = InviteFriend.agree(user_id=request.user.id,
+                                        invited_id=invited_id)
+
     if is_success:
         message = "%s 通过了你的好友申请，一起开PA吧！" % request.user.nickname
         JPush().async_push(user_ids=[invited_id], message=message)
