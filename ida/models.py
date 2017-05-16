@@ -1,3 +1,4 @@
+import copy
 import datetime
 
 from django.db import models
@@ -49,7 +50,7 @@ def duty_user_add_friend(user_ids, group, start_date, end_date):
         public_party_ids = [str(uid) for uid in public_party_ids]
         friend_party_ids = [str(uid) for uid in friend_party_ids]
 
-        data = [str(user_id), user.nickname, str(len(friend_ids)),
+        data = [str(user.id), user.nickname, str(len(friend_ids)),
                 " ".join(friend_party_ids), str(len(friend_party_ids)),
                 " ".join(public_party_ids), str(len(public_party_ids))]
         f.write(",".join(data) + "\n")
@@ -82,3 +83,42 @@ def duty_user_live_time(user_ids, group, start_date, end_date):
             f.write(",".join(data) + "\n")
 
         f.close()
+
+
+def duty_user_live_time_week(user_ids, group, start_date):
+    public_party_ids = []
+    friend_party_ids = []
+
+    table_title = "值班人ID,昵称,周一,周二,周三,周四,周五,周六,周日\n"
+    f = open("/home/mengwei/duty/duty_live_week.csv", "w")
+    f.writelines(table_title)
+
+    for user_id in user_ids:
+        if not user_id:
+            continue
+
+        user = User.get(user_id)
+
+        data = []
+        data.append(str(user_id))
+        data.append(user.nickname)
+
+        start = copy.deepcopy(start_date)
+        for i in list(range(1, 8)):
+            end_date = start + datetime.timedelta(days=1)
+            print(start, end_date)
+
+            logs = LiveMediaLog.objects.filter(user_id=user_id,
+                                               type=1,
+                                               status=2,
+                                               date__gte=start,
+                                               date__lt=end_date)
+
+            seconds = 0
+            for log in logs:
+                seconds += (log.end_date - log.date).seconds
+            data.append(str(seconds // 60))
+            start = end_date
+        f.write(",".join(data) + "\n")
+
+    f.close()
