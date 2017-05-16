@@ -157,7 +157,7 @@ class User(AbstractUser, PropsMixin):
         _ = redis.hgetall("db:user:%s" % user_id)
         profile = {}
         for k, v in _.items():
-            profile[k.encode()] = v.encode()
+            profile[k.decode()] = v.decode()
         return profile
 
     @classmethod
@@ -269,7 +269,7 @@ class User(AbstractUser, PropsMixin):
     def basic_info(self, user_id=None):
         return {
             "id": self.id,
-            "display_nickname": "",
+            "display_nickname": self.nickname,
             "nickname": self.nickname,
             "avatar_url": self.avatar_url,
             "gender": self.gender,
