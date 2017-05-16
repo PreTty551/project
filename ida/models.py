@@ -1,8 +1,11 @@
 import datetime
 
 from django.db import models
+from django.utils import timezone
+
 from user.models import User, Friend, ChannelAddFriendLog
 from live.consts import ChannelType
+from live.models import LiveMediaLog
 
 
 class Duty(models.Model):
@@ -11,7 +14,7 @@ class Duty(models.Model):
     memo = models.CharField(max_length=255, default="", blank=True)
 
 
-def duty_user(user_ids, group, start_date, end_date):
+def duty_user_add_friend(user_ids, group, start_date, end_date):
     public_party_ids = []
     friend_party_ids = []
 
@@ -52,3 +55,30 @@ def duty_user(user_ids, group, start_date, end_date):
         f.write(",".join(data) + "\n")
 
     f.close()
+
+
+def duty_user_live_time(user_ids, group, start_date, end_date):
+    public_party_ids = []
+    friend_party_ids = []
+
+    table_title = "值班人ID,昵称,开始时间,结束时间,房间类型\n"
+    for user_id in user_ids:
+        if not user_id:
+            continue
+
+        f = open("/home/mengwei/duty/duty_live_%s.csv" % user_id, "w")
+        f.writelines(table_title)
+
+        user = User.get(user_id)
+        logs = LiveMediaLog.objects.filter(user_id=user_id,
+                                           type=1,
+                                           status=2,
+                                           date__gte=start_date,
+                                           date__lt=end_date)
+        for log in logs:
+            start_str = datetime.datetime.strftime(timezone.localtime(log.date), "%Y-%m-%d %H:%M:%S")
+            end_str = datetime.datetime.strftime(timezone.localtime(log.end_date), "%Y-%m-%d %H:%M:%S")
+            data = [str(log.user_id), user.nickname, start_str, end_str, str(log.channel_type)]
+            f.write(",".join(data) + "\n")
+
+        f.close()
