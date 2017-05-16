@@ -7,9 +7,8 @@ from live.consts import ChannelType
 
 class Duty(models.Model):
     user_id = models.IntegerField(db_index=True)
-    name = models.CharField(max_length=50, default="")
-    mobile = models.CharField(max_length=20, default="")
-    group = models.SmallIntegerField(default=1)
+    group = models.CharField(max_length=50, default="", blank=True)
+    memo = models.CharField(max_length=255, default="", blank=True)
 
 
 def duty_user(user_ids, group, start_date, end_date):
