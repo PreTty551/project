@@ -389,6 +389,10 @@ def check_login(request):
     basic_info["is_bind_wechat"] = user.is_bind_wechat
     basic_info["is_bind_weibo"] = user.is_bind_weibo
     basic_info["is_disable_wallet"] = is_disable_wallet(request.user)
+
+    friend_count = len(Friend.get_friend_ids(user_id=request.user.id))
+    if friend_count < 5:
+        basic_info["public_tips"] = True
     return JsonResponse(basic_info)
 
 
