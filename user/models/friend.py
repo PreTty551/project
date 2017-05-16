@@ -84,7 +84,7 @@ class InviteFriend(models.Model):
 
 
 class Friend(models.Model):
-    user_id = models.IntegerField(db_index=True)
+    user_id = models.IntegerField()
     friend_id = models.IntegerField(db_index=True)
     invisible = models.BooleanField(default=False)
     push = models.BooleanField(default=True)
@@ -92,6 +92,9 @@ class Friend(models.Model):
     is_hint = models.BooleanField(default=False)
     date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = (('user_id', 'friend_id'))
 
     @classmethod
     def is_friend(cls, owner_id, friend_id):

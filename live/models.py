@@ -292,8 +292,10 @@ def add_member_after(sender, created, instance, **kwargs):
         if push_lock:
             redis.set("mc:user:%s:pa_push_lock" % instance.user_id, 1, 300)
 
+        channel = Channel.objects.filter(channel_id=instance.channel_id).first()
         LiveMediaLog.objects.create(user_id=instance.user_id,
                                     channel_id=instance.channel_id,
+                                    channel_type=channel.channel_type,
                                     status=1)
 
         Friend.objects.filter(friend_id=instance.user_id).update(update_date=timezone.now())
@@ -303,7 +305,6 @@ def add_member_after(sender, created, instance, **kwargs):
         user.last_pa_time = time.time()
         user.paing = 1
 
-        channel = Channel.objects.filter(channel_id=instance.channel_id).first()
         if channel.channel_type == 2:
             refresh_public(instance.user_id)
         else:

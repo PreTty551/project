@@ -339,12 +339,15 @@ def bg(request):
                                           type=2, status=1).first()
         if log:
             log.status = 2
+            log.end_date = timezone.now()
             log.save()
             return JsonResponse()
 
+        channel = Channel.get_channel(channel_id=member.channel_id)
         LiveMediaLog.objects.create(user_id=request.user.id,
                                     channel_id=member.channel_id,
-                                    channel_type=member.channel_type,
+                                    channel_type=channel.channel_type,
                                     type=2,
                                     status=1)
         return JsonResponse()
+    return JsonResponse()
