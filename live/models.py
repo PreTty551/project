@@ -150,7 +150,7 @@ class Channel(models.Model):
             "icon": self.icon,
             "is_lock": self.is_lock,
             "date": self.date,
-            "member_count": self.member_count,
+            "member_count": len(self.name.split(",")),
             "channel_type": self.channel_type
         }
 
