@@ -8,11 +8,12 @@ from django.conf import settings
 from django.utils.translation import ugettext
 
 from corelib.errors import BaseError, ErrorCodeField
+from corelib.mc import cache
 
 from .user import User
 from .ignore import Ignore
 from .friend import Friend, InviteFriend
-from user.consts import UserEnum
+from user.consts import UserEnum, MC_RECOMMEND_CONTACT
 
 
 class UserContact(models.Model):
@@ -117,6 +118,7 @@ class UserContact(models.Model):
         return result
 
     @classmethod
+    @cache(MC_RECOMMEND_CONTACT % '{owner_id}', 3600 * 24)
     def recommend_contacts(cls, owner_id, limit=None):
         ignore_ids = list(Ignore.objects.filter(owner_id=owner_id, ignore_type=2).values_list("ignore_id", flat=True))
         all_mobile_list = list(UserContact.objects.filter(user_id=owner_id)
@@ -142,10 +144,10 @@ class UserContact(models.Model):
         results = []
         for mobile, user_ids in contacts.items():
             rate = 0
-            for user_id in user_ids:
-                friend_ids = Friend.get_friend_ids(user_id=user_id)
-                friend_count = len(set(user_ids) & set(friend_ids))
-                rate += friend_count
+            # for user_id in user_ids:
+            #     friend_ids = Friend.get_friend_ids(user_id=user_id)
+            #     friend_count = len(set(user_ids) & set(friend_ids))
+            #     rate += friend_count
             results.append((mobile, rate))
 
         sorted_results = sorted(results, key=lambda item: item[1])
