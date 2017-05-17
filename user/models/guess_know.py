@@ -11,18 +11,16 @@ def two_degree_relation(user_id):
     friend_ids = list(Friend.objects.filter(user_id=user_id)
                                     .values_list("friend_id", flat=True))
     ignore_ids = list(Ignore.objects.filter(owner_id=user_id, ignore_type=1).values_list("ignore_id", flat=True))
-    second_friend_list = list(Friend.objects.filter(user_id__in=friend_ids)
-                                            .exclude(friend_id=user_id)
-                                            .exclude(friend_id__in=friend_ids)
-                                            .exclude(friend_id__in=ignore_ids)
-                                            .values_list("user_id", "friend_id"))
+    ignore_ids.append(user_id)
 
-    obj = []
-    for second_friend in second_friend_list:
-        obj.append((second_friend[0], second_friend[1]))
+    second_friend_list = list(Friend.objects.filter(user_id__in=friend_ids).values_list("user_id", "friend_id"))
+    second_friends = []
+    for user_id, friend_id in second_friend_list:
+        if not (friend_id in friend_ids or friend_id in ignore_ids):
+            second_friends.append((user_id, friend_id))
 
     _dict = {}
-    for uid, fid in obj:
+    for uid, fid in second_friends:
         _ = _dict.setdefault(fid, [])
         _.append(uid)
     result = []
