@@ -25,7 +25,7 @@ from corelib.redis import redis
 from corelib.kingsoft.ks3 import KS3
 from corelib.twilio import Twilio
 
-from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum
+from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum, REDIS_ONLINE_USERS_KEY
 from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
 from socket_server import SocketServer
@@ -646,8 +646,8 @@ def user_online_and_offine_callback(request):
 
         if int(status) == 0:
             user.online()
-        # else:
-        #     user.offline()
+        else:
+            redis.hdel(REDIS_ONLINE_USERS_KEY, request.user.id)
     return JsonResponse()
 
 
