@@ -52,10 +52,9 @@ class SocketServer(object):
                 "message": message,
                 **kwargs
             },
-            "time": int(time.time() * 1000)
         }
         queue = django_rq.get_queue('high')
-        queue.enqueue(self.client.send_inner_message, user_id, to_user_id, json.dumps(data))
+        queue.enqueue(self.client.send_inner_message, user_id, to_user_id, data)
 
     def _send_event(self, user_id, to_user_id, event_type, message, **kwargs):
         data = {
@@ -64,10 +63,9 @@ class SocketServer(object):
                 "message": message,
                 **kwargs
             },
-            "time": int(time.time() * 1000)
         }
         queue = django_rq.get_queue('high')
-        queue.enqueue(self.client.send_hide_message, user_id, to_user_id, json.dumps(data))
+        queue.enqueue(self.client.send_hide_message, user_id, to_user_id, data)
 
     def valid(self, user_id, to_user_id):
         from user.models import User

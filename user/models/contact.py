@@ -80,28 +80,6 @@ class UserContact(models.Model):
         return [contact.to_dict() for contact in cls.objects.filter(user_id=user_id)]
 
     @classmethod
-    def get_contacts_in_app(cls, owner_id):
-        ignore_user_ids = Ignore.get_contacts_in_app(owner_id=owner_id)
-        friend_ids = Friend.get_friend_ids(user_id=owner_id)
-        all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
-        invite_friends = list(InviteFriend.objects.filter(invited_id=owner_id).values_list("user_id", flat=True))
-        user_ids = list(User.objects.filter(mobile__in=all_mobile_list)
-                                    .exclude(id__in=ignore_user_ids)
-                                    .exclude(id__in=friend_ids)
-                                    .exclude(id__in=invite_friends)
-                                    .values_list("id", flat=True))
-
-        results = []
-        for user_id in user_ids:
-            user = User.get(id=user_id)
-            if not user:
-                continue
-            basic_info = user.basic_info()
-            results.append(basic_info)
-
-        return results
-
-    @classmethod
     def get_contacts_out_app(cls, owner_id):
         ignore_user_ids = list(Ignore.objects.filter(ignore_type=2).values_list("ignore_id", flat=True))
         contacts = UserContact.objects.filter(user_id=owner_id)

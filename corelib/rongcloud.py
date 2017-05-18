@@ -1,4 +1,6 @@
 import hashlib
+import time
+import json
 
 from rongcloud import RongCloud as RC
 
@@ -15,11 +17,16 @@ class RongCloud(object):
         return signature == _signature
 
     def _send(self, user_id, to_user_id, content, object_name):
+        if isinstance(content, dict):
+            content["time"] = int(time.time() * 1000)
+            _content = json.dumps(content)
+        else:
+            _content = content
         return self.rongcloud.Message.publishPrivate(
                     fromUserId=user_id,
                     toUserId=to_user_id,
                     objectName=object_name,
-                    content=content)
+                    content=_content)
 
     def send_inner_message(self, user_id, to_user_id, content):
         return self._send(user_id=user_id,
