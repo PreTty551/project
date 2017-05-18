@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import random
 
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth import authenticate, login, logout
@@ -169,5 +170,5 @@ def friend_relation(request):
     user_id = request.GET.get("user_id", "")
     common_friend_list = common_friends(user_id=request.user.id, to_user_id=user_id)
     is_friend = Friend.is_friend(owner_id=request.user.id, friend_id=user_id)
-    common_friend = common_friend_list[0] if common_friend_list else ""
+    common_friend = random.sample(common_friend_list, 1)[0] if common_friend_list else ""
     return JsonResponse({"is_friend": is_friend, "common_friend": common_friend})
