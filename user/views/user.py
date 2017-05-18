@@ -648,6 +648,7 @@ def user_online_and_offine_callback(request):
             user.online()
         else:
             redis.hdel(REDIS_ONLINE_USERS_KEY, request.user.id)
+            user.paing = 0
     return JsonResponse()
 
 
