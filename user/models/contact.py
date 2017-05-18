@@ -104,7 +104,12 @@ class UserContact(models.Model):
     @classmethod
     def get_contacts_out_app(cls, owner_id):
         ignore_user_ids = list(Ignore.objects.filter(ignore_type=2).values_list("ignore_id", flat=True))
-        all_mobile_list = list(UserContact.objects.filter(user_id=owner_id).values_list("mobile", flat=True))
+        contacts = UserContact.objects.filter(user_id=user_id)
+        contacts_dict = {}
+        for contact in contacts:
+            contacts_dict[contact.mobile] = (contact.id, contact.name, contact.user_id)
+
+        all_mobile_list = list(contacts_dict.keys())
         mobile_ids = list(User.objects.filter(mobile__in=all_mobile_list)
                                       .exclude(id__in=ignore_user_ids)
                                       .values_list("mobile", flat=True))
@@ -112,9 +117,14 @@ class UserContact(models.Model):
         out_say_mobiles = set(mobile_ids) ^ set(all_mobile_list)
         result = []
         for mobile in out_say_mobiles:
-            uc = UserContact.objects.filter(user_id=owner_id, mobile=mobile).first()
-            if uc:
-                result.append(uc.to_dict())
+            contact = contacts_dict.get(mobile, "")
+            if contact:
+                result.append({
+                    "id": contact[0],
+                    "name": contact[1],
+                    "mobile": mobile,
+                    "user_id": contact[2]
+                })
         return result
 
     @classmethod
