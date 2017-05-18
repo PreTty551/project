@@ -10,7 +10,7 @@ class IgnoreType(Enum):
 
 
 class Ignore(models.Model):
-    owner_id = models.IntegerField()
+    owner_id = models.IntegerField(db_index=True)
     ignore_id = models.IntegerField()
     ignore_type = models.SmallIntegerField()
     date = models.DateTimeField(auto_now_add=True)

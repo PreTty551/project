@@ -46,7 +46,7 @@ def add_user_contact(request):
     is_success = UserContact.bulk_add(contact_list=contact_list, user_id=request.user.id)
     if is_success:
         user = User.get(request.user.id)
-        user.is_contact = 1
+        user.is_contact = True
         user.save()
         return JsonResponse()
     return HttpResponseServerError()
@@ -60,10 +60,10 @@ def update_user_contact(request):
     is_success = UserContact.bulk_add(contact_list=contact_list, user_id=request.user.id)
     user = User.get(request.user.id)
     if is_success:
-        user.is_contact = 1
+        user.is_contact = True
         user.save()
         return JsonResponse()
-    user.is_contact = 0
+    user.is_contact = False
     user.save()
     return JsonResponse()
 
