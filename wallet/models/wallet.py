@@ -173,7 +173,8 @@ class Withdrawals(models.Model):
             if user.disable_login:
                 wr.status = WITHDRAWAL_FAIL
                 wr.wechat_recode = "APP_DISABLE"
-                return
+                wr.save()
+                continue
 
             is_success, recode = cls.enterprise_pay(openid=wr.openid, amount=wr.amount)
             if is_success:
