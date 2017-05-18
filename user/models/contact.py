@@ -104,7 +104,7 @@ class UserContact(models.Model):
     @classmethod
     def get_contacts_out_app(cls, owner_id):
         ignore_user_ids = list(Ignore.objects.filter(ignore_type=2).values_list("ignore_id", flat=True))
-        contacts = UserContact.objects.filter(user_id=user_id)
+        contacts = UserContact.objects.filter(user_id=owner_id)
         contacts_dict = {}
         for contact in contacts:
             contacts_dict[contact.mobile] = (contact.id, contact.name, contact.user_id)
