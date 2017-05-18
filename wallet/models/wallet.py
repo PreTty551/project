@@ -7,6 +7,8 @@ from django.db.models import F
 from decimal import Decimal
 from corelib.utils import random_str
 
+from user.models import User
+
 from wallet.consts import MIN_TRANSFER_AMOUNT, MAX_TRANSFER_AMOUNT
 from wallet.consts import MIN_WITHDRAWALS_AMOUNT, MAX_WITHDRAWALS_AMOUNT
 from wallet.consts import WITHDRAWAL_APPLY, WITHDRAWAL_SUCCESS, WITHDRAWAL_FAIL
@@ -167,11 +169,16 @@ class Withdrawals(models.Model):
     def withdrawal(cls):
         withdrawal_recodes = cls.objects.filter(status=WITHDRAWAL_APPLY)
         for wr in withdrawal_recodes:
+            user = User.get(wr.user_id)
+            if user.disable_login:
+                wr.status = WITHDRAWAL_FAIL
+                wr.wechat_recode = "APP_DISABLE"
+                return
+
             is_success, recode = cls.enterprise_pay(openid=wr.openid, amount=wr.amount)
             if is_success:
-                Withdrawals.objects.filter(user_id=wr.user_id).update(status=WITHDRAWAL_SUCCESS)
-                # wallet = Wallet.get(user_id=wr.user_id)
-                # wallet.minus(amount=wr.amount)
+                wr.status = WITHDRAWAL_SUCCESS
+                wr.save()
 
                 WalletRecord.objects.create(owner_id=wr.user_id,
                                             user_id=wr.user_id,
@@ -181,8 +188,9 @@ class Withdrawals(models.Model):
                                             type=1,
                                             desc="提现")
             else:
-                Withdrawals.objects.filter(user_id=wr.user_id).update(wechat_recode=recode["err_code"],
-                                                                      status=WITHDRAWAL_FAIL)
+                wr.status = WITHDRAWAL_FAIL
+                wr.wechat_recode = recode["err_code"]
+                wr.save()
 
 
 def get_related_amount(amount):
