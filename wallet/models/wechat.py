@@ -27,7 +27,8 @@ class WechatSDK(object):
                                             total_fee=str(amount),
                                             out_trade_no=out_trade_no,
                                             notify_url=notify_url,
-                                            trade_type=trade_type)
+                                            trade_type=trade_type,
+                                            limit_pay="no_credit")
 
         appapi_params = self.wechatpay.order.get_appapi_params(prepay_id=wechat_order["prepay_id"])
         return appapi_params
