@@ -40,7 +40,7 @@ def request_sms_code(request):
     if not mobile:
         return HttpResponseBadRequest()
 
-    if mobile == APPSTORE_MOBILE:
+    if mobile in [APPSTORE_MOBILE, ANDROID_MOBILE]:
         return JsonResponse()
 
     try:
@@ -65,7 +65,7 @@ def request_voice_code(request):
     if not mobile:
         return HttpResponseBadRequest()
 
-    if mobile == APPSTORE_MOBILE:
+    if mobile in [APPSTORE_MOBILE, ANDROID_MOBILE]:
         return JsonResponse()
 
     try:
