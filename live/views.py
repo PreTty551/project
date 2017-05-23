@@ -80,8 +80,8 @@ def near_channel_list(request):
     1. 先查找所有附近类型的房间，再查这些房间用户，算附近排序(现在使用中)
     2. 先直接查找附近n距离内的用户，再根据这些用户找到房间
     """
-    channel_ids = list(Channel.objects.filter(channel_type=ChannelType.public.value).values_list("id", flat=True))
-    user_ids = list(ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True))
+    # channel_ids = list(Channel.objects.filter(channel_type=ChannelType.public.value).values_list("id", flat=True))
+    # user_ids = list(ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True))
     # place = Place.get(user_id=request.user.id)
     # channels = []
     # if place:
@@ -99,10 +99,54 @@ def near_channel_list(request):
     #             channels.append(channel.to_dict())
 
     # limit = 100 - len(channels)
+
+    friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+    friend_channel_ids = list(ChannelMember.objects.filter(user_id__in=friend_ids,
+                                                           channel_type=ChannelType.public.value)
+                                                   .values_list("channel_id", flat=True))
+
+    limit = 100 - len(set(friend_channel_ids))
+    public_channel_ids = list(Channel.objects.filter(channel_type=ChannelType.public.value)
+                                             .exclude(id__in=friend_channel_ids)
+                                             .order_by("?").values_list("channel_id", flat=True)[:limit])
+
+    public_channel_ids.extend(friend_channel_ids)
+    public_channel_ids = list(set(public_channel_ids))
+
+    member_list = ChannelMember.objects.filter(channel_id__in=public_channel_ids)
+
+    members = []
+    members_dict = {}
+    channel_user_ids = []
+    for member in member_list:
+        _ = members_dict.setdefault(member.channel_id, [])
+        _.append((member.user_id, member.nickname))
+        channel_user_ids.append(member.user_id)
+
     channels = []
-    channel_list = Channel.objects.filter(channel_type=ChannelType.public.value).order_by("-id")[:100]
+
+    channel_list = Channel.objects.filter(channel_id__in=public_channel_ids)
     for channel in channel_list:
-        channels.append(channel.to_dict())
+        member = members_dict.get(channel.channel_id)
+        if not member:
+            continue
+
+        friend_nicknames = []
+        user_icon = None
+        for user_id, nickname in member:
+            if user_id in friend_ids:
+                user_icon = user_id
+                friend_nicknames.append((nickname, 0))
+            else:
+                friend_nicknames.append((nickname, 1))
+
+            if not user_icon:
+                user_icon = user_id
+
+        friend_nicknames = sorted(friend_nicknames, key=lambda item: item[1])
+        user = User.get(user_icon)
+        icon = user.avatar_url
+        channels.append(channel.to_dict(nicknames=friend_nicknames, icon=icon))
 
     friend_list = FriendListWidget.list(user_id=request.user.id)
     return JsonResponse({"channels": channels, "friends": friend_list})

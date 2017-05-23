@@ -120,7 +120,7 @@ class Channel(models.Model):
             channel_user_ids.append(member.user_id)
 
         results = []
-        channels = Channel.objects.filter(channel_id__in=channel_ids, channel_type=ChannelType.normal.value)
+        channels = Channel.objects.filter(channel_id__in=channel_ids)
         for channel in channels:
             member = members_dict.get(channel.channel_id)
             if not member:
@@ -149,7 +149,7 @@ class Channel(models.Model):
         nicknames = [nickname_tuple[0] for nickname_tuple in nicknames]
         return ",".join(nicknames)
 
-    def duration_time(self):
+    def duration_time(self, nicknames):
         timedelta = timezone.now() - self.date
         minute = int((timedelta.seconds / 60) + timedelta.days * 24 * 60)
         people_number = self._member_count(nicknames=nicknames)

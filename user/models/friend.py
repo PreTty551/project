@@ -240,9 +240,9 @@ def friend_dynamic(owner_id, user_id, add_friend_time):
     # 没有开过Pa或者开Pa的时间小于新加的好友的时间
     if not dt:
         if now < add_friend_time + datetime.timedelta(seconds=3600):
-            return "TA刚刚通过你的好友申请"
+            return "你们刚刚成为了好友"
     elif dt < add_friend_time:
-        return "TA刚刚通过你的好友申请"
+        return "你们刚刚成为了好友"
 
     if dt:
         d = time_format(timezone.localtime(dt))

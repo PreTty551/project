@@ -144,6 +144,7 @@ class User(AbstractUser, PropsMixin):
     def offline(self):
         self.offline_time = timezone.now()
         self.save()
+        self.paing = 0
         redis.hdel(REDIS_ONLINE_USERS_KEY, self.id)
         from live.models import ChannelMember
         ChannelMember.objects.filter(user_id=self.id).delete()
