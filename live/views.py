@@ -4,7 +4,7 @@ import random
 import requests
 import datetime
 
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponseServerError
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
@@ -117,9 +117,13 @@ def create_channel(request):
     except ValueError:
         return HttpResponseBadRequest()
 
-    InviteParty.clear(request.user.id)
-    channel = Channel.create_channel(user_id=request.user.id, channel_type=channel_type)
+    channel = Channel.create_channel(user_id=request.user.id,
+                                     channel_type=channel_type,
+                                     nickname=request.user.nickname)
     if channel:
+        request.user.last_pa_time = time.time()
+        request.user.paing = 1
+
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
         return JsonResponse({"channel_id": channel.channel_id, "channel_key": channel_key})
@@ -160,7 +164,11 @@ def join_channel(request):
         return JsonResponse({"is_lock": True})
 
     Channel.join_channel(channel_id=channel_id,
-                         user_id=request.user.id)
+                         user_id=request.user.id,
+                         nickname=request.user.nickname)
+
+    request.user.last_pa_time = time.time()
+    request.user.paing = 1
     return JsonResponse({"channel_id": channel_id, "channel_key": channel_key})
 
 
@@ -172,23 +180,29 @@ def quit_channel(request):
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         last_pa_time = request.user.last_pa_time
-        channel.quit_channel(user_id=request.user.id)
+        is_success = channel.quit_channel(user_id=request.user.id)
 
-        if not last_pa_time:
-            return
+        if is_success:
+            if not last_pa_time:
+                return
 
-        dt = datetime.datetime.fromtimestamp(float(last_pa_time))
-        if (datetime.datetime.now() - dt).seconds > 300:
-            return JsonResponse({"feedback": True})
-    return JsonResponse({"feedback": False})
+            request.user.paing = 0
+
+            dt = datetime.datetime.fromtimestamp(float(last_pa_time))
+            if (datetime.datetime.now() - dt).seconds > 300:
+                return JsonResponse({"feedback": True})
+        return JsonResponse({"feedback": False})
+    return HttpResponseServerError()
 
 
 @require_http_methods(["POST"])
 @login_required_404
 def delete_channel(request):
     channel_id = request.POST.get("channel_id")
-    Channel.delete_channel(channel_id=channel_id)
-    return JsonResponse()
+    is_success = Channel.delete_channel(channel_id=channel_id)
+    if is_success:
+        return JsonResponse()
+    return HttpResponseServerError()
 
 
 @login_required_404

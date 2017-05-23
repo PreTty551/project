@@ -62,15 +62,17 @@ class Channel(models.Model):
 
     @classmethod
     def delete_channel(cls, channel_id):
-        channel = cls.objects.filter(channel_id=channel_id).first()
-        if channel:
-            ChannelMember.objects.filter(channel_id=channel_id).delete()
+        for member in ChannelMember.objects.filter(channel_id=channel_id):
+            member.delete()
+            user = User.get(member.user_id)
+            user.paing = 0
+        return True
 
     @classmethod
-    def join_channel(cls, channel_id, user_id):
+    def join_channel(cls, channel_id, user_id, nickname):
         channel = Channel.get_channel(channel_id=channel_id)
         if channel:
-            ChannelMember.add(channel_id=channel_id, user_id=user_id)
+            ChannelMember.add(channel_id=channel_id, user_id=user_id, nickname=nickname)
             ChannelMember.objects.filter(user_id=user_id).exclude(channel_id=channel.channel_id).delete()
             return True
         return False
@@ -85,6 +87,7 @@ class Channel(models.Model):
 
     def quit_channel(self, user_id):
         ChannelMember.objects.filter(user_id=user_id, channel_id=self.channel_id).delete()
+        return True
 
     def get_channel_member(self):
         return ChannelMember.get_channel_member(channel_id=self.channel_id)
@@ -126,11 +129,11 @@ class Channel(models.Model):
             friend_nicknames = []
             user_icon = None
             for user_id, nickname in member:
-                if user_id in channel_friend_ids:
+                if user_id in friend_ids:
                     user_icon = user_id
-                    friend_nicknames.append((nickname, 1))
-                else:
                     friend_nicknames.append((nickname, 0))
+                else:
+                    friend_nicknames.append((nickname, 1))
 
                 if not user_icon:
                     user_icon = user_id
@@ -142,20 +145,20 @@ class Channel(models.Model):
 
         return results
 
-    @property
     def title(self, nicknames=[]):
-        # nicknames = redis.lrange(REDIS_CHANNEL_NICKNAMES % self.id, 0, -1)
-        # nicknames = [nickname.decode() for nickname in nicknames]
+        nicknames = [nickname_tuple[0] for nickname_tuple in nicknames]
         return ",".join(nicknames)
 
-    @property
     def duration_time(self):
         timedelta = timezone.now() - self.date
         minute = int((timedelta.seconds / 60) + timedelta.days * 24 * 60)
-        number = len(self.name.split(","))
+        people_number = self._member_count(nicknames=nicknames)
         if minute < 1:
-            return "当前%s人, 刚刚开PA" % number
-        return "当前%s人, 进行了%s分钟" % (number, minute)
+            return "当前%s人, 刚刚开PA" % people_number
+        return "当前%s人, 进行了%s分钟" % (people_number, minute)
+
+    def _member_count(self, nicknames):
+        return len(nicknames)
 
     def icon(self, user_id):
         user = User.get(user_id)
@@ -163,13 +166,13 @@ class Channel(models.Model):
             return user.avatar_url
         return ""
 
-    def to_dict(self, nicknames):
+    def to_dict(self, nicknames, icon=""):
         title = self.title(nicknames)
         return {
             "title": title,
             "channel_id": self.channel_id,
-            "duration_time": self.duration_time,
-            "icon": self.icon(user_id=friend_id),
+            "duration_time": self.duration_time(nicknames=nicknames),
+            "icon": icon,
             "is_lock": self.is_lock,
             "date": self.date,
             "member_count": len(nicknames),
@@ -197,10 +200,10 @@ class ChannelMember(models.Model):
         return cls.objects.filter(channel_id=channel_id).values_list("user_id", flat=True)
 
     @classmethod
-    def add(cls, channel_id, user_id):
+    def add(cls, channel_id, user_id, nickname):
         member = cls.objects.filter(channel_id=channel_id, user_id=user_id).first()
         if not member:
-            cls.objects.create(channel_id=channel_id, user_id=user_id)
+            cls.objects.create(channel_id=channel_id, user_id=user_id, nickname=nickname)
 
     @classmethod
     def clear_channel(cls, user_id):
@@ -301,20 +304,6 @@ def refresh_public(user_id):
                            event_type=EventType.refresh_public.value)
 
 
-@receiver(post_delete, sender=Channel)
-def delete_channel_after(sender, instance, **kwargs):
-    redis.delete(REDIS_CHANNEL_MEMBER_COUNT % instance.id)
-
-
-@receiver(post_save, sender=InviteParty)
-def add_invite_party(sender, created, instance, **kwargs):
-    if created:
-        InviteParty.objects.filter(user_id=instance.to_user_id,
-                                   to_user_id=instance.user_id,
-                                   status=0).update(status=1)
-        redis.delete(MC_INVITE_PARTY % instance.user_id)
-
-
 @receiver(post_save, sender=ChannelMember)
 def add_member_after(sender, created, instance, **kwargs):
     if created:
@@ -333,7 +322,7 @@ def add_member_after(sender, created, instance, **kwargs):
 
         user = User.get(instance.user_id)
         user.last_pa_time = time.time()
-        user.paing = 1
+        # user.paing = 1
 
         if channel.channel_type == 2:
             refresh_public(instance.user_id)
@@ -355,17 +344,9 @@ def delete_member_after(sender, instance, **kwargs):
         count = ChannelMember.objects.filter(channel_id=instance.channel_id).count()
         if count == 0:
             Channel.objects.filter(channel_id=instance.channel_id).delete()
-        else:
-            user = User.get(instance.user_id)
-            name = channel.name.replace("%s," % user.nickname, "").replace(",%s" % user.nickname, "")
-            name = name.strip(",")
-            if name:
-                channel.name = name
-                channel.save()
 
         user = User.get(instance.user_id)
         user.last_pa_time = time.time()
-        user.paing = 0
 
         if channel.channel_type == 2:
             refresh_public(instance.user_id)
