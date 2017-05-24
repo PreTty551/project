@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+</head>
+<body>
+  <form method="get", action="/duty/live_time/">
+    用户ids: <textarea type="text" name="user_ids"></textarea>
+    开始时间: <input type="text" name="start_date">
+    天数: <input type="text" name="days">
+    <input type="submit">
+  </form>
+
+  {% for o in results %}
+    {{ o[1] }} {{ o[2] }}
+  {% endfor %}
+</body>
+</html>

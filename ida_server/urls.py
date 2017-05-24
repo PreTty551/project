@@ -28,6 +28,7 @@ urlpatterns = [
     url(r'', include('gift.urls')),
     url(r'', include('wallet.urls')),
     url(r'^invite/', include('invite.urls')),
+    url(r'', include('ida.urls')),
     url(r'^h5/$', views.main),
     url(r'^apple-app-site-association$', file_download),
     url(r'^clause/$', views.clause),
