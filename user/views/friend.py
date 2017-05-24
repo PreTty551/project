@@ -31,26 +31,23 @@ def invite_friend(request):
                                                friend_id=invited_id,
                                                channel_type=channel.channel_type)
 
-    if InviteFriend.objects.filter(user_id=invited_id, invited_id=request.user.id).first():
-        Friend.add(user_id=request.user.id, friend_id=invited_id)
-    else:
-        is_success = InviteFriend.add(user_id=request.user.id,
-                                      invited_id=invited_id)
-        if is_success:
-            push_lock = redis.get("mc:user:%s:friend:%s:invite_push_lock" % (request.user.id, invited_id))
-            if not push_lock:
-                message = "%s 申请添加你为好友" % request.user.nickname
-                JPush().async_push(user_ids=[invited_id], message=message)
-                data = {
-                    "from_user_id": request.user.id,
-                    "avatar_url": request.user.avatar_url,
-                }
-                SocketServer().invite_friend(user_id=request.user.id,
-                                             to_user_id=invited_id,
-                                             message=message,
-                                             **data)
-                redis.set("mc:user:%s:friend:%s:invite_push_lock" % (request.user.id, invited_id), 1, 60)
-            return JsonResponse()
+    is_success = InviteFriend.add(user_id=request.user.id,
+                                  invited_id=invited_id)
+    if is_success:
+        push_lock = redis.get("mc:user:%s:friend:%s:invite_push_lock" % (request.user.id, invited_id))
+        if not push_lock:
+            message = "%s 申请添加你为好友" % request.user.nickname
+            JPush().async_push(user_ids=[invited_id], message=message)
+            data = {
+                "from_user_id": request.user.id,
+                "avatar_url": request.user.avatar_url,
+            }
+            SocketServer().invite_friend(user_id=request.user.id,
+                                         to_user_id=invited_id,
+                                         message=message,
+                                         **data)
+            redis.set("mc:user:%s:friend:%s:invite_push_lock" % (request.user.id, invited_id), 1, 60)
+        return JsonResponse()
     return HttpResponseServerError()
 
 

@@ -38,15 +38,16 @@ class InviteFriend(models.Model):
 
     @classmethod
     def add(cls, user_id, invited_id):
-        try:
+        invite = cls.objects.filter(user_id=invited_id, invited_id=user_id, status=0).first()
+        if not invite:
             invite = cls.objects.filter(user_id=user_id, invited_id=invited_id).first()
             if invite:
                 invite.status = 0
                 invite.save()
             else:
                 cls.objects.create(user_id=user_id, invited_id=invited_id)
-        except IntegrityError:
-            pass
+        else:
+            cls.objects.create(user_id=user_id, invited_id=invited_id)
         return True
 
     @classmethod
