@@ -12,6 +12,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseBadRequest, Http404, \
         HttpResponseServerError, HttpResponseNotFound
 
+from xpinyin import Pinyin
+
 from corelib.jiguang import JSMS
 from corelib.http import JsonResponse
 from corelib.errors import LoginError
@@ -545,6 +547,9 @@ def update_nickname(request):
     nickname = request.POST.get("nickname")
     user = User.objects.filter(id=request.user.id).first()
     user.nickname = nickname
+
+    pinyin = Pinyin().get_pinyin(nickname, "")
+    user.pinyin = pinyin[:50]
     user.save()
     return JsonResponse()
 
@@ -648,12 +653,11 @@ def user_online_and_offine_callback(request):
             user.online()
         else:
             redis.hdel(REDIS_ONLINE_USERS_KEY, request.user.id)
-            user.paing = 0
     return JsonResponse()
 
 
 def fuck_you(request):
-    token = hashlib.sha1(request.COOKIES["sessionid"].encode('utf-8')).hexdigest()
+    token = hashlib.sha1(request.user.rong_token).hexdigest()
     data = {
         "type": 4444,
         "data": {
