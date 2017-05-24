@@ -257,7 +257,7 @@ class User(AbstractUser, PropsMixin):
         return self.paid == str(self.id)
 
     def push_role(self, friend_id):
-        no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % user_id)
+        no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % self.id)
         if friend_id.encode() in no_push_ids:
             return False
         return True
