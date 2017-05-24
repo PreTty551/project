@@ -108,7 +108,7 @@ class Channel(models.Model):
         user_ids = [user_id]
         user_ids.extend(friend_ids)
 
-        channel_ids = ChannelMember.objects.filter(user_id__in=user_ids).values_list("channel_id", flat=True)
+        channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids).values_list("channel_id", flat=True))
         member_list = ChannelMember.objects.filter(channel_id__in=channel_ids)
 
         members = []
