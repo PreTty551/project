@@ -24,6 +24,6 @@ MC_MY_INVITE_FRIEND_IDS = "my:inv:%s:ids"
 MC_RECOMMEND_CONTACT = "u:%s:rc"
 
 REDIS_MEMOS_KEY = 'u:%s:f:%s:memo'
-REDIS_INVISIBLE_KEY = 'u:%s:invisible'
-REDIS_PUSH_KEY = 'u:%s:push'
 REDIS_ONLINE_USERS_KEY = 'online:user_ids'
+
+REDIS_NO_PUSH_IDS = "u:%s:no_push"

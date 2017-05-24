@@ -6,7 +6,9 @@ import jpush
 import django_rq
 
 from django.conf import settings
+
 from corelib.redis import redis
+from user.consts import REDIS_NO_PUSH_IDS
 
 
 class JPush(object):
@@ -41,9 +43,17 @@ class JPush(object):
         }
         return _
 
+    def _get_valid_user_ids(self, user_ids):
+        no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % user_id)
+        for no_push_id in no_push_ids:
+            no_push_id = no_push_id.decode()
+            if no_push_id in user_ids:
+                user_ids.remove(no_push_id)
+
+        return user_ids
+
     def push(self, user_ids, message, push_type=0, is_sound=False,
              sound=None, title="通知提醒", badge="", **kwargs):
-
         push = self.client.create_push()
         push.audience = jpush.audience({"alias": user_ids})
         ios = self._ios(is_sound=is_sound, sound=sound, push_type=push_type, badge=badge, **kwargs)
@@ -55,20 +65,25 @@ class JPush(object):
 
     def async_push(self, user_ids, message, push_type=0, is_sound=False,
                    sound=None, title="通知提醒", badge="", **kwargs):
-        queue = django_rq.get_queue('high')
-        queue.enqueue(self.push, user_ids, message, push_type, is_sound, sound, title, badge, **kwargs)
+        user_ids = self._get_valid_user_ids(user_ids=user_ids)
+        if user_ids:
+            queue = django_rq.get_queue('high')
+            queue.enqueue(self.push, user_ids, message, push_type, is_sound, sound, title, badge, **kwargs)
 
     def async_batch_push(self, user_ids, message, push_type=0, is_sound=False,
                          sound=None, title="通知提醒", badge="", **kwargs):
-        # query的限制是1000，所以一次发1000个人
-        limit = 0
-        offset = 1000
-        receive_count = len(user_ids)
-        loop_num = receive_count // offset
-        if (receive_count % offset):
-            loop_num += 1
 
-        queue = django_rq.get_queue('high')
-        for i in list(range(loop_num)):
-            queue.enqueue(self.push, user_ids[limit: limit + offset], message, push_type, is_sound, sound, title, badge, **kwargs)
-            limit += 1000
+        user_ids = self._get_valid_user_ids(user_ids=user_ids)
+        if user_ids:
+            # query的限制是1000，所以一次发1000个人
+            limit = 0
+            offset = 1000
+            receive_count = len(user_ids)
+            loop_num = receive_count // offset
+            if (receive_count % offset):
+                loop_num += 1
+
+            queue = django_rq.get_queue('high')
+            for i in list(range(loop_num)):
+                queue.enqueue(self.push, user_ids[limit: limit + offset], message, push_type, is_sound, sound, title, badge, **kwargs)
+                limit += 1000

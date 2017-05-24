@@ -22,7 +22,8 @@ from corelib.utils import natural_time as time_format
 from corelib.mc import cache
 from corelib.redis import redis
 
-from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY
+from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, \
+                        REDIS_NO_PUSH_IDS
 from .place import Place
 
 
@@ -256,14 +257,9 @@ class User(AbstractUser, PropsMixin):
         return self.paid == str(self.id)
 
     def push_role(self, friend_id):
-        is_invisible = redis.hget(REDIS_INVISIBLE_KEY % self.id, friend_id)
-        if is_invisible:
+        no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % user_id)
+        if friend_id.encode() in no_push_ids:
             return False
-
-        is_push = redis.hget(REDIS_PUSH_KEY % friend_id, self.id)
-        if is_push:
-            return False
-
         return True
 
     def basic_info(self, user_id=None):

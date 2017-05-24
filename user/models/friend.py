@@ -13,7 +13,7 @@ from corelib.redis import redis
 from corelib.mc import hlcache, cache
 
 from user.models import User
-from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_PUSH_KEY, REDIS_INVISIBLE_KEY, \
+from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, \
                         MC_FRIEND_LIST, MC_INVITE_MY_FRIEND_IDS, MC_MY_INVITE_FRIEND_IDS
 
 
@@ -165,27 +165,17 @@ class Friend(models.Model):
     def update_invisible(self, is_invisible):
         self.invisible = is_invisible
         self.save()
-        redis.hset(REDIS_INVISIBLE_KEY % self.user_id, self.user_id, is_invisible)
+
+        if is_invisible:
+            redis.hset(REDIS_NO_PUSH_IDS % self.user_id, self.friend_id, 1)
         return True
 
     def update_push(self, is_push):
         self.push = is_push
         self.save()
-        redis.hset(REDIS_PUSH_KEY % self.user_id, self.user_id, is_push)
-        return True
 
-    @classmethod
-    def is_invisible(cls, owner_id, user_id):
-        is_invisible = redis.hget(REDIS_INVISIBLE_KEY % owner_id, user_id)
-        if is_invisible is not None:
-            return True if is_invisible else False
-        return False
-
-    @classmethod
-    def is_push(cls, owner_id, user_id):
-        is_push = redis.hget(REDIS_PUSH_KEY % owner_id, user_id)
-        if is_push is not None:
-            return True if is_push else False
+        if is_push:
+            redis.hset(REDIS_NO_PUSH_IDS % self.friend_id, self.user_id, 1)
         return True
 
     @property
