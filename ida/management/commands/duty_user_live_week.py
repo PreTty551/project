@@ -4,7 +4,7 @@ import datetime
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from ida.models import Duty, duty_user_add_friend
+from ida.models import Duty, duty_user_live_time_week
 
 
 class Command(BaseCommand):
