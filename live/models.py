@@ -330,7 +330,7 @@ def add_member_after(sender, created, instance, **kwargs):
             refresh(instance.user_id)
 
         count = ChannelMember.objects.filter(user_id=instance.user_id).count()
-        if count > 1:
+        if count == 1:
             party_push(instance.user_id, instance.channel_id, channel.channel_type)
 
 
