@@ -137,6 +137,7 @@ def duty_party_time(user_ids, start_date, days):
         data.append(user.nickname)
 
         start = copy.deepcopy(start_date)
+        start = datetime.datetime.strptime(start, '%Y-%m-%d')
         for i in list(range(1, int(days))):
             end_date = start + datetime.timedelta(days=1)
             logs = LiveMediaLog.objects.filter(user_id=user_id,

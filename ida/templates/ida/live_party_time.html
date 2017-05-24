@@ -10,8 +10,10 @@
     <input type="submit">
   </form>
 
-  {% for o in results %}
-    {{ o[1] }} {{ o[2] }}
+  {% for result in results %}
+    {% for o in result %}
+      {{ o }}
+    {% endfor %}
   {% endfor %}
 </body>
 </html>
