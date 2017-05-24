@@ -18,7 +18,6 @@ class JPush(object):
 
     def __init__(self, user_id=""):
         self.client = jpush.JPush(self.app_key, self.master_secret)
-        self.client.set_logging("DEBUG")
         self.user_id = user_id
 
     def _ios(self, is_sound, sound, push_type, badge, **kwargs):

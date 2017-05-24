@@ -64,5 +64,5 @@ urlpatterns = [
     url(r'^user/kill_app/$', views.kill_app, name='kill_app'),
     url(r'^kaipa/$', views.tianmo, name='kaipa'),
     url(r'^api/v2/version/ios/$', views.say_ios, name='say_ios'),
-
+    url(r'^xiazaipa/$', views.xiazaipa, name='xiazaipa'),
 ]

@@ -780,3 +780,8 @@ def tianmo(request):
     from django.shortcuts import redirect
     redis.incr("tianmo")
     return redirect("http://t.cn/R5imgiZ")
+
+
+def xiazaipa(request):
+    from django.shortcuts import redirect
+    return redirect("http://a.app.qq.com/o/simple.jsp?pkgname=com.gouhuoapp.pa")
