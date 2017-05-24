@@ -16,9 +16,10 @@ class JPush(object):
     app_key = settings.JSMS_APP_KEY
     master_secret = settings.JSMS_MASTER_SECRET
 
-    def __init__(self):
+    def __init__(self, user_id=""):
         self.client = jpush.JPush(self.app_key, self.master_secret)
         self.client.set_logging("DEBUG")
+        self.user_id = user_id
 
     def _ios(self, is_sound, sound, push_type, badge, **kwargs):
         _ = {
@@ -44,7 +45,7 @@ class JPush(object):
         return _
 
     def _get_valid_user_ids(self, user_ids):
-        no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % user_id)
+        no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % self.user_id)
         for no_push_id in no_push_ids:
             no_push_id = no_push_id.decode()
             if no_push_id in user_ids:
