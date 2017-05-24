@@ -13,7 +13,7 @@ from corelib.redis import redis
 from corelib.mc import hlcache, cache
 
 from user.models import User
-from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, \
+from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_NO_PUSH_IDS, \
                         MC_FRIEND_LIST, MC_INVITE_MY_FRIEND_IDS, MC_MY_INVITE_FRIEND_IDS
 
 

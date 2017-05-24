@@ -124,9 +124,12 @@ def update_invisible(request):
     friend_id = request.POST.get("friend_id")
     invisible = request.POST.get("invisible")
 
+    if invisible is None:
+        return HttpResponseBadRequest()
+
     friend = Friend.objects.filter(user_id=request.user.id, friend_id=friend_id).first()
     if friend:
-        is_success = friend.update_invisible(is_invisible=invisible)
+        is_success = friend.update_invisible(is_invisible=bool(invisible))
         if is_success:
             return JsonResponse()
     return HttpResponseServerError()
@@ -137,9 +140,12 @@ def update_push(request):
     friend_id = request.POST.get("friend_id")
     push = request.POST.get("push")
 
+    if push is None:
+        return HttpResponseBadRequest()
+
     friend = Friend.objects.filter(user_id=request.user.id, friend_id=friend_id).first()
     if friend:
-        is_success = friend.update_push(is_push=push)
+        is_success = friend.update_push(is_push=bool(push))
         if is_success:
             return JsonResponse()
     return HttpResponseServerError()
