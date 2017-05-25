@@ -3,7 +3,6 @@
 import json
 import requests
 import django_rq
-
 from django.conf import settings
 
 

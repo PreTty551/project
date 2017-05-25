@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_rq',
+    'django.rq',
     'user',
     'live',
     'gift',
@@ -148,7 +148,6 @@ RQ_QUEUES = {
         'USE_REDIS_CACHE': 'redis-queue',
     },
 }
-
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

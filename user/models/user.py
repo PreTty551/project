@@ -3,6 +3,7 @@ import uuid
 import random
 import datetime
 
+from datetime import date,timedelta
 from itertools import permutations
 from xpinyin import Pinyin
 
@@ -124,17 +125,17 @@ class User(AbstractUser, PropsMixin):
     #     return "<User(id=%s, nickname=%s)>" % (self.id, self.nickname)
     #
     # __repr__ = __str__
-
-    def save(self, *args, **kwargs):
-        if not self.mobile:
-            self.mobile = random.randint(27600000000, 27690000000)
-        super(User, self).save(*args, **kwargs)
+    @classmethod
+    def add(cls, user_id):
+        cls.objects.create(user_id=user_id)
 
     @property
     def _props_db_key(self):
         return "db:user:%s" % self.id
 
     def save(self, *args, **kwargs):
+        if not self.mobile:
+            self.mobile = random.randint(27600000000, 27690000000)
         super(User, self).save(*args, **kwargs)
 
     @classmethod
@@ -239,7 +240,12 @@ class User(AbstractUser, PropsMixin):
 
     @property
     def disable_login(self):
-        return self.id in list(BanUser.objects.values_list("user_id", flat=True))
+        banuser = BanUser.objects.filter(user_id=self.id).first()
+        if banuser:
+            dtime = banuser.date + timedelta(days=1)
+            if timezone.now() < dtime:
+                return True
+        return False
 
     def create_rong_token(self):
         from corelib.rong import client
@@ -304,7 +310,6 @@ class User(AbstractUser, PropsMixin):
                 dis = place.get_dis(to_user_id=user_id)
                 if dis:
                     detail_info["location"] = u"%s公里" % dis
-
             return detail_info
 
         else:
@@ -349,7 +354,13 @@ class BanUser(models.Model):
     class Meta:
         db_table = "ban_user"
 
-
+    @classmethod
+    def add(cls, user_id, second):
+        cls.objects.create(user_id=user_id,second=second)
+    @classmethod
+    def get(cls, id):
+        return cls.objects.filter(id=id).first()
+        
 @receiver(post_save, sender=ThirdUser)
 def add_thirduser_after(sender, created, instance, **kwargs):
     if created:
