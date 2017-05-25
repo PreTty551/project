@@ -46,7 +46,7 @@ class JPush(object):
     def _get_valid_user_ids(self, user_ids):
         no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % self.user_id)
         for no_push_id in no_push_ids:
-            no_push_id = no_push_id.decode()
+            no_push_id = int(no_push_id.decode())
             if no_push_id in user_ids:
                 user_ids.remove(no_push_id)
 
