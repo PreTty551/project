@@ -3,7 +3,7 @@ import uuid
 import random
 import datetime
 
-from datetime import date,timedelta
+from datetime import date, timedelta
 from itertools import permutations
 from xpinyin import Pinyin
 
@@ -125,6 +125,7 @@ class User(AbstractUser, PropsMixin):
     #     return "<User(id=%s, nickname=%s)>" % (self.id, self.nickname)
     #
     # __repr__ = __str__
+
     @classmethod
     def add(cls, user_id):
         cls.objects.create(user_id=user_id)
@@ -357,7 +358,7 @@ class BanUser(models.Model):
     @classmethod
     def add(cls, user_id, second):
         cls.objects.create(user_id=user_id,second=second)
-    @classmethod
+    
     def get(cls, id):
         return cls.objects.filter(id=id).first()
         

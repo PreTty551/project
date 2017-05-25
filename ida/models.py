@@ -141,15 +141,15 @@ def duty_party_time(user_ids, start_date, days):
         for i in list(range(1, int(days))):
             end_date = start + datetime.timedelta(days=1)
             logs = LiveMediaLog.objects.filter(user_id=user_id,
-                                              type=1,
-                                              status=2,
-                                              date__gte=start,
-                                              date__lt=end_date)
+                                               type=1,
+                                               status=2,
+                                               date__gte=start,
+                                               date__lt=end_date)
 
             seconds = 0
             for log in logs:
                 seconds += (log.end_date - log.date).seconds
-           data.append(str(seconds // 60))
-           start = end_date
+            data.append(str(seconds // 60))
+            start = end_date
         result.append(data)
     return result
