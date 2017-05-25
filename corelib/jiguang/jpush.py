@@ -64,16 +64,19 @@ class JPush(object):
         push.send()
 
     def async_push(self, user_ids, message, push_type=0, is_sound=False,
-                   sound=None, title="通知提醒", badge="", **kwargs):
-        user_ids = self._get_valid_user_ids(user_ids=user_ids)
+                   sound=None, title="通知提醒", badge="", is_valid_role=True, **kwargs):
+        if is_valid_role:
+            user_ids = self._get_valid_user_ids(user_ids=user_ids)
+
         if user_ids:
             queue = django_rq.get_queue('high')
             queue.enqueue(self.push, user_ids, message, push_type, is_sound, sound, title, badge, **kwargs)
 
     def async_batch_push(self, user_ids, message, push_type=0, is_sound=False,
-                         sound=None, title="通知提醒", badge="", **kwargs):
+                         sound=None, title="通知提醒", badge="", is_valid_role=True, **kwargs):
+        if is_valid_role:
+            user_ids = self._get_valid_user_ids(user_ids=user_ids)
 
-        user_ids = self._get_valid_user_ids(user_ids=user_ids)
         if user_ids:
             # query的限制是1000，所以一次发1000个人
             limit = 0

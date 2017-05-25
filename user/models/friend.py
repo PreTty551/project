@@ -168,7 +168,9 @@ class Friend(models.Model):
         self.save()
 
         if is_invisible:
-            redis.hset(REDIS_NO_PUSH_IDS % self.user_id, self.friend_id, 1)
+            redis.hset(REDIS_NO_PUSH_IDS % self.user_id, self.friend_id, is_invisible)
+        else:
+            redis.hdel(REDIS_NO_PUSH_IDS % self.user_id, self.friend_id)
         return True
 
     def update_push(self, is_push):
@@ -176,7 +178,9 @@ class Friend(models.Model):
         self.save()
 
         if is_push:
-            redis.hset(REDIS_NO_PUSH_IDS % self.friend_id, self.user_id, 1)
+            redis.hset(REDIS_NO_PUSH_IDS % self.friend_id, self.user_id, is_push)
+        else:
+            redis.hdel(REDIS_NO_PUSH_IDS % self.friend_id, self.user_id)
         return True
 
     @property

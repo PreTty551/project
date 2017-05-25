@@ -708,7 +708,7 @@ def _poke(owner, user_id):
                                             to_user_id=user_id,
                                             message=message,
                                             channel_id=0)
-        JPush().async_push(user_ids=[user_id], message=message)
+        JPush().async_push(user_ids=[user_id], message=message, is_valid_role=False)
         redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:
         return JsonResponse(error={40000: "好了好了，TA收到啦"})
@@ -716,10 +716,6 @@ def _poke(owner, user_id):
 
 
 def _invite_party(owner, user_id, channel_id, channel_type):
-    push_role = owner.push_role(friend_id=user_id)
-    if not push_role:
-        return JsonResponse()
-
     push_lock = redis.get("mc:user:%s:to_user_id:%s:pa_push_lock" % (owner.id, user_id)) or 0
     if int(push_lock) <= 20:
         icon = ""
@@ -740,7 +736,8 @@ def _invite_party(owner, user_id, channel_id, channel_type):
                            is_sound=True,
                            sound="push.caf",
                            channel_id=channel_id,
-                           channel_type=channel_type)
+                           channel_type=channel_type,
+                           is_valid_role=False)
 
         redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:
