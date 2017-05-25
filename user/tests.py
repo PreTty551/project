@@ -2,7 +2,7 @@ import random
 
 from django.test import TestCase, TransactionTestCase
 
-from user.models import User, Friend, InviteFriend, two_degree_relation, BanUser                    
+from user.models import User, Friend, InviteFriend, two_degree_relation, BanUser
 
 
 class UsersTestCase(TransactionTestCase):
@@ -65,11 +65,10 @@ class UsersTestCase(TransactionTestCase):
         assert degree_user_list[2]["mutual_friend"] == ['ida']
 
     def test_disable_login(self):
-        User.objects.add_user(nickname="aaa",mobile="18334793471")
+        User.objects.add_user(nickname="aaa", mobile="18334793471")
         user = User.get(id=1)
-        User.objects.add_user(nickname="bbb",mobile="18334793472")
-        BanUser.add(user_id=2,second=86400)
-        banuser = BanUser.get(id=1)
-        assert user.disable_login == False
-        user = User.get(id=)
-        assert user.disable_login == True
+        User.objects.add_user(nickname="bbb", mobile="18334793472")
+        BanUser.add(user_id=2, second=86400)
+        user2 = User.get(id=2)
+        assert user.disable_login is False
+        assert user2.disable_login is True

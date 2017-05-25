@@ -243,7 +243,10 @@ class User(AbstractUser, PropsMixin):
     def disable_login(self):
         banuser = BanUser.objects.filter(user_id=self.id).first()
         if banuser:
-            dtime = banuser.date + timedelta(days=1)
+            if banuser.second == 0:
+                return True
+
+            dtime = banuser.date + timedelta(seconds=banuser.second)
             if timezone.now() < dtime:
                 return True
         return False
@@ -358,10 +361,10 @@ class BanUser(models.Model):
     @classmethod
     def add(cls, user_id, second):
         cls.objects.create(user_id=user_id,second=second)
-    
+
     def get(cls, id):
         return cls.objects.filter(id=id).first()
-        
+
 @receiver(post_save, sender=ThirdUser)
 def add_thirduser_after(sender, created, instance, **kwargs):
     if created:
