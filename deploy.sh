@@ -51,6 +51,7 @@ _tyRestart() {
 }
 
 source /home/mengwei/venv36/bin/activate
+cd /home/mengwei/ida-server/
 
 if [ "$1" = "deploy" ]
     then
@@ -75,3 +76,4 @@ else
     echo "./deplay_sh restart"
     echo "./deplay_sh restart-ty"
     echo "For more details, please check code."
+fi

@@ -17,3 +17,4 @@ arrow==0.10.0
 gunicorn==19.7.1
 py3compat==0.3
 psutil==5.2.2
+fabric==1.13.2
