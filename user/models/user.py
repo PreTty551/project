@@ -32,7 +32,7 @@ class UserManager(BaseUserManager):
     def _create_user(self, username, email, password, mobile="", **extra_fields):
         extra_fields.setdefault('nickname', '')
         if not mobile:
-            mobile = random.randint(13800000000, 13900000000)
+            mobile = random.randint(11100000000, 11200000000)
         user = self.model(
             nickname=extra_fields['nickname'],
             username=username,
@@ -124,6 +124,11 @@ class User(AbstractUser, PropsMixin):
     #     return "<User(id=%s, nickname=%s)>" % (self.id, self.nickname)
     #
     # __repr__ = __str__
+
+    def save(self, *args, **kwargs):
+        if not self.mobile:
+            self.mobile = random.randint(27600000000, 27690000000)
+        super(User, self).save(*args, **kwargs)
 
     @property
     def _props_db_key(self):

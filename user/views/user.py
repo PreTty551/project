@@ -310,6 +310,9 @@ def third_verify_sms_code(request):
     version = request.POST.get("version", "")
     country_code = request.POST.get("country_code", "86")
 
+    if not mobile:
+        return
+
     try:
         if country_code == "86":
             jsms = JSMS(mobile=mobile)
