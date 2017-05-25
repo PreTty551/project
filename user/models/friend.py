@@ -178,9 +178,9 @@ class Friend(models.Model):
         self.save()
 
         if is_push:
-            redis.hset(REDIS_NO_PUSH_IDS % self.friend_id, self.user_id, is_push)
-        else:
             redis.hdel(REDIS_NO_PUSH_IDS % self.friend_id, self.user_id)
+        else:
+            redis.hset(REDIS_NO_PUSH_IDS % self.friend_id, self.user_id, is_push)
         return True
 
     @property

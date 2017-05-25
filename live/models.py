@@ -394,8 +394,10 @@ def party_push(user_id, channel_id, channel_type):
 
         party_friend_ids = Friend.get_friend_ids(user_id=user_id)
         message = "%s 正在开PA" % user.nickname
-        JPush().async_batch_push(user_ids=party_friend_ids,
-                                 message=message,
-                                 push_type=1, channel_id=channel_id, channel_type=channel_type)
+        JPush(user_id=request.user.id).async_batch_push(user_ids=party_friend_ids,
+                                                        message=message,
+                                                        push_type=1,
+                                                        channel_id=channel_id,
+                                                        channel_type=channel_type)
 
         redis.set("mc:user:%s:pa_push_lock" % user_id, 1, 300)
