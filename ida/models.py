@@ -127,7 +127,7 @@ def duty_party_time(user_ids, start_date, days):
     for user_id in user_ids:
         if not user_id:
             continue
-
+ 
         user = User.get(user_id)
         if not user:
             continue
