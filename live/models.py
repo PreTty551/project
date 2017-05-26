@@ -2,6 +2,7 @@
 import time
 import datetime
 import subprocess
+import django_rq
 
 from django.db import models, transaction
 from django.db.models.signals import post_delete, post_save
@@ -58,10 +59,10 @@ class Channel(models.Model):
         pass
 
     @classmethod
-    def join_channel(cls, channel_id, user_id, nickname):
+    def join_channel(cls, channel_id, channel_type, user_id, nickname):
         channel = Channel.get_channel(channel_id=channel_id)
         if channel:
-            ChannelMember.add(channel_id=channel_id, user_id=user_id, nickname=nickname)
+            ChannelMember.add(channel_id=channel_id, channel_type=channel_type, user_id=user_id, nickname=nickname)
             ChannelMember.objects.filter(user_id=user_id).exclude(channel_id=channel.channel_id).delete()
             return True
         return False
@@ -84,12 +85,6 @@ class Channel(models.Model):
     def unlock(self):
         self.is_lock = False
         self.save()
-
-    def get_channel_member(self):
-        return ChannelMember.get_channel_member(channel_id=self.channel_id)
-
-    def add_channel_member(self, user_id):
-        ChannelMember.add(channel_id=self.channel_id, user_id=user_id)
 
     @classmethod
     def channel_member_count(cls):
@@ -192,14 +187,10 @@ class ChannelMember(models.Model):
         return cls.objects.filter(user_id=user_id).first()
 
     @classmethod
-    def get_channel_member(cls, channel_id):
-        return cls.objects.filter(channel_id=channel_id).values_list("user_id", flat=True)
-
-    @classmethod
-    def add(cls, channel_id, user_id, nickname):
+    def add(cls, channel_id, channel_type, user_id, nickname):
         member = cls.objects.filter(channel_id=channel_id, user_id=user_id).first()
         if not member:
-            cls.objects.create(channel_id=channel_id, user_id=user_id, nickname=nickname)
+            cls.objects.create(channel_id=channel_id, channel_type=channel_type, user_id=user_id, nickname=nickname)
 
     @classmethod
     def clear_channel(cls, user_id):
@@ -304,9 +295,9 @@ def _refresh_public(user_id):
 def refresh(user_id, channel_type):
     queue = django_rq.get_queue('refresh')
     if channel_type == 2:
-        queue.enqueue(refresh_public, instance.user_id)
+        queue.enqueue(_refresh_public, user_id)
     else:
-        queue.enqueue(_refresh_friend, instance.user_id)
+        queue.enqueue(_refresh_friend, user_id)
 
 
 @receiver(post_save, sender=ChannelMember)
@@ -332,7 +323,7 @@ def add_member_after(sender, created, instance, **kwargs):
         queue.enqueue(Friend.clear_red_point, instance.user_id)
 
         # 客户端刷新
-        refresh(instance.user_id, channel_type)
+        refresh(instance.user_id, instance.channel_type)
 
 
 @receiver(post_delete, sender=ChannelMember)
@@ -396,4 +387,4 @@ def party_push(user_id, channel_id, channel_type):
                                                 channel_id=channel_id,
                                                 channel_type=channel_type)
 
-        redis.set("mc:user:%s:pa_push_lock" % user_id, 1, 300)
+        redis.set(MC_PA_PUSH_LOCK % user_id, 1, 300)
