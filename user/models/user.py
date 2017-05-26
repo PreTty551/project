@@ -24,7 +24,7 @@ from corelib.mc import cache
 from corelib.redis import redis
 
 from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, \
-                        REDIS_NO_PUSH_IDS
+                        REDIS_NO_PUSH_IDS, REDIS_ONLINE_USERS
 from .place import Place
 
 
@@ -148,12 +148,14 @@ class User(AbstractUser, PropsMixin):
         self.online_time = timezone.now()
         self.save()
         redis.hset(REDIS_ONLINE_USERS_KEY, self.id, 1)
+        redis.hset(REDIS_ONLINE_USERS, self.id, 1)
 
     def offline(self):
         self.offline_time = timezone.now()
         self.save()
         self.paing = 0
         redis.hdel(REDIS_ONLINE_USERS_KEY, self.id)
+        redis.hdel(REDIS_ONLINE_USERS, self.id)
         from live.models import ChannelMember
         ChannelMember.objects.filter(user_id=self.id).delete()
 

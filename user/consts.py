@@ -25,5 +25,6 @@ MC_RECOMMEND_CONTACT = "u:%s:rc"
 
 REDIS_MEMOS_KEY = 'u:%s:f:%s:memo'
 REDIS_ONLINE_USERS_KEY = 'online:user_ids'
+REDIS_ONLINE_USERS = "online_user_ids"
 
 REDIS_NO_PUSH_IDS = "u:%s:no_push"
