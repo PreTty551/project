@@ -64,7 +64,7 @@ class SocketServer(object):
                 **kwargs
             },
         }
-        queue = django_rq.get_queue('high')
+        queue = django_rq.get_queue('refresh')
         queue.enqueue(self.client.send_hide_message, user_id, to_user_id, data)
 
     def valid(self, user_id, to_user_id):

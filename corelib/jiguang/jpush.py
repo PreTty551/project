@@ -67,17 +67,18 @@ class JPush(object):
         # if msg_id:
         #     options["override_msg_id"] = int(msg_id)
         push.options = options
+        push.send()
 
-        try:
-            push.send()
-        except common.Unauthorized:
-            raise common.Unauthorized("Unauthorized")
-        except common.APIConnectionException:
-            raise common.APIConnectionException("conn error")
-        except common.JPushFailure:
-            pass
-        except Exception as e:
-            raise e
+        # try:
+        #     push.send()
+        # except common.Unauthorized:
+        #     raise common.Unauthorized("Unauthorized")
+        # except common.APIConnectionException:
+        #     raise common.APIConnectionException("conn error")
+        # except common.JPushFailure:
+        #     pass
+        # except Exception as e:
+        #     raise e
 
     def async_push(self, user_ids, message, push_type=0, is_sound=False,
                    sound=None, title="通知提醒", badge="", is_valid_role=True, **kwargs):
