@@ -51,7 +51,6 @@ urlpatterns = [
     url(r'^user/unbind/wx/$', views.unbind_wechat, name='unbind_wechat'),
     url(r'^user/unbind/wb/$', views.unbind_weibo, name='unbind_weibo'),
 
-    url(r'^user/fuck_you/$', views.fuck_you, name='fuck_you'),
     url(r'^user/location/add/$', views.add_user_location, name='add_user_location'),
     url(r'^user/ignore/$', views.ignore, name='ignore'),
     url(r'^user/feedback/$', views.add_feedback, name='feedback'),
