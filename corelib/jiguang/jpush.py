@@ -3,6 +3,7 @@ import requests
 import base64
 import json
 import jpush
+import jpush.common
 import django_rq
 
 from django.conf import settings
