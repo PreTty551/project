@@ -69,7 +69,7 @@ class JPush(object):
             user_ids = self._get_valid_user_ids(user_ids=user_ids)
 
         if user_ids:
-            queue = django_rq.get_queue('high')
+            queue = django_rq.get_queue('push')
             queue.enqueue(self.push, user_ids, message, push_type, is_sound, sound, title, badge, **kwargs)
 
     def async_batch_push(self, user_ids, message, push_type=0, is_sound=False,
@@ -86,7 +86,7 @@ class JPush(object):
             if (receive_count % offset):
                 loop_num += 1
 
-            queue = django_rq.get_queue('high')
+            queue = django_rq.get_queue('push')
             for i in list(range(loop_num)):
                 queue.enqueue(self.push, user_ids[limit: limit + offset], message, push_type, is_sound, sound, title, badge, **kwargs)
                 limit += 1000

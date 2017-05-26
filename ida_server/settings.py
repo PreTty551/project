@@ -147,6 +147,12 @@ RQ_QUEUES = {
     'avatar': {
         'USE_REDIS_CACHE': 'redis-queue',
     },
+    'push': {
+        'USE_REDIS_CACHE': 'redis-queue',
+    },
+    'refresh': {
+        'USE_REDIS_CACHE': 'redis-queue',
+    },
 }
 LOGGING = {
     "version": 1,
