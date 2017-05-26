@@ -149,6 +149,14 @@ class Friend(models.Model):
         cls.objects.filter(user_id=friend_id, friend_id=owner_id).delete()
         return True
 
+    @classmethod
+    def update_friend_list(cls, friend_id):
+        Friend.objects.filter(friend_id=friend_id).update(update_date=timezone.now())
+
+    @classmethod
+    def clear_red_point(cls, user_id):
+        Friend.objects.filter(user_id=user_id).update(is_hint=False)
+
     def clear_mc(self):
         redis.delete(MC_FRIEND_LIST % self.user_id)
         redis.delete(MC_FRIEND_IDS_KEY % self.user_id)

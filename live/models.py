@@ -15,7 +15,7 @@ from corelib.redis import redis
 from corelib.jiguang import JPush
 
 from user.models import User, Friend
-from .consts import ChannelType, MC_INVITE_PARTY
+from .consts import ChannelType, MC_INVITE_PARTY, MC_PA_PUSH_LOCK
 from socket_server import SocketServer, EventType
 
 
@@ -36,11 +36,8 @@ class Channel(models.Model):
         obj = cls.objects.create(creator_id=user_id, channel_id=channel_id, channel_type=channel_type)
         if obj:
             user = User.get(user_id)
-            ChannelMember.add(channel_id=channel_id, user_id=user_id, nickname=nickname)
+            ChannelMember.add(channel_id=channel_id, channel_type=obj.channel_type, user_id=user_id, nickname=nickname)
             ChannelMember.objects.filter(user_id=user_id).exclude(channel_id=channel_id).delete()
-            # redis.lpush(REDIS_CHANNEL_MEMBERS % channel.id, user.nickname)
-            # redis.lpush(REDIS_CHANNEL_NICKNAMES % channel.id, user.nickname)
-            # redis.incr(REDIS_CHANNEL_MEMBER_COUNT % channel.id)
             return obj
         return None
 
@@ -61,14 +58,6 @@ class Channel(models.Model):
         pass
 
     @classmethod
-    def delete_channel(cls, channel_id):
-        for member in ChannelMember.objects.filter(channel_id=channel_id):
-            member.delete()
-            user = User.get(member.user_id)
-            user.paing = 0
-        return True
-
-    @classmethod
     def join_channel(cls, channel_id, user_id, nickname):
         channel = Channel.get_channel(channel_id=channel_id)
         if channel:
@@ -77,6 +66,17 @@ class Channel(models.Model):
             return True
         return False
 
+    def delete_channel(self):
+        for member in ChannelMember.objects.filter(channel_id=self.channel_id):
+            member.delete()
+            user = User.get(member.user_id)
+            user.paing = 0
+        return True
+
+    def quit_channel(self, user_id):
+        ChannelMember.objects.filter(user_id=user_id, channel_id=self.channel_id).delete()
+        return True
+
     def lock(self):
         self.is_lock = True
         self.save()
@@ -84,10 +84,6 @@ class Channel(models.Model):
     def unlock(self):
         self.is_lock = False
         self.save()
-
-    def quit_channel(self, user_id):
-        ChannelMember.objects.filter(user_id=user_id, channel_id=self.channel_id).delete()
-        return True
 
     def get_channel_member(self):
         return ChannelMember.get_channel_member(channel_id=self.channel_id)
@@ -213,6 +209,7 @@ class ChannelMember(models.Model):
 class LiveLockLog(models.Model):
     channel_id = models.CharField(max_length=50)
     member_count = models.SmallIntegerField()
+    status = models.SmallIntegerField(default=0)
     date = models.DateTimeField('date', auto_now_add=True)
     end_date = models.DateTimeField('end_date', default=datetime.datetime.now)
 
@@ -279,7 +276,7 @@ def unique_channel_id(user_id):
     return "%s%s" % (int(time.time()), user_id)
 
 
-def refresh(user_id):
+def _refresh_friend(user_id):
     friend_ids = Friend.get_friend_ids(user_id)
     online_ids = User.get_online_ids()
     online_friend_ids = [friend_id for friend_id in friend_ids if friend_id in online_ids]
@@ -295,7 +292,7 @@ def refresh(user_id):
                                event_type=EventType.refresh_inner_home.value)
 
 
-def refresh_public(user_id):
+def _refresh_public(user_id):
     channel_ids = list(Channel.objects.filter(channel_type=2).values_list("channel_id", flat=True))
     member_ids = list(ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True))
     SocketServer().refresh(user_id=user_id,
@@ -304,58 +301,57 @@ def refresh_public(user_id):
                            event_type=EventType.refresh_public.value)
 
 
+def refresh(user_id, channel_type):
+    queue = django_rq.get_queue('refresh')
+    if channel_type == 2:
+        queue.enqueue(refresh_public, instance.user_id)
+    else:
+        queue.enqueue(_refresh_friend, instance.user_id)
+
+
 @receiver(post_save, sender=ChannelMember)
 def add_member_after(sender, created, instance, **kwargs):
     if created:
-        push_lock = redis.get("mc:user:%s:pa_push_lock" % instance.user_id)
+        push_lock = redis.get(MC_PA_PUSH_LOCK % instance.user_id)
         if push_lock:
-            redis.set("mc:user:%s:pa_push_lock" % instance.user_id, 1, 300)
-
-        channel = Channel.objects.filter(channel_id=instance.channel_id).first()
-        LiveMediaLog.objects.create(user_id=instance.user_id,
-                                    channel_id=instance.channel_id,
-                                    channel_type=channel.channel_type,
-                                    status=1)
-
-        Friend.objects.filter(friend_id=instance.user_id).update(update_date=timezone.now())
-        Friend.objects.filter(user_id=instance.user_id).update(is_hint=False)
+            redis.set(MC_PA_PUSH_LOCK % instance.user_id, 1, 300)
 
         user = User.get(instance.user_id)
         user.last_pa_time = time.time()
-        # user.paing = 1
 
-        if channel.channel_type == 2:
-            refresh_public(instance.user_id)
-        else:
-            refresh(instance.user_id)
+        LiveMediaLog.objects.create(user_id=instance.user_id,
+                                    channel_id=instance.channel_id,
+                                    channel_type=instance.channel_type,
+                                    status=1)
 
-        count = ChannelMember.objects.filter(user_id=instance.user_id).count()
-        if count == 1:
-            party_push(instance.user_id, instance.channel_id, channel.channel_type)
+        # ========= 以下是异步操作 =========
+
+        # 刷新好友列表顺序和清除红点
+        queue = django_rq.get_queue('high')
+        queue.enqueue(Friend.update_friend_list, instance.user_id)
+        queue.enqueue(Friend.clear_red_point, instance.user_id)
+
+        # 客户端刷新
+        refresh(instance.user_id, channel_type)
 
 
 @receiver(post_delete, sender=ChannelMember)
 def delete_member_after(sender, instance, **kwargs):
-    LiveMediaLog.objects.filter(user_id=instance.user_id, channel_id=instance.channel_id, status=1) \
+    LiveMediaLog.objects.filter(user_id=instance.user_id,
+                                channel_id=instance.channel_id,
+                                status=1) \
                         .update(end_date=timezone.now(), status=2)
 
-    channel = Channel.get_channel(channel_id=instance.channel_id)
-    if channel:
-        count = ChannelMember.objects.filter(channel_id=instance.channel_id).count()
-        if count == 0:
-            Channel.objects.filter(channel_id=instance.channel_id).delete()
+    user = User.get(instance.user_id)
+    user.last_pa_time = time.time()
 
-        user = User.get(instance.user_id)
-        user.last_pa_time = time.time()
-
-        if channel.channel_type == 2:
-            refresh_public(instance.user_id)
-        else:
-            refresh(instance.user_id)
+    count = ChannelMember.objects.filter(channel_id=instance.channel_id).count()
+    if count == 0:
+        Channel.objects.filter(channel_id=instance.channel_id).delete()
 
 
 def party_push(user_id, channel_id, channel_type):
-    push_lock = redis.get("mc:user:%s:pa_push_lock" % user_id)
+    push_lock = redis.get(MC_PA_PUSH_LOCK % user_id)
     if not push_lock:
         bulk_ids = []
         ids = []

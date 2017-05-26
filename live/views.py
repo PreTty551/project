@@ -14,8 +14,8 @@ from corelib.http import JsonResponse
 from corelib.websocket import Websocket
 from corelib.redis import redis
 
-from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog
-from live.consts import ChannelType
+from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, party_push, refresh
+from live.consts import ChannelType, MC_PA_PUSH_LOCK
 from user.models import User, Friend, UserContact, Place, guess_know_user, friend_dynamic
 from user.consts import UserEnum
 from widget import FriendListWidget, ChannelListWidget, ChannelInnerListWidget
@@ -168,6 +168,10 @@ def create_channel(request):
         request.user.last_pa_time = time.time()
         request.user.paing = 1
 
+        party_push(user_id=request.user.id,
+                   channel_id=channel.channel_id,
+                   channel_type=channel.channel_type)
+
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
         return JsonResponse({"channel_id": channel.channel_id, "channel_key": channel_key})
@@ -231,6 +235,7 @@ def quit_channel(request):
                 return
 
             request.user.paing = 0
+            refresh(user_id=request.user.id, channel_type=channel.channel_type)
 
             dt = datetime.datetime.fromtimestamp(float(last_pa_time))
             if (datetime.datetime.now() - dt).seconds > 300:
@@ -243,8 +248,10 @@ def quit_channel(request):
 @login_required_404
 def delete_channel(request):
     channel_id = request.POST.get("channel_id")
-    is_success = Channel.delete_channel(channel_id=channel_id)
-    if is_success:
+    channel = Channel.get_channel(channel_id=channel_id)
+    if channel:
+        channel.delete_channel()
+        refresh(user_id=request.user.id, channel_type=channel.channel_type)
         return JsonResponse()
     return HttpResponseServerError()
 
@@ -274,6 +281,9 @@ def lock_channel(request):
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         channel.lock()
+        member_count = ChannelMember.objects.filter(channel_id=channel_id).count()
+        LiveLockLog.objects.create(channel_id=channel_id,
+                                   member_count=member_count)
         data = {
             "type": 6,
             "data": {
@@ -293,6 +303,8 @@ def unlock_channel(request):
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         channel.unlock()
+        LiveLockLog.objects.filter(channel_id=channel_id, status=0) \
+                           .update(end_date=timezone.now(), status=1)
         data = {
             "type": 6,
             "data": {
