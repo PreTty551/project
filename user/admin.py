@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from django.contrib.auth.admin import UserAdmin
+
 from user.models import BanUser, User
 
 
@@ -10,3 +12,11 @@ class BanUserAdmin(admin.ModelAdmin):
     def get_nickname(self, obj):
         return User.get(obj.user_id).nickname
     get_nickname.short_description = u"昵称"
+
+
+class PaUserAdmin(UserAdmin):
+    search_fields = ('paid', 'nickname', 'mobile')
+
+
+admin.site.unregister(User)
+admin.site.register(User, PaUserAdmin)
