@@ -42,5 +42,14 @@ def file_download(request):
     return response
 
 
+def android_download(request):
+    with open('/home/mengwei/android.apk', "rb") as f:
+        c = f.read()
+    response = HttpResponse(c)
+    response['Content-Length'] = len(c)
+    response['Content-Type'] = 'application/vnd.android.package-archive'
+    return response
+
+
 def home(request):
     return render(request, 'invite/house_index.html')

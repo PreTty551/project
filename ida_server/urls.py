@@ -18,7 +18,7 @@ from django.conf.urls import url, include
 from django.contrib import admin
 
 from h5 import views
-from invite.views import file_download
+from invite.views import file_download, android_download
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -31,6 +31,7 @@ urlpatterns = [
     url(r'', include('ida.urls')),
     url(r'^h5/$', views.main),
     url(r'^apple-app-site-association$', file_download),
+    url(r'^android_download/', android_download),
     url(r'^clause/$', views.clause),
 ]
 
