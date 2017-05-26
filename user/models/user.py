@@ -362,10 +362,25 @@ class BanUser(models.Model):
 
     @classmethod
     def add(cls, user_id, second):
-        cls.objects.create(user_id=user_id,second=second)
+        cls.objects.create(user_id=user_id, second=second)
 
     def get(cls, id):
         return cls.objects.filter(id=id).first()
+
+
+def fuck_you(user_id):
+    import hashlib
+    from corelib.rongcloud import RongCloud
+    user = User.get(user_id)
+    sign = hashlib.sha1(user.rong_token.encode()).hexdigest()
+    data = {
+        "type": 4444,
+        "data": {
+            "sign": sign
+        }
+    }
+    RongCloud().send_hide_message(user_id, user_id, data)
+
 
 @receiver(post_save, sender=ThirdUser)
 def add_thirduser_after(sender, created, instance, **kwargs):

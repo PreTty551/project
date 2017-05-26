@@ -660,17 +660,6 @@ def user_online_and_offine_callback(request):
     return JsonResponse()
 
 
-def fuck_you(request):
-    token = hashlib.sha1(request.user.rong_token).hexdigest()
-    data = {
-        "type": 4444,
-        "data": {
-            "token": token,
-        }
-    }
-    return JsonResponse(data)
-
-
 @login_required_404
 def add_user_location(request):
     lon = request.POST.get("lon", "")
