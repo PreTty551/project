@@ -59,9 +59,24 @@ class JPush(object):
         ios = self._ios(is_sound=is_sound, sound=sound, push_type=push_type, badge=badge, **kwargs)
         android = self._android(title=title, push_type=push_type, **kwargs)
         push.notification = jpush.notification(alert=message, ios=ios, android=android)
-        push.options = {"apns_production": True}
         push.platform = ["android", "ios"]
-        push.send()
+
+        options = {"apns_production": True}
+        # msg_id = redis.get("msg_id:3")
+        # if msg_id:
+        #     options["override_msg_id"] = int(msg_id)
+        push.options = options
+
+        try:
+            push.send()
+        except common.Unauthorized:
+            raise common.Unauthorized("Unauthorized")
+        except common.APIConnectionException:
+            raise common.APIConnectionException("conn error")
+        except common.JPushFailure:
+            pass
+        except Exception as e:
+            raise e
 
     def async_push(self, user_ids, message, push_type=0, is_sound=False,
                    sound=None, title="通知提醒", badge="", is_valid_role=True, **kwargs):
