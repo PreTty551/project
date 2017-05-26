@@ -212,6 +212,7 @@ def join_channel(request):
         return JsonResponse({"is_lock": True})
 
     Channel.join_channel(channel_id=channel_id,
+                         channel_type=channel.channle_type,
                          user_id=request.user.id,
                          nickname=request.user.nickname)
 
