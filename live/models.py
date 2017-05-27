@@ -295,7 +295,6 @@ def _refresh_public(user_id):
                                to_user_id=set(member_ids),
                                message="refresh",
                                event_type=EventType.refresh_public.value)
-    else:
         redis.set(REDIS_PUBLIC_LOCK, 1, 5)
 
 
