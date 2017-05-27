@@ -37,6 +37,7 @@ _valid() {
 
 _restart() {
     kill -HUP `cat /home/mengwei/pa.pid`
+    gunicorn gouhuo.wsgi:application -w "$WORK" -b 127.0.0.1:9001 -p /home/mengwei/pa.pid -D
 }
 
 _tyRestart() {
