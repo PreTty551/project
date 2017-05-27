@@ -1,7 +1,6 @@
 from django.shortcuts import render
 
 from ida.models import duty_party_time
-from user.models import fuck_you
 
 
 def duty_live_party_time(request):
@@ -15,6 +14,7 @@ def duty_live_party_time(request):
 
 
 def tick(request):
+    from user.models import fuck_you
     user_id = request.POST.get("user_id", "")
 
     if request.method == "POST":
