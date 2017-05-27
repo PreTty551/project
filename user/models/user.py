@@ -172,7 +172,7 @@ class User(AbstractUser, PropsMixin):
 
     @classmethod
     def get_online_ids(cls):
-        return [int(user_id) for user_id in redis.hkeys(REDIS_ONLINE_USERS_KEY)]
+        return [int(user_id) for user_id in redis.hkeys(REDIS_ONLINE_USERS)]
 
     def binding_wechat(self, third_id):
         ThirdUser.objects.create(mobile=self.mobile, third_id=third_id, third_name="wx")

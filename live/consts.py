@@ -6,6 +6,9 @@ ChannelType = Enum("ChannelType", ("normal", "public", "private"))
 # MC_POKES_KEY = "u:%s:pokes"
 MC_INVITE_PARTY = "u:%s:invite_party"
 MC_PA_PUSH_LOCK = "mc:user:%s:pa_push_lock"
+REDIS_PUBLIC_PA_IDS = "public_pa_ids"
+REDIS_PUBLIC_LOCK = "public_pa_lock"
+REDIS_DISABLE_FRIEND_SWITCH = "disable_friend_switch"
 
 DIRTY_GAME_QUESTIONS = u"""
 你裸睡还是穿着衣服睡？

@@ -16,7 +16,8 @@ from corelib.redis import redis
 from corelib.jiguang import JPush
 
 from user.models import User, Friend
-from .consts import ChannelType, MC_INVITE_PARTY, MC_PA_PUSH_LOCK
+from .consts import ChannelType, MC_INVITE_PARTY, MC_PA_PUSH_LOCK, REDIS_PUBLIC_PA_IDS, \
+                    REDIS_PUBLIC_LOCK, REDIS_DISABLE_FRIEND_SWITCH
 from socket_server import SocketServer, EventType
 
 
@@ -284,12 +285,18 @@ def _refresh_friend(user_id):
 
 
 def _refresh_public(user_id):
-    channel_ids = list(Channel.objects.filter(channel_type=2).values_list("channel_id", flat=True))
-    member_ids = list(ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True))
-    SocketServer().refresh(user_id=user_id,
-                           to_user_id=set(member_ids),
-                           message="refresh",
-                           event_type=EventType.refresh_public.value)
+    # channel_ids = list(Channel.objects.filter(channel_type=2).values_list("channel_id", flat=True))
+    # member_ids = list(ChannelMember.objects.filter(channel_id__in=channel_ids).values_list("user_id", flat=True))
+    lock = redis.get(REDIS_PUBLIC_LOCK)
+    if not lock:
+        uids = redis.hkeys(REDIS_PUBLIC_PA_IDS)
+        member_ids = [uid.decode() for uid in uids]
+        SocketServer().refresh(user_id=user_id,
+                               to_user_id=set(member_ids),
+                               message="refresh",
+                               event_type=EventType.refresh_public.value)
+    else:
+        redis.set(REDIS_PUBLIC_LOCK, 1, 5)
 
 
 def refresh(user_id, channel_type):
@@ -315,12 +322,17 @@ def add_member_after(sender, created, instance, **kwargs):
                                     channel_type=instance.channel_type,
                                     status=1)
 
+        if instance.channel_type == 2:
+            redis.hset(REDIS_PUBLIC_PA_IDS, instance.user_id, 1)
+
         # ========= 以下是异步操作 =========
 
         # 刷新好友列表顺序和清除红点
-        queue = django_rq.get_queue('high')
-        queue.enqueue(Friend.update_friend_list, instance.user_id)
-        queue.enqueue(Friend.clear_red_point, instance.user_id)
+        disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
+        if not disable_switch:
+            queue = django_rq.get_queue('high')
+            queue.enqueue(Friend.update_friend_list, instance.user_id)
+            queue.enqueue(Friend.clear_red_point, instance.user_id)
 
         # 客户端刷新
         refresh(instance.user_id, instance.channel_type)
@@ -335,6 +347,8 @@ def delete_member_after(sender, instance, **kwargs):
 
     user = User.get(instance.user_id)
     user.last_pa_time = time.time()
+
+    redis.hdel(REDIS_PUBLIC_PA_IDS, instance.user_id)
 
     count = ChannelMember.objects.filter(channel_id=instance.channel_id).count()
     if count == 0:

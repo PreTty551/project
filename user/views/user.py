@@ -27,11 +27,13 @@ from corelib.redis import redis
 from corelib.kingsoft.ks3 import KS3
 from corelib.twilio import Twilio
 
-from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum, REDIS_ONLINE_USERS_KEY, REDIS_ONLINE_USERS
+from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum, \
+                        REDIS_ONLINE_USERS_KEY, REDIS_ONLINE_USERS
 from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
 from socket_server import SocketServer
 from live.models import Channel, ChannelMember, InviteParty
+from live.consts import REDIS_DISABLE_FRIEND_SWITCH
 from wallet.models import is_disable_wallet
 
 
@@ -694,8 +696,10 @@ def _poke(owner, user_id):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
 
-        Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
-        Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False, update_date=timezone.now())
+        disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
+        if not disable_switch:
+            Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
+            Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False, update_date=timezone.now())
 
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
@@ -717,8 +721,11 @@ def _invite_party(owner, user_id, channel_id, channel_type):
             icon += "👉"
         message = "%s%s" % (icon, message)
 
-        Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True, update_date=timezone.now())
-        Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
+        disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
+        if not disable_switch:
+            Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True, update_date=timezone.now())
+            Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
+
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,
