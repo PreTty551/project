@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+import random
 import datetime
 import subprocess
 import django_rq
@@ -265,7 +266,7 @@ class InviteParty(models.Model):
 
 
 def unique_channel_id(user_id):
-    return "%s%s" % (int(time.time()), user_id)
+    return "%s%s%s" % (int(time.time() * 1000), random.randint(0, 400), user_id)
 
 
 def _refresh_friend(user_id):
