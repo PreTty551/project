@@ -22,6 +22,7 @@ MC_FRIEND_LIST = "u:%s:fl"
 MC_INVITE_MY_FRIEND_IDS = "inv:my:%s:ids"
 MC_MY_INVITE_FRIEND_IDS = "my:inv:%s:ids"
 MC_RECOMMEND_CONTACT = "u:%s:rc"
+MC_INVITE_FRIEND_COUNT = "u:%s:inv_count"
 
 REDIS_MEMOS_KEY = 'u:%s:f:%s:memo'
 REDIS_ONLINE_USERS_KEY = 'online:user_ids'

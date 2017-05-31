@@ -14,7 +14,8 @@ from corelib.mc import hlcache, cache
 
 from user.models import User
 from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_NO_PUSH_IDS, \
-                        MC_FRIEND_LIST, MC_INVITE_MY_FRIEND_IDS, MC_MY_INVITE_FRIEND_IDS
+                        MC_FRIEND_LIST, MC_INVITE_MY_FRIEND_IDS, MC_MY_INVITE_FRIEND_IDS, \
+                        MC_INVITE_FRIEND_COUNT
 
 
 class ChannelAddFriendLog(models.Model):
@@ -63,8 +64,12 @@ class InviteFriend(models.Model):
         cls.objects.filter(id=id).update(status=2)
 
     @classmethod
-    def count(cls, user_id):
-        return cls.objects.filter(invited_id=user_id, status=0).count()
+    @cache(MC_INVITE_FRIEND_COUNT % user_id)
+    def count(cls, user_id, ignore_user_ids=[]):
+        queryset = cls.objects.filter(invited_id=user_id, status=0)
+        if ignore_user_ids:
+            queryset = queryset.exclude(user_id__in=ignore_user_ids)
+        return queryset.count()
 
     @classmethod
     def is_invite_user(cls, user_id, friend_id):

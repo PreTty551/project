@@ -422,22 +422,14 @@ def get_profile(request):
         basic_info["user_relation"] = UserEnum.be_invite.value
         invite_friends.append(basic_info)
 
-    two_degrees = []
-    two_degree = two_degree_relation(user_id=request.user.id)
-    for user_id, count in two_degree:
-        u = User.get(user_id)
-        basic_info = u.basic_info()
-        basic_info["user_relation"] = UserEnum.nothing.value
-        two_degrees.append(basic_info)
-    out_app_contacts = UserContact.recommend_contacts(request.user.id, 20)
+    recommend_contacts = UserContact.recommend_contacts(request.user.id, 20)
+    invite_friend_count = InviteFriend.count(user_id=request.user.id, ignore_user_ids=ignore_user_ids)
 
-    invite_friend_count = InviteFriend.objects.filter(invited_id=request.user.id, status=0).exclude(user_id__in=ignore_user_ids).count()
     results = {}
     results["user"] = user.basic_info()
-    results["friend_count"] = Friend.count(user_id=request.user.id)
     results["friend_invite_count"] = invite_friend_count
     results["two_degree"] = guess_know_user(request.user.id)
-    results["out_app_contacts"] = out_app_contacts
+    results["out_app_contacts"] = recommend_contacts
     results["invite_friends"] = invite_friends
     return JsonResponse(results)
 
