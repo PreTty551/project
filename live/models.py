@@ -94,7 +94,14 @@ class Channel(models.Model):
         return cls.objects.all().aggregate(Sum("member_count"))["member_count__sum"] or 0
 
     @classmethod
-    def get_friend_channels(cls, user_id, friend_ids=[]):
+    def get_channel_by_channeltype(cls, channel_ids, channel_type):
+        if channel_type:
+            return Channel.objects.filter(channel_id__in=channel_ids,
+                                          channel_type=channel_type)
+        return Channel.objects.filter(channel_id__in=channel_ids)
+
+    @classmethod
+    def get_friend_channels(cls, user_id, friend_ids=[], channel_type=0):
         if not friend_ids:
             friend_ids = Friend.get_friend_ids(user_id=user_id)
 
@@ -113,8 +120,7 @@ class Channel(models.Model):
             channel_user_ids.append(member.user_id)
 
         results = []
-        # 这里写channel_type，是为了房间内列表不显示公开pa房间
-        channels = Channel.objects.filter(channel_id__in=channel_ids, channel_type=ChannelType.normal.value)
+        channels = cls.get_channel_by_channeltype(channel_ids=channel_ids, channel_type=channel_type)
         for channel in channels:
             member = members_dict.get(channel.channel_id)
             if not member:
