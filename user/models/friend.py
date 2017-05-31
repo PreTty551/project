@@ -64,7 +64,7 @@ class InviteFriend(models.Model):
         cls.objects.filter(id=id).update(status=2)
 
     @classmethod
-    @cache(MC_INVITE_FRIEND_COUNT % user_id)
+    # @cache(MC_INVITE_FRIEND_COUNT % '{user_id}')
     def count(cls, user_id, ignore_user_ids=[]):
         queryset = cls.objects.filter(invited_id=user_id, status=0)
         if ignore_user_ids:
