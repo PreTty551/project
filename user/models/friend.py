@@ -78,7 +78,7 @@ class InviteFriend(models.Model):
     @hlcache(MC_INVITE_MY_FRIEND_IDS % '{owner_id}')
     def get_invited_my_ids(cls, owner_id):
         return list(cls.objects.filter(invited_id=owner_id,
-                                       status=0).values_list("user_id", flat=True))
+                                       status=0).order_by('-id').values_list("user_id", flat=True))
 
     @classmethod
     @hlcache(MC_MY_INVITE_FRIEND_IDS % '{owner_id}')
@@ -244,8 +244,6 @@ def friend_dynamic(owner_id, user_id, add_friend_time):
     if not dt:
         if now < add_friend_time + datetime.timedelta(seconds=3600):
             return "你们刚刚成为了好友"
-    elif dt < add_friend_time:
-        return "你们刚刚成为了好友"
 
     if dt:
         d = time_format(timezone.localtime(dt))
