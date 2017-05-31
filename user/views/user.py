@@ -118,6 +118,9 @@ def verify_sms_code(request):
                 is_success, error_dict = jsms.valid(code=code)
             else:
                 is_success = Twilio.valid_sms(mobile=mobile, country_code=country_code, code=code)
+                if not is_success:
+                    return JsonResponse(error=LoginError.SMS_CODE_ERROR)
+
     except Exception as e:
         return JsonResponse(error=LoginError.SMS_CODE_ERROR)
 
@@ -137,8 +140,7 @@ def verify_sms_code(request):
                 basic_info["is_new_user"] = False
                 return JsonResponse(basic_info)
         return JsonResponse({"is_new_user": True})
-    else:
-        return JsonResponse(error=error_dict)
+    return JsonResponse(error=LoginError.REGISTER_ERROR)
 
 
 @require_http_methods(["POST"])
