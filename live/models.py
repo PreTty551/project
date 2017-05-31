@@ -113,7 +113,8 @@ class Channel(models.Model):
             channel_user_ids.append(member.user_id)
 
         results = []
-        channels = Channel.objects.filter(channel_id__in=channel_ids)
+        # 这里写channel_type，是为了房间内列表不显示公开pa房间
+        channels = Channel.objects.filter(channel_id__in=channel_ids, channel_type=ChannelType.normal.value)
         for channel in channels:
             member = members_dict.get(channel.channel_id)
             if not member:
@@ -399,6 +400,7 @@ def party_push(user_id, channel_id, channel_type):
                                                 message=message,
                                                 push_type=1,
                                                 channel_id=channel_id,
-                                                channel_type=channel_type)
+                                                channel_type=channel_type,
+                                                apns_collapse_id="pa")
 
         redis.set(MC_PA_PUSH_LOCK % user_id, 1, 300)
