@@ -415,10 +415,11 @@ def bg(request):
             return JsonResponse()
 
         channel = Channel.get_channel(channel_id=member.channel_id)
-        LiveMediaLog.objects.create(user_id=request.user.id,
-                                    channel_id=member.channel_id,
-                                    channel_type=channel.channel_type,
-                                    type=2,
-                                    status=1)
+        if channel:
+            LiveMediaLog.objects.create(user_id=request.user.id,
+                                        channel_id=member.channel_id,
+                                        channel_type=channel.channel_type,
+                                        type=2,
+                                        status=1)
         return JsonResponse()
     return JsonResponse()
