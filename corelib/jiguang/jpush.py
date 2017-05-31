@@ -3,8 +3,9 @@ import requests
 import base64
 import json
 import jpush
-import jpush.common
 import django_rq
+
+from jpush import common
 
 from django.conf import settings
 
@@ -60,25 +61,28 @@ class JPush(object):
         ios = self._ios(is_sound=is_sound, sound=sound, push_type=push_type, badge=badge, **kwargs)
         android = self._android(title=title, push_type=push_type, **kwargs)
         push.notification = jpush.notification(alert=message, ios=ios, android=android)
-        push.platform = ["android", "ios"]
+        push.platform = "all"
 
         options = {"apns_production": True}
-        # msg_id = redis.get("msg_id:3")
-        # if msg_id:
-        #     options["override_msg_id"] = int(msg_id)
-        push.options = options
-        push.send()
+        apns_collapse_id = kwargs.get("apns_collapse_id")
+        if apns_collapse_id:
+            options["apns_collapse_id"] = apns_collapse_id
 
-        # try:
-        #     push.send()
-        # except common.Unauthorized:
-        #     raise common.Unauthorized("Unauthorized")
-        # except common.APIConnectionException:
-        #     raise common.APIConnectionException("conn error")
-        # except common.JPushFailure:
-        #     pass
-        # except Exception as e:
-        #     raise e
+        push.options = options
+
+        try:
+            push.send()
+        except common.Unauthorized:
+            raise common.Unauthorized("Unauthorized")
+        except common.APIConnectionException:
+            raise common.APIConnectionException("conn error")
+        except common.JPushFailure as e:
+            # 没有满足条件的推送目标
+            if e.error_code == 1011:
+                return
+            raise Exception(e.error)
+        except Exception as e:
+            raise e
 
     def async_push(self, user_ids, message, push_type=0, is_sound=False,
                    sound=None, title="通知提醒", badge="", is_valid_role=True, **kwargs):
