@@ -280,10 +280,11 @@ class User(AbstractUser, PropsMixin):
         return True
 
     def basic_info(self, user_id=None):
+        nickname = "" if self.nickname is None else self.nickname,
         return {
             "id": self.id,
-            "display_nickname": self.nickname,
-            "nickname": self.nickname,
+            "display_nickname": nickname,
+            "nickname": nickname,
             "avatar_url": self.avatar_url,
             "gender": self.gender,
             "intro": self.intro or "",
