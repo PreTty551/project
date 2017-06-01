@@ -85,13 +85,19 @@ def duty_user_live_time(user_ids, group, start_date, end_date):
         f.close()
 
 
-def duty_user_live_time_week(user_ids, group, start_date):
+def duty_user_live_time_week(user_ids, group, start_date, days):
     public_party_ids = []
     friend_party_ids = []
 
-    table_title = "值班人ID,昵称,周一,周二,周三,周四,周五,周六,周日\n"
+    # table_title = "值班人ID,昵称,周一,周二,周三,周四,周五,周六,周日\n"
+    table_title = ["值班人ID", "昵称"]
+    start = start_date.day
+    for i in list(range(1, days)):
+        table_title.append(str(start))
+        start += 1
+
     f = open("/home/mengwei/duty/duty_live_week.csv", "w")
-    f.writelines(table_title)
+    f.writelines(",".join(table_title) + "\n")
 
     for user_id in user_ids:
         if not user_id:
@@ -127,7 +133,7 @@ def duty_party_time(user_ids, start_date, days):
     for user_id in user_ids:
         if not user_id:
             continue
- 
+
         user = User.get(user_id)
         if not user:
             continue
