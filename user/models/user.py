@@ -59,6 +59,9 @@ class UserManager(BaseUserManager):
             user.save()
             return user
         except Exception as e:
+            from raven import Client
+            client = Client(settings.RAVEN_CONFIG["dsn"])
+            client.captureException(True)
             return None
 
     def filter_nickname(self, nickname):
