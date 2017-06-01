@@ -152,8 +152,6 @@ def register(request):
     platform = request.POST.get("platform", "")
 
     nickname = nickname.strip().replace("#", "").replace("@", "").replace(" ", "")
-    if len(mobile) != 11:
-        return HttpResponseBadRequest()
 
     user = User.objects.filter(mobile=mobile).first()
     if not user:
