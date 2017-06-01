@@ -1,5 +1,6 @@
 from django.shortcuts import render
 
+from corelib.redis import redis
 from ida.models import duty_party_time
 
 
@@ -20,3 +21,21 @@ def tick(request):
     if request.method == "POST":
         fuck_you(user_id)
     return render(request, 'ida/tick.html')
+
+
+def weibo(request):
+    weibo1 = redis.get("weibo1")
+    weibo2 = redis.get("weibo2")
+    weibo3 = redis.get("weibo3")
+    weibo4 = redis.get("weibo4")
+    weibo5 = redis.get("weibo5")
+
+    data = {
+        'weibo1': weibo1,
+        'weibo2': weibo2,
+        'weibo3': weibo3,
+        'weibo4': weibo4,
+        'weibo5': weibo5,
+    }
+
+    return render(request, 'ida/weibo.html', data)
