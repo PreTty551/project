@@ -7,6 +7,7 @@ import requests
 import hashlib
 
 from django.utils import timezone
+from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseBadRequest, Http404, \
@@ -776,3 +777,28 @@ def tianmo(request):
 def xiazaipa(request):
     from django.shortcuts import redirect
     return redirect("http://a.app.qq.com/o/simple.jsp?pkgname=com.gouhuoapp.pa")
+
+
+def weibo1(request):
+    redis.incr("weibo1")
+    return redirect("https://itunes.apple.com/cn/app/id1069693851")
+
+
+def weibo2(request):
+    redis.incr("weibo2")
+    return redirect("https://itunes.apple.com/cn/app/id1069693851")
+
+
+def weibo3(request):
+    redis.incr("weibo3")
+    return redirect("https://itunes.apple.com/cn/app/id1069693851")
+
+
+def weibo4(request):
+    redis.incr("weibo4")
+    return redirect("https://itunes.apple.com/cn/app/id1069693851")
+
+
+def weibo5(request):
+    redis.incr("weibo5")
+    return redirect("https://itunes.apple.com/cn/app/id1069693851")

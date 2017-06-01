@@ -64,4 +64,9 @@ urlpatterns = [
     url(r'^kaipa/$', views.tianmo, name='kaipa'),
     url(r'^api/v2/version/ios/$', views.say_ios, name='say_ios'),
     url(r'^xiazaipa/$', views.xiazaipa, name='xiazaipa'),
+    url(r'^weibo1/$', views.weibo1, name='weibo1'),
+    url(r'^weibo2/$', views.weibo2, name='weibo2'),
+    url(r'^weibo3/$', views.weibo3, name='weibo3'),
+    url(r'^weibo4/$', views.weibo4, name='weibo4'),
+    url(r'^weibo5/$', views.weibo5, name='weibo5')
 ]
