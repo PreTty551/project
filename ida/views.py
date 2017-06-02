@@ -1,7 +1,9 @@
 from django.shortcuts import render
+from django.http import HttpResponse
 
 from corelib.redis import redis
 from ida.models import duty_party_time
+from user.models import User
 
 
 def duty_live_party_time(request):
@@ -39,3 +41,17 @@ def weibo(request):
     }
 
     return render(request, 'ida/weibo.html', data)
+
+
+def get_register_user(request):
+    start = request.GET.get("start", "")
+    end = request.GET.get("end", "")
+
+    if not start:
+        return HttpResponse("error")
+
+    if end:
+        user_count = User.objects.filter(date_joined__gte=start, date_joined__lte=end).count()
+    else:
+        user_count = User.objects.filter(date_joined__gte=start).count()
+    return render(request, 'ida/register.html', {"user_count": user_count})
