@@ -321,9 +321,6 @@ def add_member_after(sender, created, instance, **kwargs):
         if push_lock:
             redis.set(MC_PA_PUSH_LOCK % instance.user_id, 1, 300)
 
-        user = User.get(instance.user_id)
-        user.last_pa_time = time.time()
-
         LiveMediaLog.objects.create(user_id=instance.user_id,
                                     channel_id=instance.channel_id,
                                     channel_type=instance.channel_type,
@@ -351,9 +348,6 @@ def delete_member_after(sender, instance, **kwargs):
                                 channel_id=instance.channel_id,
                                 status=1) \
                         .update(end_date=timezone.now(), status=2)
-
-    user = User.get(instance.user_id)
-    user.last_pa_time = time.time()
 
     redis.hdel(REDIS_PUBLIC_PA_IDS, instance.user_id)
 

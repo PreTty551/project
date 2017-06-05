@@ -16,7 +16,7 @@ from corelib.redis import redis
 
 from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, party_push, refresh, LiveLockLog
 from live.consts import ChannelType, MC_PA_PUSH_LOCK
-from user.models import User, Friend, UserContact, Place, guess_know_user, friend_dynamic
+from user.models import User, Friend, UserContact, Place, guess_know_user, UserDynamic
 from user.consts import UserEnum
 from widget import FriendListWidget, ChannelListWidget, ChannelInnerListWidget
 
@@ -165,9 +165,7 @@ def create_channel(request):
                                      channel_type=channel_type,
                                      nickname=request.user.nickname)
     if channel:
-        request.user.last_pa_time = time.time()
-        request.user.paing = 1
-
+        UserDynamic.update_dynamic(user_id=request.user.id, paing=True)
         party_push(user_id=request.user.id,
                    channel_id=channel.channel_id,
                    channel_type=channel.channel_type)
@@ -208,6 +206,7 @@ def join_channel(request):
     if not channel:
         return HttpResponseBadRequest()
 
+    UserDynamic.update_dynamic(user_id=request.user.id, paing=True)
     if channel.is_lock:
         return JsonResponse({"is_lock": True})
 
@@ -216,8 +215,6 @@ def join_channel(request):
                          user_id=request.user.id,
                          nickname=request.user.nickname)
 
-    request.user.last_pa_time = time.time()
-    request.user.paing = 1
     return JsonResponse({"channel_id": channel_id, "channel_key": channel_key})
 
 
@@ -228,14 +225,9 @@ def quit_channel(request):
     content = request.POST.get("content", "")
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
-        last_pa_time = request.user.last_pa_time
         is_success = channel.quit_channel(user_id=request.user.id)
-
         if is_success:
-            if not last_pa_time:
-                return
-
-            request.user.paing = 0
+            UserDynamic.update_dynamic(user_id=request.user.id, paing=False)
             refresh(user_id=request.user.id, channel_type=channel.channel_type)
 
             dt = datetime.datetime.fromtimestamp(float(last_pa_time))

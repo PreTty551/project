@@ -50,13 +50,20 @@ class UserManager(BaseUserManager):
             pinyin = Pinyin().get_pinyin(nickname, "")
             password = name
             email = "%s@%s.com" % (name, name)
-            user = self._create_user(username=name, email=email, password=password, nickname=nickname, mobile=mobile)
+            user = self._create_user(username=name,
+                                     email=email,
+                                     password=password,
+                                     nickname=nickname,
+                                     mobile=mobile)
             user.mobile = mobile
             user.gender = gender
             user.platform = platform
             user.pinyin = pinyin
             user.paid = user.id
             user.save()
+
+            UserDynamic.objects.create(user_id=user.id, nickname=user.nickname)
+
             return user
         except Exception as e:
             from raven import Client
@@ -92,6 +99,10 @@ def update_avatar_in_third_login(avatar_url, user_id):
     if avatar_name:
         user.avatar = avatar_name
         user.save()
+
+        ud = UserDynamic.objects.filter(user_id=user.id).first()
+        ud.avatar = avatar_name
+        ud.save()
 
 
 class User(AbstractUser, PropsMixin):
@@ -370,6 +381,54 @@ class BanUser(models.Model):
 
     def get(cls, id):
         return cls.objects.filter(id=id).first()
+
+
+class UserDynamic(models.Model):
+    """ 这个表记录用户的一些动态信息
+        为了查询, 冗余一些user基本信息
+    """
+    user_id = models.IntegerField()
+    nickname = models.CharField(max_length=50)
+    avatar = models.CharField(max_length=40, default="")
+    is_paing = models.BooleanField(default=False)
+    last_pa_time = models.DateTimeField()
+    update_date = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def update_dynamic(cls, user_id, paing):
+        ud = cls.objects.filter(user_id=user_id).first()
+        if ud:
+            ud.last_pa_time = time.time()
+            ud.paing = paing
+            ud.save()
+
+    def to_dict(self):
+        """和user的basic_info保持一致"""
+        return {
+            "id": self.user_id,
+            "nickname": self.nickname,
+            "display_nickname": self.nickname,
+            "avatar": self.avatar,
+            "is_paing": self.is_paing,
+            "last_pa_time": self.last_pa_time,
+            "update_date": self.update_date
+        }
+
+
+class Poke(object):
+
+    def __init__(self, user_id):
+        self.user_id = user_id
+
+    def add(self, friend_id):
+        redis.zadd(REDIS_POKE % self.user_id, int(time.time()), friend_id)
+
+    def delete(self, friend_id):
+        redis.zrem(REDIS_POKE % self.user_id, friend_id)
+
+    def list(self):
+        poke_list = redis.zrevrangebyscore(REDIS_POKE % self.user_id)
+        return [poke.decode() for poke in poke_list]
 
 
 def fuck_you(user_id):

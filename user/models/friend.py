@@ -2,6 +2,7 @@
 import time
 import datetime
 import pytz
+import collections
 
 from django.db import models, transaction, IntegrityError
 from django.db.models.signals import post_delete, post_save
@@ -14,7 +15,7 @@ from corelib.mc import hlcache, cache
 
 from user.models import User
 from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_NO_PUSH_IDS, \
-                        MC_FRIEND_LIST, MC_INVITE_MY_FRIEND_IDS, MC_MY_INVITE_FRIEND_IDS, \
+                        MC_INVITE_MY_FRIEND_IDS, MC_MY_INVITE_FRIEND_IDS, \
                         MC_INVITE_FRIEND_COUNT
 
 
@@ -115,22 +116,49 @@ class Friend(models.Model):
     def get_friend_ids(cls, user_id):
         return list(cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True))
 
-    # @cache(MC_FRIEND_LIST % '{user_id}')
     @classmethod
-    def get_friends_order_by_date(cls, user_id):
-        from live.models import ChannelMember
-        friends = cls.objects.filter(user_id=user_id).order_by("-is_hint", "-update_date")
-        party_user_list = list(ChannelMember.objects.values_list("user_id", flat=True))
-        poke_friend_list = []
-        normal_friend_list = []
-        for friend in friends:
-            if friend.id in party_user_list:
-                poke_friend_list.append(friend)
-            else:
-                normal_friend_list.append(friend)
+    def get_friends_order_by_date(cls, friend_ids):
+        user_dynamics = UserDynamic.objects.filter(user_id__in=friend_ids).order_by("-update_date")
 
-        poke_friend_list.extend(normal_friend_list)
-        return [friend.to_dict() for friend in poke_friend_list]
+        dynamics_dict = collections.OrderedDict()
+        for dynamic in user_dynamics:
+            dynamics_dict[dynamic.user_id] = dynamic.to_dict()
+
+        friend_ids = []
+        poke_my_user_ids = Poke(user_id=user_id).list()
+        if not poke_my_user_ids:
+            friend_ids = profiles_dict.keys()
+        else:
+            friend_ids = poke_my_user_ids
+            for uid in profiles_dict.keys():
+                if uid not in poke_my_user_ids:
+                    friend_ids.append(uid)
+
+        friend_list = []
+        for friend_id in friend_ids:
+            user_info = dynamics_dict.get(friend_id)
+            user_info["user_relation"] = UserEnum.friend.value
+            user_info["dynamic"] = friend_dynamic(last_pa_time=user_info["last_pa_time"],
+                                                  add_friend_time=self.date,
+                                                  paing=user_info["paing"])
+            user_info["is_hint"] = True if friend_id in poke_my_user_ids else False
+            friend_list.append(user_info)
+        return friend_list
+
+        # from live.models import ChannelMember
+        # friends = cls.objects.filter(user_id=user_id).order_by("-is_hint", "-update_date")
+        # party_user_list = list(ChannelMember.objects.values_list("user_id", flat=True))
+        # poke_friend_list = []
+        # normal_friend_list = []
+        #
+        # for friend in friends:
+        #     if friend.id in party_user_list:
+        #         poke_friend_list.append(friend)
+        #     else:
+        #         normal_friend_list.append(friend)
+        #
+        # poke_friend_list.extend(normal_friend_list)
+        # return [friend.to_dict() for friend in poke_friend_list]
 
     @classmethod
     def get_friends_by_online_push(cls, user_id):
@@ -163,7 +191,6 @@ class Friend(models.Model):
         Friend.objects.filter(user_id=user_id).update(is_hint=False)
 
     def clear_mc(self):
-        redis.delete(MC_FRIEND_LIST % self.user_id)
         redis.delete(MC_FRIEND_IDS_KEY % self.user_id)
 
     @classmethod
@@ -210,9 +237,11 @@ class Friend(models.Model):
 
     @classmethod
     def get_friends_order_by_pinyin(cls, user_id):
-        friend_list = cls.get_friends_order_by_date(user_id=user_id)
-        results = {"#": []}
+        friend_ids = cls.get_friend_ids(user_id=user_id)
+        friend_list = cls.objects.filter(user_id=user_id, friend_id__in=friend_ids)
+        friend_list = [friend.to_dict() for friend in friend_list]
 
+        results = {"#": []}
         for friend_dict in friend_list:
             pinyin = friend_dict["pinyin"]
             if pinyin[0].isalpha():
@@ -235,10 +264,8 @@ class Friend(models.Model):
         return basic_info
 
 
-def friend_dynamic(owner_id, user_id, add_friend_time):
-    friend_profile = User.get_profile(user_id=user_id)
-
-    last_pa_time = friend_profile.get("last_pa_time", 0)
+# def friend_dynamic(owner_id, user_id, add_friend_time):
+def friend_dynamic(last_pa_time, add_friend_time, paing):
     if last_pa_time:
         dt = datetime.datetime.utcfromtimestamp(float(last_pa_time)).replace(tzinfo=pytz.utc)
     else:

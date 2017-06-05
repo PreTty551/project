@@ -568,6 +568,10 @@ def update_avatar(request):
     user = User.objects.filter(id=request.user.id).first()
     user.avatar = avatar
     user.save()
+
+    ud = UserDynamic.objects.filter(user_id=user.id, nickname=user.nickname)
+    ud.avatar = avatar
+    ud.save()
     return JsonResponse()
 
 
@@ -691,8 +695,9 @@ def _poke(owner, user_id):
 
         disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
         if not disable_switch:
-            Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
-            Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False, update_date=timezone.now())
+            Poke.add(friend_id=user_id)
+            # Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
+            # Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False, update_date=timezone.now())
 
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
@@ -716,8 +721,9 @@ def _invite_party(owner, user_id, channel_id, channel_type):
 
         disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
         if not disable_switch:
-            Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True, update_date=timezone.now())
-            Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
+            Poke.add(friend_id=user_id)
+            # Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True, update_date=timezone.now())
+            # Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
 
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,

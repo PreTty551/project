@@ -18,7 +18,6 @@ EMOJI_LIST = [u"😀", u"😁", u"😃", u"😄", u"😇", u"😉", u"😊", u"�
 MC_USER_KEY = "user:%s"
 MC_IS_FRIEND_KEY = "u:%s:f:%s"
 MC_FRIEND_IDS_KEY = "user:%s:fs"
-MC_FRIEND_LIST = "u:%s:fl"
 MC_INVITE_MY_FRIEND_IDS = "inv:my:%s:ids"
 MC_MY_INVITE_FRIEND_IDS = "my:inv:%s:ids"
 MC_RECOMMEND_CONTACT = "u:%s:rc"
@@ -27,5 +26,5 @@ MC_INVITE_FRIEND_COUNT = "u:%s:inv_count"
 REDIS_MEMOS_KEY = 'u:%s:f:%s:memo'
 REDIS_ONLINE_USERS_KEY = 'online:user_ids'
 REDIS_ONLINE_USERS = "online_user_ids"
-
+REDIS_POKE = "user:%s:poke"
 REDIS_NO_PUSH_IDS = "u:%s:no_push"
