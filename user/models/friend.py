@@ -13,10 +13,10 @@ from corelib.utils import natural_time as time_format
 from corelib.redis import redis
 from corelib.mc import hlcache, cache
 
-from user.models import User
+from user.models import User, UserDynamic, Poke
 from user.consts import UserEnum, MC_FRIEND_IDS_KEY, REDIS_MEMOS_KEY, REDIS_NO_PUSH_IDS, \
                         MC_INVITE_MY_FRIEND_IDS, MC_MY_INVITE_FRIEND_IDS, \
-                        MC_INVITE_FRIEND_COUNT
+                        MC_INVITE_FRIEND_COUNT, REDIS_FRIEND_DATE
 
 
 class ChannelAddFriendLog(models.Model):
@@ -117,9 +117,8 @@ class Friend(models.Model):
         return list(cls.objects.filter(user_id=user_id).values_list("friend_id", flat=True))
 
     @classmethod
-    def get_friends_order_by_date(cls, friend_ids):
+    def get_friends_order_by_date(cls, user_id, friend_ids):
         user_dynamics = UserDynamic.objects.filter(user_id__in=friend_ids).order_by("-update_date")
-
         dynamics_dict = collections.OrderedDict()
         for dynamic in user_dynamics:
             dynamics_dict[dynamic.user_id] = dynamic.to_dict()
@@ -127,20 +126,26 @@ class Friend(models.Model):
         friend_ids = []
         poke_my_user_ids = Poke(user_id=user_id).list()
         if not poke_my_user_ids:
-            friend_ids = profiles_dict.keys()
+            friend_ids = list(dynamics_dict.keys())
         else:
             friend_ids = poke_my_user_ids
-            for uid in profiles_dict.keys():
+            for uid in dynamics_dict.keys():
                 if uid not in poke_my_user_ids:
                     friend_ids.append(uid)
 
+        friend_date_dict = redis.hgetall(REDIS_FRIEND_DATE % user_id)
         friend_list = []
         for friend_id in friend_ids:
             user_info = dynamics_dict.get(friend_id)
+            if not user_info:
+                continue
             user_info["user_relation"] = UserEnum.friend.value
-            user_info["dynamic"] = friend_dynamic(last_pa_time=user_info["last_pa_time"],
-                                                  add_friend_time=self.date,
-                                                  paing=user_info["paing"])
+            _add_friend_time = friend_date_dict[str(friend_id).encode()]
+            add_friend_time = datetime.datetime.utcfromtimestamp(float(_add_friend_time)).replace(tzinfo=pytz.utc)
+            user_info["dynamic"] = friend_dynamic(user_id=friend_id,
+                                                  last_pa_time=user_info["last_pa_time"],
+                                                  add_friend_time=add_friend_time,
+                                                  paing=user_info["is_paing"])
             user_info["is_hint"] = True if friend_id in poke_my_user_ids else False
             friend_list.append(user_info)
         return friend_list
@@ -266,26 +271,22 @@ class Friend(models.Model):
 
 # def friend_dynamic(owner_id, user_id, add_friend_time):
 def friend_dynamic(last_pa_time, add_friend_time, paing):
-    if last_pa_time:
-        dt = datetime.datetime.utcfromtimestamp(float(last_pa_time)).replace(tzinfo=pytz.utc)
-    else:
-        dt = None
-
     now = timezone.now()
     # 没有开过Pa或者开Pa的时间小于新加的好友的时间
-    if not dt:
+    if not last_pa_time:
         if now < add_friend_time + datetime.timedelta(seconds=3600):
             return "你们刚刚成为了好友"
-
-    if dt:
+    else:
         d = time_format(timezone.localtime(dt))
-        if int(friend_profile.get("paing", 0)):
+        if paing == 1:
             return "正在开PA"
-        elif (now - dt).seconds < 600:
+        elif paing == 2:
+            return "正在广场开PA"
+        elif (now - last_pa_time).seconds < 600:
             return "刚刚离开房间"
-        elif (now - dt).days < 4:
+        elif (now - last_pa_time).days < 4:
             return "%s开过PA" % d
-        elif (now - dt).days < 30:
+        elif (now - last_pa_time).days < 30:
             return "%s见过TA" % d
 
     date_str = time_format(timezone.localtime(add_friend_time))
@@ -303,11 +304,13 @@ def common_friends(user_id, to_user_id):
 @receiver(post_save, sender=Friend)
 def save_friend_after(sender, created, instance, **kwargs):
     if created:
+        redis.hset(REDIS_FRIEND_DATE % instance.user_id, instance.friend_id, time.time())
         instance.clear_mc()
 
 
 @receiver(post_delete, sender=Friend)
 def delete_friend_after(sender, instance, **kwargs):
+    redis.hrem(REDIS_FRIEND_DATE % instance.user_id, instance.friend_id)
     instance.clear_mc()
 
 

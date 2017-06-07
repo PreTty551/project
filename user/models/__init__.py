@@ -1,5 +1,5 @@
 from .user import User, ThirdUser, BanUser, create_third_user, fuck_you
-from .user import update_avatar_in_third_login, TempThirdUser, UserDynamic
+from .user import update_avatar_in_third_login, TempThirdUser, UserDynamic, Poke
 from .friend import Friend, InviteFriend, common_friends, friend_dynamic, ChannelAddFriendLog
 from .contact import UserContact, ContactError
 from .ignore import Ignore

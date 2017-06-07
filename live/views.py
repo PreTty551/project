@@ -165,7 +165,7 @@ def create_channel(request):
                                      channel_type=channel_type,
                                      nickname=request.user.nickname)
     if channel:
-        UserDynamic.update_dynamic(user_id=request.user.id, paing=True)
+        UserDynamic.update_dynamic(user_id=request.user.id, paing=channel_type)
         party_push(user_id=request.user.id,
                    channel_id=channel.channel_id,
                    channel_type=channel.channel_type)
@@ -206,7 +206,7 @@ def join_channel(request):
     if not channel:
         return HttpResponseBadRequest()
 
-    UserDynamic.update_dynamic(user_id=request.user.id, paing=True)
+    UserDynamic.update_dynamic(user_id=request.user.id, paing=channel.channel_type)
     if channel.is_lock:
         return JsonResponse({"is_lock": True})
 
@@ -227,12 +227,16 @@ def quit_channel(request):
     if channel:
         is_success = channel.quit_channel(user_id=request.user.id)
         if is_success:
-            UserDynamic.update_dynamic(user_id=request.user.id, paing=False)
-            refresh(user_id=request.user.id, channel_type=channel.channel_type)
+            ud = UserDynamic.objects.filter(user_id=request.user.id).first()
+            if ud:
+                last_pa_time = ud.last_pa_time
+                ud.paing = False
+                ud.last_pa_time = timezone.now()
+                ud.save()
+                refresh(user_id=request.user.id, channel_type=channel.channel_type)
 
-            dt = datetime.datetime.fromtimestamp(float(last_pa_time))
-            if (datetime.datetime.now() - dt).seconds > 300:
-                return JsonResponse({"feedback": True})
+                if (timezone.now() - last_pa_time).seconds > 300:
+                    return JsonResponse({"feedback": True})
         return JsonResponse({"feedback": False})
     return HttpResponseServerError()
 

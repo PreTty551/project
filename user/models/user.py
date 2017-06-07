@@ -19,12 +19,12 @@ from django.contrib.auth.models import AbstractUser, UserManager as BaseUserMana
 from corelib.qiniucloud import Qiniu
 from corelib.props import PropsMixin
 from corelib.weibo import Weibo
-from corelib.utils import natural_time as time_format
+from corelib.utils import avatar_url, natural_time as time_format
 from corelib.mc import cache
 from corelib.redis import redis
 
 from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, \
-                        REDIS_NO_PUSH_IDS, REDIS_ONLINE_USERS
+                        REDIS_NO_PUSH_IDS, REDIS_ONLINE_USERS, REDIS_POKE
 from .place import Place
 
 
@@ -255,6 +255,8 @@ class User(AbstractUser, PropsMixin):
 
         return "%s/default_avatar@base@tag=imgScale&w=150&h=150" % (settings.AVATAR_BASE_URL)
 
+
+
     @property
     def disable_login(self):
         banuser = BanUser.objects.filter(user_id=self.id).first()
@@ -390,15 +392,15 @@ class UserDynamic(models.Model):
     user_id = models.IntegerField()
     nickname = models.CharField(max_length=50)
     avatar = models.CharField(max_length=40, default="")
-    is_paing = models.BooleanField(default=False)
-    last_pa_time = models.DateTimeField()
+    paing = models.SmallIntegerField(default=0)
+    last_pa_time = models.DateTimeField(blank=True, null=True)
     update_date = models.DateTimeField(auto_now=True)
 
     @classmethod
     def update_dynamic(cls, user_id, paing):
         ud = cls.objects.filter(user_id=user_id).first()
         if ud:
-            ud.last_pa_time = time.time()
+            ud.last_pa_time = timezone.now()
             ud.paing = paing
             ud.save()
 
@@ -408,7 +410,7 @@ class UserDynamic(models.Model):
             "id": self.user_id,
             "nickname": self.nickname,
             "display_nickname": self.nickname,
-            "avatar": self.avatar,
+            "avatar_url": avatar_url(self.avatar),
             "is_paing": self.is_paing,
             "last_pa_time": self.last_pa_time,
             "update_date": self.update_date
@@ -427,7 +429,7 @@ class Poke(object):
         redis.zrem(REDIS_POKE % self.user_id, friend_id)
 
     def list(self):
-        poke_list = redis.zrevrangebyscore(REDIS_POKE % self.user_id)
+        poke_list = redis.zrevrangebyscore(REDIS_POKE % self.user_id, 0, -1)
         return [poke.decode() for poke in poke_list]
 
 

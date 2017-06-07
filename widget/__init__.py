@@ -16,7 +16,8 @@ class FriendListWidget(Widget):
 
     @classmethod
     def list(cls, user_id):
-        return Friend.get_friends_order_by_date(user_id=user_id)
+        friend_ids = Friend.get_friend_ids(user_id=user_id)
+        return Friend.get_friends_order_by_date(user_id=user_id, friend_ids=friend_ids)
 
 
 class ChannelListWidget(Widget):

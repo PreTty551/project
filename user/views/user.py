@@ -30,7 +30,7 @@ from corelib.twilio import Twilio
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum, \
                         REDIS_ONLINE_USERS_KEY, REDIS_ONLINE_USERS
-from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place
+from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place, UserDynamic
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
 from socket_server import SocketServer
 from live.models import Channel, ChannelMember, InviteParty

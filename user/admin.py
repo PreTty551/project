@@ -16,6 +16,8 @@ class BanUserAdmin(admin.ModelAdmin):
 
 class PaUserAdmin(UserAdmin):
     search_fields = ('paid', 'nickname', 'mobile')
+    list_display = ('nickname', 'mobile', 'id')
+    ordering = ('-id',)
 
 
 admin.site.unregister(User)
