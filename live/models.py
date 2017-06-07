@@ -17,8 +17,10 @@ from corelib.redis import redis
 from corelib.jiguang import JPush
 
 from user.models import User, Friend
+from ida.models import Duty
+
 from .consts import ChannelType, MC_INVITE_PARTY, MC_PA_PUSH_LOCK, REDIS_PUBLIC_PA_IDS, \
-                    REDIS_PUBLIC_LOCK, REDIS_DISABLE_FRIEND_SWITCH
+                    REDIS_PUBLIC_LOCK
 from socket_server import SocketServer, EventType
 
 
@@ -108,7 +110,14 @@ class Channel(models.Model):
         user_ids = [user_id]
         user_ids.extend(friend_ids)
 
-        channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids).values_list("channel_id", flat=True))
+        # 兼职人员互相看不到
+        ignore_user_ids = Duty.objects.values_list("user_id", flat=True)
+        if user_id in ignore_user_ids:
+            channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids)
+                                                    .exclude(user_id__in=ignore_user_ids)
+                                                    .values_list("channel_id", flat=True))
+        else:
+            channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids).values_list("channel_id", flat=True))
         member_list = ChannelMember.objects.filter(channel_id__in=channel_ids)
 
         members = []
@@ -332,11 +341,9 @@ def add_member_after(sender, created, instance, **kwargs):
         # ========= 以下是异步操作 =========
 
         # 刷新好友列表顺序和清除红点
-        disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
-        if not disable_switch:
-            queue = django_rq.get_queue('high')
-            queue.enqueue(Friend.update_friend_list, instance.user_id)
-            queue.enqueue(Friend.clear_red_point, instance.user_id)
+        queue = django_rq.get_queue('high')
+        queue.enqueue(Friend.update_friend_list, instance.user_id)
+        queue.enqueue(Friend.clear_red_point, instance.user_id)
 
         # 客户端刷新
         refresh(instance.user_id, instance.channel_type)
@@ -359,48 +366,33 @@ def delete_member_after(sender, instance, **kwargs):
 def party_push(user_id, channel_id, channel_type):
     push_lock = redis.get(MC_PA_PUSH_LOCK % user_id)
     if not push_lock:
-        bulk_ids = []
-        ids = []
-        i = 0
+        friend_ids = Friend.get_friend_ids()
+        no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % user_id)
+        friend_ids = [friend_id for friend_id in friend_ids if friend_id not in no_push_ids]
+        friend_ids.remove(user_id)
 
-        user = User.get(id=user_id)
-        # friend_ids = Friend.get_friends_by_online_push(user_id=user_id)
-        # party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
-        # no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
-        #
-        # pre_week = timezone.now() - datetime.timedelta(days=7)
-        # party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=no_party_friend_ids)
-        #                                                   .values_list("user_id", flat=True).distinct())
+        party_user_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
+        nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
+        if nicknames:
+            _nicknames = ",".join(nicknames)
+            message = "%s 正在开PA" % _nicknames
+            JPush(user_id=user_id).async_batch_push(user_ids=party_user_ids,
+                                                    message=message,
+                                                    push_type=1,
+                                                    channel_id=channel_id,
+                                                    channel_type=channel_type,
+                                                    apns_collapse_id="pa",
+                                                    is_valid_role=False)
 
-        # for friend_id in party_user_ids_in_week:
-        #     fids = Friend.get_friend_ids(user_id=friend_id)
-        #     if int(user_id) in fids:
-        #         fids.remove(int(user_id))
-        #     if int(friend_id) in fids:
-        #         fids.remove(int(friend_id))
-        #
-        #     party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
-        #     nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
-        #     if nicknames:
-        #         nicknames = ",".join(nicknames)
-        #         message = "%s 正在开PA" % nicknames
-        #         JPush().async_push(user_ids=[friend_id],
-        #                            message=message,
-        #                            push_type=1,
-        #                            channel_id=channel_id,
-        #                            channel_type=channel_type)
-        #         SocketServer().invite_party_in_live(user_id=user.id,
-        #                                             to_user_id=friend_id,
-        #                                             message=message,
-        #                                             channel_id=channel_id)
+        no_party_ids = party_user_ids ^ friend_ids
+        if no_party_ids:
+            message = "%s 正在开PA" % user.nickname
+            JPush(user_id=user_id).async_batch_push(user_ids=no_party_ids,
+                                                    message=message,
+                                                    push_type=1,
+                                                    channel_id=channel_id,
+                                                    channel_type=channel_type,
+                                                    apns_collapse_id="pa",
+                                                    is_valid_role=False)
 
-        party_friend_ids = Friend.get_friend_ids(user_id=user_id)
-        message = "%s 正在开PA" % user.nickname
-        JPush(user_id=user_id).async_batch_push(user_ids=party_friend_ids,
-                                                message=message,
-                                                push_type=1,
-                                                channel_id=channel_id,
-                                                channel_type=channel_type,
-                                                apns_collapse_id="pa")
-
-        redis.set(MC_PA_PUSH_LOCK % user_id, 1, 300)
+        redis.set(MC_PA_PUSH_LOCK % user_id, 1, 60)

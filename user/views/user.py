@@ -34,7 +34,6 @@ from user.models import User, ThirdUser, create_third_user, update_avatar_in_thi
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
 from socket_server import SocketServer
 from live.models import Channel, ChannelMember, InviteParty
-from live.consts import REDIS_DISABLE_FRIEND_SWITCH
 from wallet.models import is_disable_wallet
 
 
@@ -693,17 +692,16 @@ def _poke(owner, user_id):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
 
-        disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
-        if not disable_switch:
-            Poke.add(friend_id=user_id)
-            # Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
-            # Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False, update_date=timezone.now())
-
+        Poke.add(friend_id=user_id)
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,
                                             channel_id=0)
-        JPush().async_push(user_ids=[user_id], message=message, is_valid_role=False)
+
+        JPush(owner.id).async_push(user_ids=[user_id],
+                                   message=message,
+                                   apns_collapse_id="poke")
+
         redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:
         return JsonResponse(error={40000: "好了好了，TA收到啦"})
@@ -719,24 +717,19 @@ def _invite_party(owner, user_id, channel_id, channel_type):
             icon += "👉"
         message = "%s%s" % (icon, message)
 
-        disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
-        if not disable_switch:
-            Poke.add(friend_id=user_id)
-            # Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True, update_date=timezone.now())
-            # Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
-
+        Poke.add(friend_id=user_id)
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,
                                             channel_id=channel_id)
-        JPush().async_push(user_ids=[user_id],
-                           message=message,
-                           push_type=1,
-                           is_sound=True,
-                           sound="push.caf",
-                           channel_id=channel_id,
-                           channel_type=channel_type,
-                           is_valid_role=False)
+        JPush(owner.id).async_push(user_ids=[user_id],
+                                   message=message,
+                                   push_type=1,
+                                   is_sound=True,
+                                   sound="push.caf",
+                                   channel_id=channel_id,
+                                   channel_type=channel_type,
+                                   apns_collapse_id="poke")
 
         redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:

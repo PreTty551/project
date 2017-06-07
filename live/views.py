@@ -18,6 +18,7 @@ from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMedi
 from live.consts import ChannelType, MC_PA_PUSH_LOCK
 from user.models import User, Friend, UserContact, Place, guess_know_user, UserDynamic
 from user.consts import UserEnum
+from ida.models import Duty
 from widget import FriendListWidget, ChannelListWidget, ChannelInnerListWidget
 
 TEST_USER_IDS = []
@@ -97,10 +98,18 @@ def near_channel_list(request):
     #                 continue
     #
     #             channels.append(channel.to_dict())
-
     # limit = 100 - len(channels)
 
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+
+    # 兼职人员互相看不到
+    ignore_channel_ids = []
+    ignore_user_ids = Duty.objects.values_list("user_id", flat=True)
+    if request.user.id in ignore_user_ids:
+        ignore_channel_ids = ChannelMember.objects.filter(channel_type=ChannelType.public.value,
+                                                          user_id__in=ignore_user_ids) \
+                                                  .values_list("channel_id", flat=True)
+
     friend_channel_ids = list(ChannelMember.objects.filter(user_id__in=friend_ids,
                                                            channel_type=ChannelType.public.value)
                                                    .values_list("channel_id", flat=True))
@@ -124,7 +133,7 @@ def near_channel_list(request):
         channel_user_ids.append(member.user_id)
 
     channels = []
-
+    public_channel_ids = [channel_id for channel_id in public_channel_ids if channel_id in ignore_channel_ids]
     channel_list = Channel.objects.filter(channel_id__in=public_channel_ids)
     for channel in channel_list:
         member = members_dict.get(channel.channel_id)
