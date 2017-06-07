@@ -142,10 +142,10 @@ class Friend(models.Model):
             user_info["user_relation"] = UserEnum.friend.value
             _add_friend_time = friend_date_dict[str(friend_id).encode()]
             add_friend_time = datetime.datetime.utcfromtimestamp(float(_add_friend_time)).replace(tzinfo=pytz.utc)
-            user_info["dynamic"] = friend_dynamic(user_id=friend_id,
+            user_info["dynamic"] = friend_dynamic(friend_id=friend_id,
                                                   last_pa_time=user_info["last_pa_time"],
                                                   add_friend_time=add_friend_time,
-                                                  paing=user_info["is_paing"])
+                                                  paing=user_info["paing"])
             user_info["is_hint"] = True if friend_id in poke_my_user_ids else False
             friend_list.append(user_info)
         return friend_list
@@ -257,27 +257,15 @@ class Friend(models.Model):
 
         return results
 
-    def to_dict(self):
-        user = User.get(self.friend_id)
-        basic_info = user.basic_info()
-        basic_info["is_hint"] = self.is_hint
-        basic_info["user_relation"] = UserEnum.friend.value
-        basic_info["dynamic"] = friend_dynamic(owner_id=self.user_id,
-                                               user_id=user.id,
-                                               add_friend_time=self.date)
-        basic_info["pinyin"] = user.pinyin
-        return basic_info
 
-
-# def friend_dynamic(owner_id, user_id, add_friend_time):
-def friend_dynamic(last_pa_time, add_friend_time, paing):
+def friend_dynamic(friend_id, last_pa_time, add_friend_time, paing):
     now = timezone.now()
     # 没有开过Pa或者开Pa的时间小于新加的好友的时间
     if not last_pa_time:
         if now < add_friend_time + datetime.timedelta(seconds=3600):
             return "你们刚刚成为了好友"
     else:
-        d = time_format(timezone.localtime(dt))
+        d = time_format(timezone.localtime(last_pa_time))
         if paing == 1:
             return "正在开PA"
         elif paing == 2:

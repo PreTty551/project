@@ -389,7 +389,7 @@ class UserDynamic(models.Model):
     """ 这个表记录用户的一些动态信息
         为了查询, 冗余一些user基本信息
     """
-    user_id = models.IntegerField()
+    user_id = models.IntegerField(db_index=True)
     nickname = models.CharField(max_length=50)
     avatar = models.CharField(max_length=40, default="")
     paing = models.SmallIntegerField(default=0)
@@ -411,7 +411,7 @@ class UserDynamic(models.Model):
             "nickname": self.nickname,
             "display_nickname": self.nickname,
             "avatar_url": avatar_url(self.avatar),
-            "is_paing": self.is_paing,
+            "paing": self.paing,
             "last_pa_time": self.last_pa_time,
             "update_date": self.update_date
         }

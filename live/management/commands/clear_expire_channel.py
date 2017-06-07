@@ -5,7 +5,7 @@ import datetime
 from corelib.redis import redis
 from corelib.agora import Agora
 
-from user.models import User
+from user.models import User, UserDynamic
 from live.models import Channel, ChannelMember
 
 
@@ -22,7 +22,5 @@ class Command(BaseCommand):
             is_online = agora.query_online()
             if not is_online:
                 ChannelMember.objects.filter(user_id=member.user_id).delete()
-                user = User.get(member.user_id)
-                user.last_pa_time = time.time()
-                user.paing = 0
+                UserDynamic.update_dynamic(user_id=member.user_id, paing=0)
                 print("clear user: %s, date: %s" % (member.user_id, datetime.datetime.now()))
