@@ -258,6 +258,13 @@ class Friend(models.Model):
 
         return results
 
+    def to_dict(self):
+        user = User.get(self.friend_id)
+        basic_info = user.basic_info()
+        basic_info["user_relation"] = UserEnum.friend.value
+        basic_info["pinyin"] = user.pinyin
+        return basic_info
+
 
 def friend_dynamic(friend_id, last_pa_time, add_friend_time, paing):
     now = timezone.now()
