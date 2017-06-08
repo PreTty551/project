@@ -256,8 +256,6 @@ class User(AbstractUser, PropsMixin):
 
         return "%s/default_avatar@base@tag=imgScale&w=150&h=150" % (settings.AVATAR_BASE_URL)
 
-
-
     @property
     def disable_login(self):
         banuser = BanUser.objects.filter(user_id=self.id).first()

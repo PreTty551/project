@@ -15,6 +15,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         user_ids = list(Friend.objects.values_list("user_id", flat=True).distinct())
+        start = 0
+        skip = 10000
+        user_ids = User.objects.values_list("id", flat=True)[start:skip]
         for user_id in user_ids:
             ud = UserDynamic.objects.filter(user_id=user_id).first()
             if ud:
@@ -47,7 +50,10 @@ class Command(BaseCommand):
             except:
                 print("user_id", user_id, user.nickname)
 
+            start = skip
+            skip += 10000
+
             friends = Friend.objects.filter(user_id=user_id)
             for friend in friends:
                 add_friend_time = time.mktime(friend.date.timetuple())
-                redis.hset(REDIS_FRIEND_DATE % user_id, friend.id, add_friend_time)
+                redis.hset(REDIS_FRIEND_DATE % user_id, friend.user_id, add_friend_time)

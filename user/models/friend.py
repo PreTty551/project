@@ -141,8 +141,12 @@ class Friend(models.Model):
             if not user_info:
                 continue
             user_info["user_relation"] = UserEnum.friend.value
-            _add_friend_time = friend_date_dict[str(friend_id).encode()]
-            add_friend_time = datetime.datetime.utcfromtimestamp(float(_add_friend_time)).replace(tzinfo=pytz.utc)
+            _add_friend_time = friend_date_dict.get(str(friend_id).encode())
+            if _add_friend_time:
+                add_friend_time = datetime.datetime.utcfromtimestamp(float(_add_friend_time)).replace(tzinfo=pytz.utc)
+            else:
+                add_friend_time = None
+
             user_info["dynamic"] = friend_dynamic(friend_id=friend_id,
                                                   last_pa_time=user_info["last_pa_time"],
                                                   add_friend_time=add_friend_time,
@@ -270,8 +274,9 @@ def friend_dynamic(friend_id, last_pa_time, add_friend_time, paing):
     now = timezone.now()
     # 没有开过Pa或者开Pa的时间小于新加的好友的时间
     if not last_pa_time:
-        if now < add_friend_time + datetime.timedelta(seconds=3600):
-            return "你们刚刚成为了好友"
+        if add_friend_time:
+            if now < add_friend_time + datetime.timedelta(seconds=3600):
+                return "你们刚刚成为了好友"
     else:
         d = time_format(timezone.localtime(last_pa_time))
         if paing == 1:
@@ -285,8 +290,10 @@ def friend_dynamic(friend_id, last_pa_time, add_friend_time, paing):
         elif (now - last_pa_time).days < 30:
             return "%s见过TA" % d
 
-    date_str = time_format(timezone.localtime(add_friend_time))
-    return "%s成为朋友" % date_str
+    if add_friend_time:
+        date_str = time_format(timezone.localtime(add_friend_time))
+        return "%s成为朋友" % date_str
+    return ""
 
 
 def common_friends(user_id, to_user_id):

@@ -548,6 +548,10 @@ def update_nickname(request):
     pinyin = Pinyin().get_pinyin(nickname, "")
     user.pinyin = pinyin[:50]
     user.save()
+
+    ud = UserDynamic.objects.filter(user_id=user.id).first()
+    ud.nickname = nickname
+    ud.save()
     return JsonResponse()
 
 
@@ -568,7 +572,7 @@ def update_avatar(request):
     user.avatar = avatar
     user.save()
 
-    ud = UserDynamic.objects.filter(user_id=user.id, nickname=user.nickname)
+    ud = UserDynamic.objects.filter(user_id=user.id).first()
     ud.avatar = avatar
     ud.save()
     return JsonResponse()
