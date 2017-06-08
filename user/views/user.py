@@ -800,3 +800,8 @@ def weibo4(request):
 def weibo5(request):
     redis.incr("weibo5")
     return redirect("https://itunes.apple.com/cn/app/id1069693851")
+
+
+def firxiazai(request):
+    redis.incr("firxiazai")
+    return redirect("http://a.app.qq.com/o/simple.jsp?pkgname=com.gouhuoapp.pa")

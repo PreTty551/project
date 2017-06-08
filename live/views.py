@@ -133,7 +133,7 @@ def near_channel_list(request):
         channel_user_ids.append(member.user_id)
 
     channels = []
-    public_channel_ids = [channel_id for channel_id in public_channel_ids if channel_id in ignore_channel_ids]
+    public_channel_ids = [channel_id for channel_id in public_channel_ids if channel_id not in ignore_channel_ids]
     channel_list = Channel.objects.filter(channel_id__in=public_channel_ids)
     for channel in channel_list:
         member = members_dict.get(channel.channel_id)
