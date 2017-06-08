@@ -299,7 +299,7 @@ def save_friend_after(sender, created, instance, **kwargs):
 
 @receiver(post_delete, sender=Friend)
 def delete_friend_after(sender, instance, **kwargs):
-    redis.hrem(REDIS_FRIEND_DATE % instance.user_id, instance.friend_id)
+    redis.hdel(REDIS_FRIEND_DATE % instance.user_id, instance.friend_id)
     instance.clear_mc()
 
 

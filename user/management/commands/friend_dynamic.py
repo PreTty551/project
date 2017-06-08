@@ -14,20 +14,40 @@ class Command(BaseCommand):
         pass
 
     def handle(self, *args, **options):
-        user_ids = Friend.objects.values_list("user_id").distinct()
+        user_ids = list(Friend.objects.values_list("user_id", flat=True).distinct())
         for user_id in user_ids:
+            ud = UserDynamic.objects.filter(user_id=user_id).first()
+            if ud:
+                user = User.get(user_id)
+                ud.paing = user.paing
+                ud.save()
+
+            user = User.get(user_id)
+            is_paing = user.paing or 0
+            last_pa_time = user.last_pa_time or None
+            if last_pa_time:
+                last_pa_time = datetime.datetime.utcfromtimestamp(float(last_pa_time)).replace(tzinfo=pytz.utc)
+            else:
+                last_pa_time = None
+
+            try:
+                if not last_pa_time:
+                    UserDynamic.objects.create(user_id=user.id,
+                                               nickname=user.nickname,
+                                               avatar=user.avatar,
+                                               paing=is_paing,
+                                               update_date=timezone.now())
+                else:
+                    UserDynamic.objects.create(user_id=user.id,
+                                               nickname=user.nickname,
+                                               avatar=user.avatar,
+                                               paing=is_paing,
+                                               last_pa_time=last_pa_time,
+                                               update_date=timezone.now())
+            except:
+                print("user_id", user_id, user.nickname)
+
             friends = Friend.objects.filter(user_id=user_id)
             for friend in friends:
-                user = User.get(friend.friend_id)
-                is_paing = user.is_paing or 0
-                last_pa_time = user.last_pa_time or None
-
-                UserDynamic.objects.create(user_id=user.id,
-                                           nickname=user.nickname,
-                                           avatar=user.avatar,
-                                           is_paing=is_paing,
-                                           last_pa_time=last_pa_time,
-                                           update_date=timezone.now())
-
                 add_friend_time = time.mktime(friend.date.timetuple())
-                redis.hset(REDIS_FRIEND_DATE % 3, friend.id, add_friend_time)
+                redis.hset(REDIS_FRIEND_DATE % user_id, friend.id, add_friend_time)
