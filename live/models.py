@@ -17,8 +17,7 @@ from corelib.redis import redis
 from corelib.jiguang import JPush
 
 from user.models import User, Friend
-from ida.models import Duty
-
+from user.consts import REDIS_NO_PUSH_IDS
 from .consts import ChannelType, MC_INVITE_PARTY, MC_PA_PUSH_LOCK, REDIS_PUBLIC_PA_IDS, \
                     REDIS_PUBLIC_LOCK
 from socket_server import SocketServer, EventType
@@ -111,6 +110,7 @@ class Channel(models.Model):
         user_ids.extend(friend_ids)
 
         # 兼职人员互相看不到
+        from ida.models import Duty
         ignore_user_ids = Duty.objects.values_list("user_id", flat=True)
         if user_id in ignore_user_ids:
             channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids)
@@ -366,12 +366,11 @@ def delete_member_after(sender, instance, **kwargs):
 def party_push(user_id, channel_id, channel_type):
     push_lock = redis.get(MC_PA_PUSH_LOCK % user_id)
     if not push_lock:
-        friend_ids = Friend.get_friend_ids()
+        friend_ids = Friend.get_friend_ids(user_id)
         no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % user_id)
         friend_ids = [friend_id for friend_id in friend_ids if friend_id not in no_push_ids]
-        friend_ids.remove(user_id)
 
-        party_user_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
+        party_user_ids = list(ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True))
         nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
         if nicknames:
             _nicknames = ",".join(nicknames)
@@ -384,8 +383,9 @@ def party_push(user_id, channel_id, channel_type):
                                                     apns_collapse_id="pa",
                                                     is_valid_role=False)
 
-        no_party_ids = party_user_ids ^ friend_ids
+        no_party_ids = list(set(party_user_ids) ^ set(friend_ids))
         if no_party_ids:
+            user = User.get(user_id)
             message = "%s 正在开PA" % user.nickname
             JPush(user_id=user_id).async_batch_push(user_ids=no_party_ids,
                                                     message=message,

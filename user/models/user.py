@@ -2,6 +2,7 @@
 import uuid
 import random
 import datetime
+import time
 
 from datetime import date, timedelta
 from itertools import permutations
@@ -429,7 +430,7 @@ class Poke(object):
         redis.zrem(REDIS_POKE % self.user_id, friend_id)
 
     def list(self):
-        poke_list = redis.zrevrangebyscore(REDIS_POKE % self.user_id, 0, -1)
+        poke_list = redis.zrevrange(REDIS_POKE % self.user_id, 0, -1)
         return [poke.decode() for poke in poke_list]
 
 

@@ -31,7 +31,7 @@ from corelib.twilio import Twilio
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum, \
                         REDIS_ONLINE_USERS_KEY, REDIS_ONLINE_USERS
 from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place, UserDynamic
-from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
+from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user, Poke
 from socket_server import SocketServer
 from live.models import Channel, ChannelMember, InviteParty
 from wallet.models import is_disable_wallet
@@ -692,7 +692,8 @@ def _poke(owner, user_id):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
 
-        Poke.add(friend_id=user_id)
+        Poke(user_id).add(friend_id=owner.id)
+        Poke(owner.id).delete(friend_id=user_id)
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,
@@ -717,7 +718,7 @@ def _invite_party(owner, user_id, channel_id, channel_type):
             icon += "👉"
         message = "%s%s" % (icon, message)
 
-        Poke.add(friend_id=user_id)
+        Poke(user_id).add(friend_id=owner.id)
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,

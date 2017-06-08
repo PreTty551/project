@@ -3,6 +3,7 @@ import time
 import datetime
 import pytz
 import collections
+import copy
 
 from django.db import models, transaction, IntegrityError
 from django.db.models.signals import post_delete, post_save
@@ -128,7 +129,7 @@ class Friend(models.Model):
         if not poke_my_user_ids:
             friend_ids = list(dynamics_dict.keys())
         else:
-            friend_ids = poke_my_user_ids
+            friend_ids = copy.deepcopy(poke_my_user_ids)
             for uid in dynamics_dict.keys():
                 if uid not in poke_my_user_ids:
                     friend_ids.append(uid)
@@ -146,7 +147,7 @@ class Friend(models.Model):
                                                   last_pa_time=user_info["last_pa_time"],
                                                   add_friend_time=add_friend_time,
                                                   paing=user_info["paing"])
-            user_info["is_hint"] = True if friend_id in poke_my_user_ids else False
+            user_info["is_hint"] = True if str(friend_id) in poke_my_user_ids else False
             friend_list.append(user_info)
         return friend_list
 
