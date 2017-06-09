@@ -106,6 +106,7 @@ def near_channel_list(request):
     ignore_channel_ids = []
     ignore_user_ids = Duty.objects.values_list("user_id", flat=True)
     if request.user.id in ignore_user_ids:
+        ignore_user_ids.remove(request.user.id)
         ignore_channel_ids = ChannelMember.objects.filter(channel_type=ChannelType.public.value,
                                                           user_id__in=ignore_user_ids) \
                                                   .values_list("channel_id", flat=True)
