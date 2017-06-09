@@ -111,8 +111,9 @@ class Channel(models.Model):
 
         # 兼职人员互相看不到
         from ida.models import Duty
-        ignore_user_ids = Duty.objects.values_list("user_id", flat=True)
+        ignore_user_ids = list(Duty.objects.values_list("user_id", flat=True))
         if user_id in ignore_user_ids:
+            ignore_user_ids.remove(int(user_id))
             channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids)
                                                     .exclude(user_id__in=ignore_user_ids)
                                                     .values_list("channel_id", flat=True))
@@ -371,19 +372,26 @@ def party_push(user_id, channel_id, channel_type):
         friend_ids = [friend_id for friend_id in friend_ids if friend_id not in no_push_ids]
 
         party_user_ids = list(ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True))
-        nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
-        if nicknames:
+        merge_user_ids = copy.deepcopy(party_user_ids)
+
+        if user_id in party_user_ids:
+            party_user_ids.remove(int(user_id))
+
+        # 这里因为每个人的message都要除去自己，所以都不一样，要一个一个发
+        # [3, 276, 6, 50]
+        for uid in party_user_ids:
+            nicknames = [User.get(id=user_id).nickname for merge_user_id in merge_user_ids if uid != merge_user_id]
             _nicknames = ",".join(nicknames)
             message = "%s 正在开PA" % _nicknames
-            JPush(user_id=user_id).async_batch_push(user_ids=party_user_ids,
-                                                    message=message,
-                                                    push_type=1,
-                                                    channel_id=channel_id,
-                                                    channel_type=channel_type,
-                                                    apns_collapse_id="pa",
-                                                    is_valid_role=False)
+            JPush(user_id=uid).async_push(user_ids=[uid],
+                                          message=message,
+                                          push_type=1,
+                                          channel_id=channel_id,
+                                          channel_type=channel_type,
+                                          apns_collapse_id="pa",
+                                          is_valid_role=False)
 
-        no_party_ids = list(set(party_user_ids) ^ set(friend_ids))
+        no_party_ids = [fid for fid in friend_ids if fid not in party_user_ids]
         if no_party_ids:
             user = User.get(user_id)
             message = "%s 正在开PA" % user.nickname
