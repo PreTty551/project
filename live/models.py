@@ -368,39 +368,28 @@ def party_push(user_id, channel_id, channel_type):
     push_lock = redis.get(MC_PA_PUSH_LOCK % user_id)
     if not push_lock:
         friend_ids = Friend.get_friend_ids(user_id)
-        no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % user_id)
-        friend_ids = [friend_id for friend_id in friend_ids if friend_id not in no_push_ids]
+        party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
+        no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
 
-        party_user_ids = list(ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True))
-        merge_user_ids = copy.deepcopy(party_user_ids)
+        pre_week = timezone.now() - datetime.timedelta(days=7)
+        party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=no_party_friend_ids)
+                                                          .values_list("user_id", flat=True).distinct())
 
-        if user_id in party_user_ids:
-            party_user_ids.remove(int(user_id))
+        for friend_id in party_user_ids_in_week:
+            fids = Friend.get_friend_ids(user_id=friend_id)
+            if int(friend_id) in fids:
+                fids.remove(int(friend_id))
 
-        # 这里因为每个人的message都要除去自己，所以都不一样，要一个一个发
-        # [3, 276, 6, 50]
-        for uid in party_user_ids:
-            nicknames = [User.get(id=user_id).nickname for merge_user_id in merge_user_ids if uid != merge_user_id]
-            _nicknames = ",".join(nicknames)
-            message = "%s 正在开PA" % _nicknames
-            JPush(user_id=uid).async_push(user_ids=[uid],
-                                          message=message,
-                                          push_type=1,
-                                          channel_id=channel_id,
-                                          channel_type=channel_type,
-                                          apns_collapse_id="pa",
-                                          is_valid_role=False)
-
-        no_party_ids = [fid for fid in friend_ids if fid not in party_user_ids]
-        if no_party_ids:
-            user = User.get(user_id)
-            message = "%s 正在开PA" % user.nickname
-            JPush(user_id=user_id).async_batch_push(user_ids=no_party_ids,
-                                                    message=message,
-                                                    push_type=1,
-                                                    channel_id=channel_id,
-                                                    channel_type=channel_type,
-                                                    apns_collapse_id="pa",
-                                                    is_valid_role=False)
+            party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
+            nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
+            if nicknames:
+                nicknames = ",".join(nicknames)
+                message = "%s 正在开PA" % nicknames
+                JPush().async_push(user_ids=[friend_id],
+                                   message=message,
+                                   push_type=1,
+                                   channel_id=channel_id,
+                                   channel_type=channel_type,
+                                   apns_collapse_id="pa")
 
         redis.set(MC_PA_PUSH_LOCK % user_id, 1, 60)

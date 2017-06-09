@@ -104,7 +104,7 @@ def near_channel_list(request):
 
     # 兼职人员互相看不到
     ignore_channel_ids = []
-    ignore_user_ids = Duty.objects.values_list("user_id", flat=True)
+    ignore_user_ids = list(Duty.objects.values_list("user_id", flat=True))
     if request.user.id in ignore_user_ids:
         ignore_user_ids.remove(request.user.id)
         ignore_channel_ids = ChannelMember.objects.filter(channel_type=ChannelType.public.value,
