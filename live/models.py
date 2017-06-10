@@ -114,11 +114,16 @@ class Channel(models.Model):
         ignore_user_ids = list(Duty.objects.values_list("user_id", flat=True))
         if user_id in ignore_user_ids:
             ignore_user_ids.remove(int(user_id))
+            ignore_channel_ids = list(ChannelMember.objects.exclude(user_id__in=ignore_user_ids)
+                                                   .values_list("channel_id", flat=True))
+
             channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids)
-                                                    .exclude(user_id__in=ignore_user_ids)
+                                                    .exclude(channel_id__in=ignore_channel_ids)
                                                     .values_list("channel_id", flat=True))
         else:
-            channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids).values_list("channel_id", flat=True))
+            channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids)
+                                                    .values_list("channel_id", flat=True))
+
         member_list = ChannelMember.objects.filter(channel_id__in=channel_ids)
 
         members = []
@@ -385,11 +390,8 @@ def party_push(user_id, channel_id, channel_type):
             if nicknames:
                 nicknames = ",".join(nicknames)
                 message = "%s 正在开PA" % nicknames
-                JPush().async_push(user_ids=[friend_id],
-                                   message=message,
-                                   push_type=1,
-                                   channel_id=channel_id,
-                                   channel_type=channel_type,
-                                   apns_collapse_id="pa")
+                JPush(user_id).async_push(user_ids=[friend_id],
+                                          message=message,
+                                          apns_collapse_id="pa")
 
         redis.set(MC_PA_PUSH_LOCK % user_id, 1, 60)
