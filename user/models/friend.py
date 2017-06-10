@@ -193,10 +193,6 @@ class Friend(models.Model):
         return True
 
     @classmethod
-    def update_friend_list(cls, friend_id):
-        Friend.objects.filter(friend_id=friend_id).update(update_date=timezone.now())
-
-    @classmethod
     def clear_red_point(cls, owner_id):
         Poke(owner_id).clear()
 

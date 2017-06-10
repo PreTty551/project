@@ -348,7 +348,6 @@ def add_member_after(sender, created, instance, **kwargs):
 
         # 刷新好友列表顺序和清除红点
         queue = django_rq.get_queue('high')
-        queue.enqueue(Friend.update_friend_list, instance.user_id)
         queue.enqueue(Friend.clear_red_point, instance.user_id)
 
         # 客户端刷新
