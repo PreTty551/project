@@ -166,6 +166,9 @@ def near_channel_list(request):
 def create_channel(request):
     channel_type = int(request.POST.get("channel_type", ChannelType.normal.value))
 
+    if request.user.id in [179815, 180024]:
+        return HttpResponseServerError()
+
     try:
         ChannelType(channel_type)
     except ValueError:
@@ -205,6 +208,9 @@ def invite_channel(request):
 @login_required_404
 def join_channel(request):
     channel_id = request.POST.get("channel_id")
+
+    if request.user.id in [179815, 180024]:
+        return HttpResponseServerError()
 
     if not channel_id:
         return HttpResponseBadRequest()
