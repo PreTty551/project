@@ -151,7 +151,7 @@ class Friend(models.Model):
                                                   last_pa_time=user_info["last_pa_time"],
                                                   add_friend_time=add_friend_time,
                                                   paing=user_info["paing"])
-            user_info["is_hint"] = True if str(friend_id) in poke_my_user_ids else False
+            user_info["is_hint"] = True if friend_id in poke_my_user_ids else False
             friend_list.append(user_info)
         return friend_list
 

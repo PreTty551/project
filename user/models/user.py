@@ -168,7 +168,9 @@ class User(AbstractUser, PropsMixin):
     def offline(self):
         self.offline_time = timezone.now()
         self.save()
-        self.paing = 0
+        ud = UserDynamic.objects.filter(user_id=self.id).first()
+        ud.ping = 0
+        ud.save()
         redis.hdel(REDIS_ONLINE_USERS_KEY, self.id)
         redis.hdel(REDIS_ONLINE_USERS, self.id)
         from live.models import ChannelMember
@@ -429,7 +431,7 @@ class Poke(object):
 
     def list(self):
         poke_list = redis.zrevrange(REDIS_POKE % self.user_id, 0, -1)
-        return [poke.decode() for poke in poke_list]
+        return [int(poke) for poke in poke_list]
 
 
 def fuck_you(user_id):
