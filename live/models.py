@@ -16,7 +16,7 @@ from corelib.mc import hlcache
 from corelib.redis import redis
 from corelib.jiguang import JPush
 
-from user.models import User, Friend
+from user.models import User, Friend, UserDynamic
 from user.consts import REDIS_NO_PUSH_IDS
 from .consts import ChannelType, MC_INVITE_PARTY, MC_PA_PUSH_LOCK, REDIS_PUBLIC_PA_IDS, \
                     REDIS_PUBLIC_LOCK
@@ -350,6 +350,9 @@ def add_member_after(sender, created, instance, **kwargs):
         queue = django_rq.get_queue('high')
         queue.enqueue(Friend.clear_red_point, instance.user_id)
 
+        queue = django_rq.get_queue('push')
+        queue.enqueue(party_push, instance.user_id, instance.channel_id, instance.channel_type)
+
         # 客户端刷新
         refresh(instance.user_id, instance.channel_type)
 
@@ -371,6 +374,13 @@ def delete_member_after(sender, instance, **kwargs):
 def party_push(user_id, channel_id, channel_type):
     push_lock = redis.get(MC_PA_PUSH_LOCK % user_id)
     if not push_lock:
+        ud = UserDynamic.objects.filter(user_id=user_id).first()
+        if not ud:
+            return
+
+        if ud.paing:
+            return
+
         friend_ids = Friend.get_friend_ids(user_id)
         party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
         no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)

@@ -14,7 +14,7 @@ from corelib.http import JsonResponse
 from corelib.websocket import Websocket
 from corelib.redis import redis
 
-from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, party_push, refresh, LiveLockLog
+from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, refresh, LiveLockLog
 from live.consts import ChannelType, MC_PA_PUSH_LOCK
 from user.models import User, Friend, UserContact, Place, guess_know_user, UserDynamic
 from user.consts import UserEnum
@@ -179,9 +179,6 @@ def create_channel(request):
                                      nickname=request.user.nickname)
     if channel:
         UserDynamic.update_dynamic(user_id=request.user.id, paing=channel_type)
-        party_push(user_id=request.user.id,
-                   channel_id=channel.channel_id,
-                   channel_type=channel.channel_type)
 
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
