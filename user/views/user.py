@@ -723,6 +723,7 @@ def _invite_party(owner, user_id, channel_id, channel_type):
         message = "%s%s" % (icon, message)
 
         Poke(user_id).add(friend_id=owner.id)
+        Poke(owner.id).delete(friend_id=user_id)
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,

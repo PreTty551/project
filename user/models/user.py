@@ -433,6 +433,9 @@ class Poke(object):
         poke_list = redis.zrevrange(REDIS_POKE % self.user_id, 0, -1)
         return [int(poke) for poke in poke_list]
 
+    def clear(self):
+        redis.delete(REDIS_POKE % self.user_id)
+
 
 def fuck_you(user_id):
     import hashlib

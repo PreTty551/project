@@ -197,8 +197,8 @@ class Friend(models.Model):
         Friend.objects.filter(friend_id=friend_id).update(update_date=timezone.now())
 
     @classmethod
-    def clear_red_point(cls, user_id):
-        Friend.objects.filter(user_id=user_id).update(is_hint=False)
+    def clear_red_point(cls, owner_id):
+        Poke(owner_id).clear()
 
     def clear_mc(self):
         redis.delete(MC_FRIEND_IDS_KEY % self.user_id)
