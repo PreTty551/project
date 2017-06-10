@@ -251,7 +251,13 @@ def quit_channel(request):
                 if (timezone.now() - last_pa_time).seconds > 300:
                     return JsonResponse({"feedback": True})
         return JsonResponse({"feedback": False})
-    return HttpResponseServerError()
+    else:
+        ud = UserDynamic.objects.filter(user_id=request.user.id).first()
+        ud.paing = False
+        ud.last_pa_time = timezone.now()
+        ud.save()
+        refresh(user_id=request.user.id, channel_type=channel.channel_type)
+    return JsonResponse({"feedback": False})
 
 
 @require_http_methods(["POST"])
