@@ -114,7 +114,7 @@ class Channel(models.Model):
         ignore_user_ids = list(Duty.objects.values_list("user_id", flat=True))
         if user_id in ignore_user_ids:
             ignore_user_ids.remove(int(user_id))
-            ignore_channel_ids = list(ChannelMember.objects.exclude(user_id__in=ignore_user_ids)
+            ignore_channel_ids = list(ChannelMember.objects.filter(user_id__in=ignore_user_ids)
                                                    .values_list("channel_id", flat=True))
 
             channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids)
