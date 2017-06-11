@@ -117,7 +117,7 @@ class WalletRecharge(models.Model):
 
     @classmethod
     @transaction.atomic()
-    def recharge_callback(cls, out_trade_no):
+    def recharge_callback(cls, out_trade_no, category=RECHARGE_CATEGORY):
         wr = cls.objects.filter(out_trade_no=out_trade_no, status=0).first()
         if wr and not wr.is_pay_success:
             wallet = Wallet.get(user_id=wr.user_id)
@@ -130,7 +130,7 @@ class WalletRecharge(models.Model):
                                             user_id=wr.user_id,
                                             out_trade_no=wr.id,
                                             amount=wr.amount,
-                                            category=RECHARGE_CATEGORY,
+                                            category=category,
                                             type=2,
                                             desc="充值")
                 return True
