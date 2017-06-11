@@ -1,6 +1,8 @@
-from django.core.management.base import BaseCommand
 import time
 import datetime
+
+from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 from corelib.redis import redis
 from corelib.agora import Agora
@@ -16,7 +18,8 @@ class Command(BaseCommand):
         pass
 
     def handle(self, *args, **options):
-        members = ChannelMember.objects.all()
+        d = timezone.now() - datetime.timedelta(seconds=60)
+        members = ChannelMember.objects.filter(date__lte=d)
         for member in members:
             agora = Agora(member.user_id)
             is_online = agora.query_online()

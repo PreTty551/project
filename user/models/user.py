@@ -396,13 +396,14 @@ class UserDynamic(models.Model):
     avatar = models.CharField(max_length=40, default="")
     paing = models.SmallIntegerField(default=0)
     last_pa_time = models.DateTimeField(blank=True, null=True)
-    update_date = models.DateTimeField(auto_now=True)
+    update_date = models.DateTimeField(auto_now_add=True)
 
     @classmethod
     def update_dynamic(cls, user_id, paing):
         ud = cls.objects.filter(user_id=user_id).first()
         if ud:
             ud.last_pa_time = timezone.now()
+            ud.update_date = timezone.now()
             ud.paing = paing
             ud.save()
 

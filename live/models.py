@@ -73,9 +73,7 @@ class Channel(models.Model):
     def delete_channel(self):
         for member in ChannelMember.objects.filter(channel_id=self.channel_id):
             member.delete()
-            ud = UserDynamic.objects.filter(user_id=member.user_id).first()
-            ud.paing = 0
-            ud.save()
+            UserDynamic.update_dynamic(user_id=member.user_id, paing=0)
         return True
 
     def quit_channel(self, user_id):
