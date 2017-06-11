@@ -170,7 +170,7 @@ class User(AbstractUser, PropsMixin):
         self.save()
         ud = UserDynamic.objects.filter(user_id=self.id).first()
         if ud:
-            ud.ping = 0
+            ud.paing = 0
             ud.save()
         redis.hdel(REDIS_ONLINE_USERS_KEY, self.id)
         redis.hdel(REDIS_ONLINE_USERS, self.id)
