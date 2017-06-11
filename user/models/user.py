@@ -169,8 +169,9 @@ class User(AbstractUser, PropsMixin):
         self.offline_time = timezone.now()
         self.save()
         ud = UserDynamic.objects.filter(user_id=self.id).first()
-        ud.ping = 0
-        ud.save()
+        if ud:
+            ud.ping = 0
+            ud.save()
         redis.hdel(REDIS_ONLINE_USERS_KEY, self.id)
         redis.hdel(REDIS_ONLINE_USERS, self.id)
         from live.models import ChannelMember

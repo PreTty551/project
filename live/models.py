@@ -73,8 +73,9 @@ class Channel(models.Model):
     def delete_channel(self):
         for member in ChannelMember.objects.filter(channel_id=self.channel_id):
             member.delete()
-            user = User.get(member.user_id)
-            user.paing = 0
+            ud = UserDynamic.objects.filter(user_id=member.user_id).first()
+            ud.paing = 0
+            ud.save()
         return True
 
     def quit_channel(self, user_id):
@@ -334,7 +335,7 @@ def add_member_after(sender, created, instance, **kwargs):
     if created:
         push_lock = redis.get(MC_PA_PUSH_LOCK % instance.user_id)
         if push_lock:
-            redis.set(MC_PA_PUSH_LOCK % instance.user_id, 1, 300)
+            redis.set(MC_PA_PUSH_LOCK % instance.user_id, 1, 60)
 
         LiveMediaLog.objects.create(user_id=instance.user_id,
                                     channel_id=instance.channel_id,

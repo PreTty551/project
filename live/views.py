@@ -243,7 +243,7 @@ def quit_channel(request):
             ud = UserDynamic.objects.filter(user_id=request.user.id).first()
             if ud:
                 last_pa_time = ud.last_pa_time
-                ud.paing = False
+                ud.paing = 0
                 ud.last_pa_time = timezone.now()
                 ud.save()
                 refresh(user_id=request.user.id, channel_type=channel.channel_type)
@@ -253,7 +253,7 @@ def quit_channel(request):
         return JsonResponse({"feedback": False})
     else:
         ud = UserDynamic.objects.filter(user_id=request.user.id).first()
-        ud.paing = False
+        ud.paing = 0
         ud.last_pa_time = timezone.now()
         ud.save()
         refresh(user_id=request.user.id, channel_type=channel.channel_type)
