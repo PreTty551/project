@@ -232,6 +232,9 @@ class LiveLockLog(models.Model):
 
 
 class LiveMediaLog(models.Model):
+    """
+        type: 1是直播, 2是切换到后台, 3是异常补充的log
+    """
     user_id = models.IntegerField(db_index=True)
     channel_id = models.CharField(max_length=50)
     channel_type = models.SmallIntegerField(default=0)
@@ -358,13 +361,25 @@ def add_member_after(sender, created, instance, **kwargs):
 
 @receiver(post_delete, sender=ChannelMember)
 def delete_member_after(sender, instance, **kwargs):
-    LiveMediaLog.objects.filter(user_id=instance.user_id,
-                                channel_id=instance.channel_id,
-                                status=1) \
-                        .update(end_date=timezone.now(), status=2)
+    live_log = LiveMediaLog.objects.filter(user_id=instance.user_id,
+                                           channel_id=instance.channel_id,
+                                           status=1).first()
+    if live_log:
+        live_log.end_date = timezone.now()
+        live_log.status = 2
+        live_log.save()
+    else:
+        live_log = LiveMediaLog.objects.filter(user_id=instance.user_id,
+                                               channel_id=instance.channel_id).order_by("-id").first()
+        if live_log:
+            LiveMediaLog.objects.create(user_id=instance.user_id,
+                                        channel_id=instance.channel_id,
+                                        status=2,
+                                        type=3,
+                                        date=live_log.end_date,
+                                        end_date=timezone.now())
 
     redis.hdel(REDIS_PUBLIC_PA_IDS, instance.user_id)
-
     count = ChannelMember.objects.filter(channel_id=instance.channel_id).count()
     if count == 0:
         Channel.objects.filter(channel_id=instance.channel_id).delete()
@@ -389,6 +404,11 @@ def party_push(user_id, channel_id, channel_type):
                                                           .values_list("user_id", flat=True).distinct())
 
         for friend_id in party_user_ids_in_week:
+            no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % user_id)
+            no_push_ids = [int(no_push_id) for no_push_id in no_push_ids]
+            if friend_id in no_push_ids:
+                continue
+
             fids = Friend.get_friend_ids(user_id=friend_id)
             if int(friend_id) in fids:
                 fids.remove(int(friend_id))
@@ -398,8 +418,8 @@ def party_push(user_id, channel_id, channel_type):
             if nicknames:
                 nicknames = ",".join(nicknames)
                 message = "%s 正在开PA" % nicknames
-                JPush(user_id).async_push(user_ids=[friend_id],
-                                          message=message,
-                                          apns_collapse_id="pa")
+                JPush(user_id).push(user_ids=[friend_id],
+                                    message=message,
+                                    apns_collapse_id="pa")
 
         redis.set(MC_PA_PUSH_LOCK % user_id, 1, 60)
