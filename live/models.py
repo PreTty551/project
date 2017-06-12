@@ -394,9 +394,6 @@ def party_push(user_id, channel_id, channel_type):
         if not ud:
             return
 
-        if ud.paing:
-            return
-
         friend_ids = Friend.get_friend_ids(user_id)
         party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
         no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
