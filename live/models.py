@@ -240,7 +240,7 @@ class LiveMediaLog(models.Model):
     channel_type = models.SmallIntegerField(default=0)
     type = models.SmallIntegerField(default=1)
     status = models.SmallIntegerField()
-    date = models.DateTimeField('date', auto_now_add=True)
+    date = models.DateTimeField('date', default=datetime.datetime.now)
     end_date = models.DateTimeField('end_date', default=datetime.datetime.now)
 
     class Meta:
@@ -363,14 +363,16 @@ def add_member_after(sender, created, instance, **kwargs):
 def delete_member_after(sender, instance, **kwargs):
     live_log = LiveMediaLog.objects.filter(user_id=instance.user_id,
                                            channel_id=instance.channel_id,
-                                           status=1).first()
+                                           status=1,
+                                           type=1).first()
     if live_log:
         live_log.end_date = timezone.now()
         live_log.status = 2
         live_log.save()
     else:
         live_log = LiveMediaLog.objects.filter(user_id=instance.user_id,
-                                               channel_id=instance.channel_id).order_by("-id").first()
+                                               channel_id=instance.channel_id,
+                                               type=1).order_by("-id").first()
         if live_log:
             LiveMediaLog.objects.create(user_id=instance.user_id,
                                         channel_id=instance.channel_id,
