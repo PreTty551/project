@@ -32,6 +32,7 @@ from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum, \
                         REDIS_ONLINE_USERS_KEY, REDIS_ONLINE_USERS
 from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place, UserDynamic
 from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user, Poke
+from user.models import UserReport
 from socket_server import SocketServer
 from live.models import Channel, ChannelMember, InviteParty
 from wallet.models import is_disable_wallet
@@ -810,3 +811,8 @@ def weibo5(request):
 def firxiazai(request):
     redis.incr("firxiazai")
     return redirect("http://a.app.qq.com/o/simple.jsp?pkgname=com.gouhuoapp.pa")
+
+
+def report(request):
+    user_id = request.POST.get("user_id")
+    UserReport.objects.create(user_id=request.user.id, to_user_id=user_id, type=1)

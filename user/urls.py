@@ -69,5 +69,6 @@ urlpatterns = [
     url(r'^weibo3/$', views.weibo3, name='weibo3'),
     url(r'^weibo4/$', views.weibo4, name='weibo4'),
     url(r'^weibo5/$', views.weibo5, name='weibo5'),
-    url(r'^firxiazai/$', views.firxiazai, name='firxiazai')
+    url(r'^firxiazai/$', views.firxiazai, name='firxiazai'),
+    url(r'^user/report/$', views.report, name='report')
 ]
