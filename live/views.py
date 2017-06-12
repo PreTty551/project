@@ -279,6 +279,7 @@ def signaling_key(request):
 
 @require_http_methods(["POST"])
 def user_online_callback(request):
+    return JsonResponse()
     user_id = request.POST.get("account")
     is_online = request.POST.get("is_online", True)
 
