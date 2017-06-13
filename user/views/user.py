@@ -475,6 +475,7 @@ def bind_wechat(request):
     if third_user:
         user = User.get(id=request.user.id)
         if third_user.mobile == user.mobile:
+            user.set_props_item("is_bind_wechat", 1)
             return JsonResponse()
         else:
             return JsonResponse(error=LoginError.DUPLICATE_BING)
@@ -492,6 +493,7 @@ def bind_weibo(request):
     if third_user:
         user = User.get(id=request.user.id)
         if third_user.mobile == user.mobile:
+            user.set_props_item("is_bind_weibo", 1)
             return JsonResponse()
         else:
             return JsonResponse(error=LoginError.DUPLICATE_BING)
