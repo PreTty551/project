@@ -55,3 +55,10 @@ def get_register_user(request):
     else:
         user_count = User.objects.filter(date_joined__gte=start).count()
     return render(request, 'ida/register.html', {"user_count": user_count})
+
+
+def get_user_amount(request):
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get('end_date')
+    date = datetime.datetime.strptime(start_date,"%Y-%m-%d %X")
+    end = datetime.datetime.strptime(end_date,"%Y-%m-%d %X")

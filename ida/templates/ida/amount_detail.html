@@ -1,0 +1,89 @@
+{% load staticfiles %}
+<!DOCTYPE html>  
+<html lang="zh-CN">  
+  <head>  
+    <meta charset="utf-8">  
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">  
+    <meta name="viewport" content="width=device-width, initial-scale=1">  
+     
+    <meta name="description" content="">  
+    <meta name="author" content="">  
+    <link rel="icon" href="../../favicon.ico">  
+  
+    <title>Search</title>
+  
+    <!-- Bootstrap core CSS -->    
+<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">  
+  
+<!-- <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">  --> 
+  
+<!-- <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>  --> 
+  
+<link href="{% static 'bootstrap/css/laydate.css' %}" rel="stylesheet">
+  </head>  
+  
+  <body>  
+  
+    <div class="container">  
+    <center>
+      <form class="form-inline" method="post" action="/livetime/live_time/">
+        {% csrf_token %}
+        <h3 class="form-signin-heading">好友开PA详情搜索</h3><br/>
+        <div class="form-group">
+          <label for="exampleInputName2">PA主ID：</label>
+          <input type="text" class="form-control" name='user_id' id="exampleInputName2" placeholder="PA主ID" required>
+        </div>
+        <div class="form-group">
+          <label>开始时间：</label>
+          <input type="text" id="form-control" name='start_date' required class="laydate-icon" onClick="laydate({istime: true, format: 'YYYY-MM-DD hh:mm:ss'})">
+        </div>
+        <div class="form-group">
+          <label>结束时间：</label>
+          <input type="text" id="form-control" name='end_date' required class="laydate-icon" onClick="laydate({istime: true, format: 'YYYY-MM-DD hh:mm:ss'})">
+        </div>
+        <button type="submit" class="btn btn-default">Search</button>
+      </form>
+      <div class="table-responsive">
+        <table class="table">
+          <caption></caption>
+          <thead>
+            <tr>
+              <th>PA主ID</th>
+              <th>好友ID</th>
+              <th>开始时间</th>
+              <th>结束时间</th>
+              <th>时长(分钟)</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for list in result %}
+          <tr>
+            {% for m in list %}
+            <td>{{ m }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        </div>
+
+    </center>
+    </div> <!-- /container --> 
+    <script src="{% static 'laydate.js' %}"></script>
+    <script type="text/javascript">
+      !function(){
+          laydate.skin('molv');//切换皮肤
+          laydate({elem: '#demo'});//绑定元素
+      }();
+
+      laydate({
+          elem: '#test1',
+          format: 'YYYY年MM月DD日',
+          festival: true, //显示节日
+          choose: function(datas){ //选择日期完毕的回调
+            alert('得到：'+datas);
+          }
+      });
+      </script>
+  </body>
+</html>
