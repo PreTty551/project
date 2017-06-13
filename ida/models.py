@@ -159,3 +159,8 @@ def duty_party_time(user_ids, start_date, days):
             start = end_date
         result.append(data)
     return result
+
+
+class WageUser():
+    user_id = models.IntegerField()
+    date = models.DateTimeField(default=datetime.datetime.now)
