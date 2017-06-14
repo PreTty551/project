@@ -820,8 +820,9 @@ def report(request):
 
     ru = SpecialReportUser.objects.filter(user_id=request.user.id).first()
     if ru:
+        UserReport.objects.create(user_id=request.user.id, to_user_id=report_user_id, type=2)
         BanUser.objects.create(user_id=report_user_id, desc="用户举报", second=3600 * 24)
         fuck_you(report_user_id)
-
-    UserReport.objects.create(user_id=request.user.id, to_user_id=user_id, type=1)
+    else:
+        UserReport.objects.create(user_id=request.user.id, to_user_id=report_user_id, type=1)
     return JsonResponse()
