@@ -48,6 +48,7 @@ def weibo(request):
 def get_register_user(request):
     start = request.POST.get("start", "")
     end = request.POST.get("end", "")
+<<<<<<< HEAD
 
     user_count = 0
     if request.method == "POST":
@@ -101,3 +102,13 @@ def get_user_amount_detail(request):
             return render(request, 'ida/amount_detail.html', {'result':result[0:-1], 'amounts':amounts})
         else:
             return render(request, 'ida/amount_detail.html', {'result':result})
+=======
+
+    user_count = 0
+    if request.method == "POST":
+        if end:
+            user_count = User.objects.filter(date_joined__gte=start, date_joined__lte=end, platform=1).count()
+        else:
+            user_count = User.objects.filter(date_joined__gte=start, platform=1).count()
+    return render(request, 'ida/register.html', {"user_count": user_count})
+>>>>>>> 06ee61a08a7f9f3205bf93fbc086322697d154dc

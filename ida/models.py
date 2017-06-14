@@ -165,6 +165,7 @@ class WageUser(models.Model):
     user_id = models.IntegerField()
     date = models.DateTimeField(default=datetime.datetime.now)
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 
 def user_amount(start_date, end_date):
@@ -270,5 +271,7 @@ def user_amount_detail(start_date, end_date):
             data = {'user_id':log.user_id,'date':log.date,'end_date':log.end_date,'z_time':z_time}
             datas.append(data)
     return datas
+=======
+>>>>>>> 06ee61a08a7f9f3205bf93fbc086322697d154dc
 =======
 >>>>>>> 06ee61a08a7f9f3205bf93fbc086322697d154dc

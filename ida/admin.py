@@ -13,6 +13,10 @@ class DutyAdmin(admin.ModelAdmin):
     nickname.short_description = u'昵称'
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+>>>>>>> 06ee61a08a7f9f3205bf93fbc086322697d154dc
 =======
 
 >>>>>>> 06ee61a08a7f9f3205bf93fbc086322697d154dc
