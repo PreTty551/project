@@ -131,8 +131,9 @@ def verify_sms_code(request):
             user = authenticate(username=user.username, password=user.username)
             if user is not None:
                 login(request, user)
-                if request.user.disable_login:
-                    return JsonResponse(error=LoginError.DISABLE_LOGIN)
+                error = request.user.disable_login
+                if error:
+                    return JsonResponse(error=error)
 
                 basic_info = user.basic_info()
                 basic_info["is_bind_wechat"] = user.is_bind_wechat
@@ -180,8 +181,9 @@ def wx_user_login(request):
         if user:
             user.set_password(user.username)
             user.save()
-            if user.disable_login:
-                return JsonResponse(error=LoginError.DISABLE_LOGIN)
+            error = request.user.disable_login
+            if error:
+                return JsonResponse(error=error)
 
             # 登录
             if _login(request, user):
@@ -223,8 +225,9 @@ def wb_user_login(request):
         user = User.objects.filter(mobile=third_user.mobile).first()
         user.set_password(user.username)
         user.save()
-        if user.disable_login:
-            return JsonResponse(error=LoginError.DISABLE_LOGIN)
+        error = request.user.disable_login
+        if error:
+            return JsonResponse(error=error)
 
         # 登录
         if _login(request, user):
@@ -359,8 +362,9 @@ def third_verify_sms_code(request):
     queue = django_rq.get_queue('avatar')
     queue.enqueue(update_avatar_in_third_login, temp_user.avatar, user.id)
 
-    if user.disable_login:
-        return JsonResponse(error=LoginError.DISABLE_LOGIN)
+    error = request.user.disable_login
+    if error:
+        return JsonResponse(error=error)
 
     # 登录
     if _login(request, user):
@@ -387,8 +391,9 @@ def check_login(request):
     if not (request.user and request.user.is_authenticated()):
         return JsonResponse(error=LoginError.NOT_LOGIN)
 
-    if request.user.disable_login:
-        return JsonResponse(error=LoginError.DISABLE_LOGIN)
+    error = request.user.disable_login
+    if error:
+        return JsonResponse(error=error)
 
     user = authenticate(username=request.user.username, password=request.user.username)
     login(request, user)

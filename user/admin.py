@@ -30,7 +30,7 @@ class SpecialReportUserAdmin(admin.ModelAdmin):
 
 
 class ReportUserAdmin(admin.ModelAdmin):
-    list_display = ('report_user', 'be_report_user', 'desc', 'date')
+    list_display = ('report_user', 'be_report_user', 'be_report_user_id', 'desc', 'date')
 
     def report_user(self, obj):
         u = User.get(obj.user_id)
@@ -42,12 +42,17 @@ class ReportUserAdmin(admin.ModelAdmin):
         return u.nickname
     be_report_user.short_description = u'被举报人'
 
+    def be_report_user_id(self, obj):
+        return obj.to_user_id
+    be_report_user_id.short_description = u'被举报人ID'
+
     def desc(self, obj):
-        if type == 2:
+        if obj.type == 2:
             return "自动封禁"
-        elif type == 1:
-            return "普通用户举报"
+        elif obj.type == 1:
+            return "普通举报"
         return obj.type
+    desc.short_description = u'说明'
 
 
 admin.site.unregister(User)

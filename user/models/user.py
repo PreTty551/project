@@ -23,6 +23,8 @@ from corelib.weibo import Weibo
 from corelib.utils import avatar_url, natural_time as time_format
 from corelib.mc import cache
 from corelib.redis import redis
+from corelib.errors import LoginError
+
 
 from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, \
                         REDIS_NO_PUSH_IDS, REDIS_ONLINE_USERS, REDIS_POKE
@@ -264,12 +266,11 @@ class User(AbstractUser, PropsMixin):
         banuser = BanUser.objects.filter(user_id=self.id).first()
         if banuser:
             if banuser.second == 0:
-                return True
+                return LoginError.DISABLE_LOGIN
 
             dtime = banuser.date + timedelta(seconds=banuser.second)
             if timezone.now() < dtime:
-                return True
-        return False
+                return LoginError.BAN_BY_REPORT
 
     def create_rong_token(self):
         from corelib.rong import client

@@ -170,7 +170,8 @@ class Withdrawals(models.Model):
         withdrawal_recodes = cls.objects.filter(status=WITHDRAWAL_APPLY)
         for wr in withdrawal_recodes:
             user = User.get(wr.user_id)
-            if user.disable_login:
+            error = request.user.disable_login
+            if error:
                 wr.status = WITHDRAWAL_FAIL
                 wr.wechat_recode = "APP_DISABLE"
                 wr.save()
