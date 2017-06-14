@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from django.contrib.auth.admin import UserAdmin
 
-from user.models import BanUser, User
+from user.models import BanUser, User, SpecialReportUser
 
 
 @admin.register(BanUser)
@@ -20,5 +20,15 @@ class PaUserAdmin(UserAdmin):
     ordering = ('-id',)
 
 
+class SpecialReportUserAdmin(admin.ModelAdmin):
+    list_display = ('nickname', 'date')
+
+    def nickname(self, obj):
+        u = User.get(obj.user_id)
+        return u.nickname
+    nickname.short_description = u'用户ID'
+
+
 admin.site.unregister(User)
 admin.site.register(User, PaUserAdmin)
+admin.site.register(SpecialReportUser, SpecialReportUserAdmin)

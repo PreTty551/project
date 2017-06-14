@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 
 
@@ -9,3 +11,12 @@ class UserReport(models.Model):
 
     class Meta:
         db_table = "user_report"
+
+
+class SpecialReportUser(models.Model):
+    """特殊的举报用户"""
+    user_id = models.IntegerField()
+    date = models.DateTimeField(default=datetime.datetime.now)
+
+    class Meta:
+        db_table = "special_report_user"
