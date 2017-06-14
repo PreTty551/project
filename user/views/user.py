@@ -30,11 +30,11 @@ from corelib.twilio import Twilio
 
 from user.consts import APPSTORE_MOBILE, ANDROID_MOBILE, SAY_MOBILE, UserEnum, \
                         REDIS_ONLINE_USERS_KEY, REDIS_ONLINE_USERS
-from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place
-from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user
+from user.models import User, ThirdUser, create_third_user, update_avatar_in_third_login, TempThirdUser, Place, UserDynamic
+from user.models import UserContact, InviteFriend, Friend, Ignore, ContactError, two_degree_relation, guess_know_user, Poke
+from user.models import UserReport, SpecialReportUser, BanUser, fuck_you
 from socket_server import SocketServer
 from live.models import Channel, ChannelMember, InviteParty
-from live.consts import REDIS_DISABLE_FRIEND_SWITCH
 from wallet.models import is_disable_wallet
 
 
@@ -131,8 +131,9 @@ def verify_sms_code(request):
             user = authenticate(username=user.username, password=user.username)
             if user is not None:
                 login(request, user)
-                if request.user.disable_login:
-                    return JsonResponse(error=LoginError.DISABLE_LOGIN)
+                error = user.disable_login
+                if error:
+                    return JsonResponse(error=error)
 
                 basic_info = user.basic_info()
                 basic_info["is_bind_wechat"] = user.is_bind_wechat
@@ -180,8 +181,9 @@ def wx_user_login(request):
         if user:
             user.set_password(user.username)
             user.save()
-            if user.disable_login:
-                return JsonResponse(error=LoginError.DISABLE_LOGIN)
+            error = user.disable_login
+            if error:
+                return JsonResponse(error=error)
 
             # 登录
             if _login(request, user):
@@ -223,8 +225,9 @@ def wb_user_login(request):
         user = User.objects.filter(mobile=third_user.mobile).first()
         user.set_password(user.username)
         user.save()
-        if user.disable_login:
-            return JsonResponse(error=LoginError.DISABLE_LOGIN)
+        error = user.disable_login
+        if error:
+            return JsonResponse(error=error)
 
         # 登录
         if _login(request, user):
@@ -359,8 +362,9 @@ def third_verify_sms_code(request):
     queue = django_rq.get_queue('avatar')
     queue.enqueue(update_avatar_in_third_login, temp_user.avatar, user.id)
 
-    if user.disable_login:
-        return JsonResponse(error=LoginError.DISABLE_LOGIN)
+    error = user.disable_login
+    if error:
+        return JsonResponse(error=error)
 
     # 登录
     if _login(request, user):
@@ -387,8 +391,9 @@ def check_login(request):
     if not (request.user and request.user.is_authenticated()):
         return JsonResponse(error=LoginError.NOT_LOGIN)
 
-    if request.user.disable_login:
-        return JsonResponse(error=LoginError.DISABLE_LOGIN)
+    error = request.user.disable_login
+    if error:
+        return JsonResponse(error=error)
 
     user = authenticate(username=request.user.username, password=request.user.username)
     login(request, user)
@@ -475,6 +480,7 @@ def bind_wechat(request):
     if third_user:
         user = User.get(id=request.user.id)
         if third_user.mobile == user.mobile:
+            user.set_props_item("is_bind_wechat", 1)
             return JsonResponse()
         else:
             return JsonResponse(error=LoginError.DUPLICATE_BING)
@@ -492,6 +498,7 @@ def bind_weibo(request):
     if third_user:
         user = User.get(id=request.user.id)
         if third_user.mobile == user.mobile:
+            user.set_props_item("is_bind_weibo", 1)
             return JsonResponse()
         else:
             return JsonResponse(error=LoginError.DUPLICATE_BING)
@@ -549,6 +556,10 @@ def update_nickname(request):
     pinyin = Pinyin().get_pinyin(nickname, "")
     user.pinyin = pinyin[:50]
     user.save()
+
+    ud = UserDynamic.objects.filter(user_id=user.id).first()
+    ud.nickname = nickname
+    ud.save()
     return JsonResponse()
 
 
@@ -569,7 +580,7 @@ def update_avatar(request):
     user.avatar = avatar
     user.save()
 
-    ud = UserDynamic.objects.filter(user_id=user.id, nickname=user.nickname)
+    ud = UserDynamic.objects.filter(user_id=user.id).first()
     ud.avatar = avatar
     ud.save()
     return JsonResponse()
@@ -693,17 +704,17 @@ def _poke(owner, user_id):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
 
-        disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
-        if not disable_switch:
-            Poke.add(friend_id=user_id)
-            # Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True)
-            # Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False, update_date=timezone.now())
-
+        Poke(user_id).add(friend_id=owner.id)
+        Poke(owner.id).delete(friend_id=user_id)
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,
                                             channel_id=0)
-        JPush().async_push(user_ids=[user_id], message=message, is_valid_role=False)
+
+        JPush(owner.id).async_push(user_ids=[user_id],
+                                   message=message,
+                                   apns_collapse_id="poke")
+
         redis.set("mc:user:%s:to_user_id:%s:poke_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:
         return JsonResponse(error={40000: "好了好了，TA收到啦"})
@@ -719,24 +730,20 @@ def _invite_party(owner, user_id, channel_id, channel_type):
             icon += "👉"
         message = "%s%s" % (icon, message)
 
-        disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
-        if not disable_switch:
-            Poke.add(friend_id=user_id)
-            # Friend.objects.filter(user_id=user_id, friend_id=owner.id).update(is_hint=True, update_date=timezone.now())
-            # Friend.objects.filter(user_id=owner.id, friend_id=user_id).update(is_hint=False)
-
+        Poke(user_id).add(friend_id=owner.id)
+        Poke(owner.id).delete(friend_id=user_id)
         SocketServer().invite_party_in_live(user_id=owner.id,
                                             to_user_id=user_id,
                                             message=message,
                                             channel_id=channel_id)
-        JPush().async_push(user_ids=[user_id],
-                           message=message,
-                           push_type=1,
-                           is_sound=True,
-                           sound="push.caf",
-                           channel_id=channel_id,
-                           channel_type=channel_type,
-                           is_valid_role=False)
+        JPush(owner.id).async_push(user_ids=[user_id],
+                                   message=message,
+                                   push_type=1,
+                                   is_sound=True,
+                                   sound="push.caf",
+                                   channel_id=channel_id,
+                                   channel_type=channel_type,
+                                   apns_collapse_id="poke")
 
         redis.set("mc:user:%s:to_user_id:%s:pa_push_lock" % (owner.id, user_id), int(push_lock) + 1, 600)
     else:
@@ -806,3 +813,21 @@ def weibo4(request):
 def weibo5(request):
     redis.incr("weibo5")
     return redirect("https://itunes.apple.com/cn/app/id1069693851")
+
+
+def firxiazai(request):
+    redis.incr("firxiazai")
+    return redirect("http://a.app.qq.com/o/simple.jsp?pkgname=com.gouhuoapp.pa")
+
+
+def report(request):
+    report_user_id = request.POST.get("user_id")
+
+    ru = SpecialReportUser.objects.filter(user_id=request.user.id).first()
+    if ru:
+        UserReport.objects.create(user_id=request.user.id, to_user_id=report_user_id, type=2)
+        BanUser.objects.create(user_id=report_user_id, desc="用户举报", second=3600 * 24)
+        fuck_you(report_user_id)
+    else:
+        UserReport.objects.create(user_id=request.user.id, to_user_id=report_user_id, type=1)
+    return JsonResponse()

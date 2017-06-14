@@ -14,10 +14,11 @@ from corelib.http import JsonResponse
 from corelib.websocket import Websocket
 from corelib.redis import redis
 
-from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, party_push, refresh, LiveLockLog
+from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, refresh, LiveLockLog
 from live.consts import ChannelType, MC_PA_PUSH_LOCK
-from user.models import User, Friend, UserContact, Place, guess_know_user, UserDynamic
+from user.models import User, Friend, UserContact, Place, guess_know_user, UserDynamic, ChannelLogType, LogCategory, Logs
 from user.consts import UserEnum
+from ida.models import Duty
 from widget import FriendListWidget, ChannelListWidget, ChannelInnerListWidget
 
 TEST_USER_IDS = []
@@ -97,10 +98,19 @@ def near_channel_list(request):
     #                 continue
     #
     #             channels.append(channel.to_dict())
-
     # limit = 100 - len(channels)
 
     friend_ids = Friend.get_friend_ids(user_id=request.user.id)
+
+    # 兼职人员互相看不到
+    ignore_channel_ids = []
+    ignore_user_ids = list(Duty.objects.values_list("user_id", flat=True))
+    if request.user.id in ignore_user_ids:
+        ignore_user_ids.remove(request.user.id)
+        ignore_channel_ids = ChannelMember.objects.filter(channel_type=ChannelType.public.value,
+                                                          user_id__in=ignore_user_ids) \
+                                                  .values_list("channel_id", flat=True)
+
     friend_channel_ids = list(ChannelMember.objects.filter(user_id__in=friend_ids,
                                                            channel_type=ChannelType.public.value)
                                                    .values_list("channel_id", flat=True))
@@ -124,7 +134,7 @@ def near_channel_list(request):
         channel_user_ids.append(member.user_id)
 
     channels = []
-
+    public_channel_ids = [channel_id for channel_id in public_channel_ids if channel_id not in ignore_channel_ids]
     channel_list = Channel.objects.filter(channel_id__in=public_channel_ids)
     for channel in channel_list:
         member = members_dict.get(channel.channel_id)
@@ -156,6 +166,9 @@ def near_channel_list(request):
 def create_channel(request):
     channel_type = int(request.POST.get("channel_type", ChannelType.normal.value))
 
+    if request.user.id in [179815, 180024]:
+        return HttpResponseServerError()
+
     try:
         ChannelType(channel_type)
     except ValueError:
@@ -165,10 +178,7 @@ def create_channel(request):
                                      channel_type=channel_type,
                                      nickname=request.user.nickname)
     if channel:
-        UserDynamic.update_dynamic(user_id=request.user.id, paing=True)
-        party_push(user_id=request.user.id,
-                   channel_id=channel.channel_id,
-                   channel_type=channel.channel_type)
+        UserDynamic.update_dynamic(user_id=request.user.id, paing=channel_type)
 
         agora = Agora(user_id=request.user.id)
         channel_key = agora.get_channel_madia_key(channel_name=channel.channel_id)
@@ -196,6 +206,9 @@ def invite_channel(request):
 def join_channel(request):
     channel_id = request.POST.get("channel_id")
 
+    if request.user.id in [179815, 180024]:
+        return HttpResponseServerError()
+
     if not channel_id:
         return HttpResponseBadRequest()
 
@@ -206,7 +219,7 @@ def join_channel(request):
     if not channel:
         return HttpResponseBadRequest()
 
-    UserDynamic.update_dynamic(user_id=request.user.id, paing=True)
+    UserDynamic.update_dynamic(user_id=request.user.id, paing=channel.channel_type)
     if channel.is_lock:
         return JsonResponse({"is_lock": True})
 
@@ -227,23 +240,35 @@ def quit_channel(request):
     if channel:
         is_success = channel.quit_channel(user_id=request.user.id)
         if is_success:
-            UserDynamic.update_dynamic(user_id=request.user.id, paing=False)
-            refresh(user_id=request.user.id, channel_type=channel.channel_type)
+            ud = UserDynamic.objects.filter(user_id=request.user.id).first()
+            if ud:
+                last_pa_time = ud.last_pa_time
+                ud.paing = 0
+                ud.last_pa_time = timezone.now()
+                ud.update_date = timezone.now()
+                ud.save()
+                refresh(user_id=request.user.id, channel_type=channel.channel_type)
 
-            dt = datetime.datetime.fromtimestamp(float(last_pa_time))
-            if (datetime.datetime.now() - dt).seconds > 300:
-                return JsonResponse({"feedback": True})
+                if (timezone.now() - last_pa_time).seconds > 300:
+                    return JsonResponse({"feedback": True})
         return JsonResponse({"feedback": False})
-    return HttpResponseServerError()
+    else:
+        UserDynamic.update_dynamic(user_id=request.user.id, paing=0)
+    return JsonResponse({"feedback": False})
 
 
 @require_http_methods(["POST"])
 @login_required_404
 def delete_channel(request):
     channel_id = request.POST.get("channel_id")
+    member_count = request.POST.get("member_count", "99")
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         channel.delete_channel()
+        Logs.add(user_id=request.user.id,
+                 type=ChannelLogType.delete_channel.value,
+                 category=LogCategory.channel.value,
+                 extras={"member_count": member_count})
         refresh(user_id=request.user.id, channel_type=channel.channel_type)
         return JsonResponse()
     return HttpResponseServerError()
@@ -258,6 +283,7 @@ def signaling_key(request):
 
 @require_http_methods(["POST"])
 def user_online_callback(request):
+    return JsonResponse()
     user_id = request.POST.get("account")
     is_online = request.POST.get("is_online", True)
 
@@ -384,6 +410,11 @@ def poke(request):
         for i in list(range(int(push_lock))):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
+
+        Logs.add(user_id=request.user.id,
+                 type=ChannelLogType.delete_channel.value,
+                 category=LogCategory.channel.value,
+                 extras={"member_count": member_count})
 
         SocketServer().invite_party_in_live(user_id=request.user.id,
                                             to_user_id=receiver_id,

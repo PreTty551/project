@@ -31,6 +31,7 @@ def weibo(request):
     weibo3 = redis.get("weibo3")
     weibo4 = redis.get("weibo4")
     weibo5 = redis.get("weibo5")
+    fir = redis.get("firxiazai")
 
     data = {
         'weibo1': weibo1,
@@ -38,22 +39,22 @@ def weibo(request):
         'weibo3': weibo3,
         'weibo4': weibo4,
         'weibo5': weibo5,
+        'firxiazai': fir,
     }
 
     return render(request, 'ida/weibo.html', data)
 
 
 def get_register_user(request):
-    start = request.GET.get("start", "")
-    end = request.GET.get("end", "")
+    start = request.POST.get("start", "")
+    end = request.POST.get("end", "")
 
-    if not start:
-        return HttpResponse("error")
-
-    if end:
-        user_count = User.objects.filter(date_joined__gte=start, date_joined__lte=end).count()
-    else:
-        user_count = User.objects.filter(date_joined__gte=start).count()
+    user_count = 0
+    if request.method == "POST":
+        if end:
+            user_count = User.objects.filter(date_joined__gte=start, date_joined__lte=end, platform=1).count()
+        else:
+            user_count = User.objects.filter(date_joined__gte=start, platform=1).count()
     return render(request, 'ida/register.html', {"user_count": user_count})
 
 

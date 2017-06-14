@@ -28,3 +28,4 @@ REDIS_ONLINE_USERS_KEY = 'online:user_ids'
 REDIS_ONLINE_USERS = "online_user_ids"
 REDIS_POKE = "user:%s:poke"
 REDIS_NO_PUSH_IDS = "u:%s:no_push"
+REDIS_FRIEND_DATE = "u:%s:friend_date"

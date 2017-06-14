@@ -16,9 +16,10 @@ from corelib.mc import hlcache
 from corelib.redis import redis
 from corelib.jiguang import JPush
 
-from user.models import User, Friend
+from user.models import User, Friend, UserDynamic
+from user.consts import REDIS_NO_PUSH_IDS
 from .consts import ChannelType, MC_INVITE_PARTY, MC_PA_PUSH_LOCK, REDIS_PUBLIC_PA_IDS, \
-                    REDIS_PUBLIC_LOCK, REDIS_DISABLE_FRIEND_SWITCH
+                    REDIS_PUBLIC_LOCK
 from socket_server import SocketServer, EventType
 
 
@@ -72,8 +73,7 @@ class Channel(models.Model):
     def delete_channel(self):
         for member in ChannelMember.objects.filter(channel_id=self.channel_id):
             member.delete()
-            user = User.get(member.user_id)
-            user.paing = 0
+            UserDynamic.update_dynamic(user_id=member.user_id, paing=0)
         return True
 
     def quit_channel(self, user_id):
@@ -108,7 +108,21 @@ class Channel(models.Model):
         user_ids = [user_id]
         user_ids.extend(friend_ids)
 
-        channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids).values_list("channel_id", flat=True))
+        # 兼职人员互相看不到
+        from ida.models import Duty
+        ignore_user_ids = list(Duty.objects.values_list("user_id", flat=True))
+        if user_id in ignore_user_ids:
+            ignore_user_ids.remove(int(user_id))
+            ignore_channel_ids = list(ChannelMember.objects.filter(user_id__in=ignore_user_ids)
+                                                   .values_list("channel_id", flat=True))
+
+            channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids)
+                                                    .exclude(channel_id__in=ignore_channel_ids)
+                                                    .values_list("channel_id", flat=True))
+        else:
+            channel_ids = list(ChannelMember.objects.filter(user_id__in=user_ids)
+                                                    .values_list("channel_id", flat=True))
+
         member_list = ChannelMember.objects.filter(channel_id__in=channel_ids)
 
         members = []
@@ -218,12 +232,15 @@ class LiveLockLog(models.Model):
 
 
 class LiveMediaLog(models.Model):
+    """
+        type: 1是直播, 2是切换到后台, 3是异常补充的log
+    """
     user_id = models.IntegerField(db_index=True)
     channel_id = models.CharField(max_length=50)
     channel_type = models.SmallIntegerField(default=0)
     type = models.SmallIntegerField(default=1)
     status = models.SmallIntegerField()
-    date = models.DateTimeField('date', auto_now_add=True)
+    date = models.DateTimeField('date', default=datetime.datetime.now)
     end_date = models.DateTimeField('end_date', default=datetime.datetime.now)
 
     class Meta:
@@ -319,7 +336,7 @@ def add_member_after(sender, created, instance, **kwargs):
     if created:
         push_lock = redis.get(MC_PA_PUSH_LOCK % instance.user_id)
         if push_lock:
-            redis.set(MC_PA_PUSH_LOCK % instance.user_id, 1, 300)
+            redis.set(MC_PA_PUSH_LOCK % instance.user_id, 1, 60)
 
         LiveMediaLog.objects.create(user_id=instance.user_id,
                                     channel_id=instance.channel_id,
@@ -332,11 +349,11 @@ def add_member_after(sender, created, instance, **kwargs):
         # ========= 以下是异步操作 =========
 
         # 刷新好友列表顺序和清除红点
-        disable_switch = redis.get(REDIS_DISABLE_FRIEND_SWITCH)
-        if not disable_switch:
-            queue = django_rq.get_queue('high')
-            queue.enqueue(Friend.update_friend_list, instance.user_id)
-            queue.enqueue(Friend.clear_red_point, instance.user_id)
+        queue = django_rq.get_queue('high')
+        queue.enqueue(Friend.clear_red_point, instance.user_id)
+
+        queue = django_rq.get_queue('push')
+        queue.enqueue(party_push, instance.user_id, instance.channel_id, instance.channel_type)
 
         # 客户端刷新
         refresh(instance.user_id, instance.channel_type)
@@ -344,13 +361,27 @@ def add_member_after(sender, created, instance, **kwargs):
 
 @receiver(post_delete, sender=ChannelMember)
 def delete_member_after(sender, instance, **kwargs):
-    LiveMediaLog.objects.filter(user_id=instance.user_id,
-                                channel_id=instance.channel_id,
-                                status=1) \
-                        .update(end_date=timezone.now(), status=2)
+    live_log = LiveMediaLog.objects.filter(user_id=instance.user_id,
+                                           channel_id=instance.channel_id,
+                                           status=1,
+                                           type=1).first()
+    if live_log:
+        live_log.end_date = timezone.now()
+        live_log.status = 2
+        live_log.save()
+    else:
+        live_log = LiveMediaLog.objects.filter(user_id=instance.user_id,
+                                               channel_id=instance.channel_id,
+                                               type=1).order_by("-id").first()
+        if live_log:
+            LiveMediaLog.objects.create(user_id=instance.user_id,
+                                        channel_id=instance.channel_id,
+                                        status=2,
+                                        type=3,
+                                        date=live_log.end_date,
+                                        end_date=timezone.now())
 
     redis.hdel(REDIS_PUBLIC_PA_IDS, instance.user_id)
-
     count = ChannelMember.objects.filter(channel_id=instance.channel_id).count()
     if count == 0:
         Channel.objects.filter(channel_id=instance.channel_id).delete()
@@ -359,48 +390,35 @@ def delete_member_after(sender, instance, **kwargs):
 def party_push(user_id, channel_id, channel_type):
     push_lock = redis.get(MC_PA_PUSH_LOCK % user_id)
     if not push_lock:
-        bulk_ids = []
-        ids = []
-        i = 0
+        ud = UserDynamic.objects.filter(user_id=user_id).first()
+        if not ud:
+            return
 
-        user = User.get(id=user_id)
-        # friend_ids = Friend.get_friends_by_online_push(user_id=user_id)
-        # party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
-        # no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
-        #
-        # pre_week = timezone.now() - datetime.timedelta(days=7)
-        # party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=no_party_friend_ids)
-        #                                                   .values_list("user_id", flat=True).distinct())
+        friend_ids = Friend.get_friend_ids(user_id)
+        party_friend_ids = ChannelMember.objects.filter(user_id__in=friend_ids).values_list("user_id", flat=True)
+        no_party_friend_ids = set(party_friend_ids) ^ set(friend_ids)
 
-        # for friend_id in party_user_ids_in_week:
-        #     fids = Friend.get_friend_ids(user_id=friend_id)
-        #     if int(user_id) in fids:
-        #         fids.remove(int(user_id))
-        #     if int(friend_id) in fids:
-        #         fids.remove(int(friend_id))
-        #
-        #     party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
-        #     nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
-        #     if nicknames:
-        #         nicknames = ",".join(nicknames)
-        #         message = "%s 正在开PA" % nicknames
-        #         JPush().async_push(user_ids=[friend_id],
-        #                            message=message,
-        #                            push_type=1,
-        #                            channel_id=channel_id,
-        #                            channel_type=channel_type)
-        #         SocketServer().invite_party_in_live(user_id=user.id,
-        #                                             to_user_id=friend_id,
-        #                                             message=message,
-        #                                             channel_id=channel_id)
+        pre_week = timezone.now() - datetime.timedelta(days=7)
+        party_user_ids_in_week = list(LiveMediaLog.objects.filter(date__gte=pre_week, user_id__in=no_party_friend_ids)
+                                                          .values_list("user_id", flat=True).distinct())
 
-        party_friend_ids = Friend.get_friend_ids(user_id=user_id)
-        message = "%s 正在开PA" % user.nickname
-        JPush(user_id=user_id).async_batch_push(user_ids=party_friend_ids,
-                                                message=message,
-                                                push_type=1,
-                                                channel_id=channel_id,
-                                                channel_type=channel_type,
-                                                apns_collapse_id="pa")
+        for friend_id in party_user_ids_in_week:
+            no_push_ids = redis.hkeys(REDIS_NO_PUSH_IDS % user_id)
+            no_push_ids = [int(no_push_id) for no_push_id in no_push_ids]
+            if friend_id in no_push_ids:
+                continue
 
-        redis.set(MC_PA_PUSH_LOCK % user_id, 1, 300)
+            fids = Friend.get_friend_ids(user_id=friend_id)
+            if int(friend_id) in fids:
+                fids.remove(int(friend_id))
+
+            party_user_ids = ChannelMember.objects.filter(user_id__in=fids).values_list("user_id", flat=True)
+            nicknames = [User.get(id=uid).nickname for uid in party_user_ids]
+            if nicknames:
+                nicknames = ",".join(nicknames)
+                message = "%s 正在开PA" % nicknames
+                JPush(user_id).push(user_ids=[friend_id],
+                                    message=message,
+                                    apns_collapse_id="pa")
+
+        redis.set(MC_PA_PUSH_LOCK % user_id, 1, 60)

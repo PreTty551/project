@@ -70,5 +70,5 @@ class UsersTestCase(TransactionTestCase):
         User.objects.add_user(nickname="bbb", mobile="18334793472")
         BanUser.add(user_id=2, second=86400)
         user2 = User.get(id=2)
-        assert user.disable_login is False
-        assert user2.disable_login is True
+        assert user.disable_login is None
+        assert user2.disable_login

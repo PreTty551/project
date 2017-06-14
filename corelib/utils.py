@@ -4,6 +4,8 @@ import arrow
 import json
 import psutil
 
+from django.conf import settings
+
 
 def random_str(num=10):
     num_list = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
@@ -35,3 +37,10 @@ def send_msg_to_dingding(msg_info, access_token):
     p1 = psutil.Popen(["curl", "-X", "POST", "-H", "Content-Type: application/json", "--data", payload,
                       "https://oapi.dingtalk.com/robot/send?access_token=%s" % access_token])
     p1.communicate()
+
+
+def avatar_url(avatar):
+    if ".jpg" in avatar:
+        return "%s/%s@base@tag=imgScale&w=150&h=150" % (settings.AVATAR_BASE_URL, avatar)
+    else:
+        return "http://img.gouhuoapp.com/%s?imageView2/1/w/150/h/150/format/jpg/q/80" % avatar

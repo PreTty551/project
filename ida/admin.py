@@ -12,6 +12,10 @@ class DutyAdmin(admin.ModelAdmin):
         return u.nickname
     nickname.short_description = u'昵称'
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 06ee61a08a7f9f3205bf93fbc086322697d154dc
 class WageUserAdmin(admin.ModelAdmin):
     list_display = ('user_id', 'date')
 

@@ -2,6 +2,7 @@
 import uuid
 import random
 import datetime
+import time
 
 from datetime import date, timedelta
 from itertools import permutations
@@ -19,12 +20,14 @@ from django.contrib.auth.models import AbstractUser, UserManager as BaseUserMana
 from corelib.qiniucloud import Qiniu
 from corelib.props import PropsMixin
 from corelib.weibo import Weibo
-from corelib.utils import natural_time as time_format
+from corelib.utils import avatar_url, natural_time as time_format
 from corelib.mc import cache
 from corelib.redis import redis
+from corelib.errors import LoginError
+
 
 from user.consts import UserEnum, MC_USER_KEY, EMOJI_LIST, REDIS_ONLINE_USERS_KEY, \
-                        REDIS_NO_PUSH_IDS, REDIS_ONLINE_USERS
+                        REDIS_NO_PUSH_IDS, REDIS_ONLINE_USERS, REDIS_POKE
 from .place import Place
 
 
@@ -167,7 +170,10 @@ class User(AbstractUser, PropsMixin):
     def offline(self):
         self.offline_time = timezone.now()
         self.save()
-        self.paing = 0
+        ud = UserDynamic.objects.filter(user_id=self.id).first()
+        if ud:
+            ud.paing = 0
+            ud.save()
         redis.hdel(REDIS_ONLINE_USERS_KEY, self.id)
         redis.hdel(REDIS_ONLINE_USERS, self.id)
         from live.models import ChannelMember
@@ -260,12 +266,11 @@ class User(AbstractUser, PropsMixin):
         banuser = BanUser.objects.filter(user_id=self.id).first()
         if banuser:
             if banuser.second == 0:
-                return True
+                return LoginError.DISABLE_LOGIN
 
             dtime = banuser.date + timedelta(seconds=banuser.second)
             if timezone.now() < dtime:
-                return True
-        return False
+                return LoginError.BAN_BY_REPORT
 
     def create_rong_token(self):
         from corelib.rong import client
@@ -387,18 +392,19 @@ class UserDynamic(models.Model):
     """ 这个表记录用户的一些动态信息
         为了查询, 冗余一些user基本信息
     """
-    user_id = models.IntegerField()
+    user_id = models.IntegerField(unique=True)
     nickname = models.CharField(max_length=50)
     avatar = models.CharField(max_length=40, default="")
-    is_paing = models.BooleanField(default=False)
-    last_pa_time = models.DateTimeField()
-    update_date = models.DateTimeField(auto_now=True)
+    paing = models.SmallIntegerField(default=0)
+    last_pa_time = models.DateTimeField(blank=True, null=True)
+    update_date = models.DateTimeField(auto_now_add=True)
 
     @classmethod
     def update_dynamic(cls, user_id, paing):
         ud = cls.objects.filter(user_id=user_id).first()
         if ud:
-            ud.last_pa_time = time.time()
+            ud.last_pa_time = timezone.now()
+            ud.update_date = timezone.now()
             ud.paing = paing
             ud.save()
 
@@ -408,8 +414,8 @@ class UserDynamic(models.Model):
             "id": self.user_id,
             "nickname": self.nickname,
             "display_nickname": self.nickname,
-            "avatar": self.avatar,
-            "is_paing": self.is_paing,
+            "avatar_url": avatar_url(self.avatar),
+            "paing": self.paing,
             "last_pa_time": self.last_pa_time,
             "update_date": self.update_date
         }
@@ -427,8 +433,11 @@ class Poke(object):
         redis.zrem(REDIS_POKE % self.user_id, friend_id)
 
     def list(self):
-        poke_list = redis.zrevrangebyscore(REDIS_POKE % self.user_id)
-        return [poke.decode() for poke in poke_list]
+        poke_list = redis.zrevrange(REDIS_POKE % self.user_id, 0, -1)
+        return [int(poke) for poke in poke_list]
+
+    def clear(self):
+        redis.delete(REDIS_POKE % self.user_id)
 
 
 def fuck_you(user_id):

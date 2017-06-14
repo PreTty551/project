@@ -43,3 +43,4 @@ class LoginError(BaseError):
     PA_ALREADY_USED = ErrorCodeField(10013, ugettext("Pa已使用"))
     DUPLICATE_BING = ErrorCodeField(10014, ugettext("绑定失败, 账号已被绑定"))
     RE_PAID_ERROR = ErrorCodeField(10015, ugettext("PA号必须以字母开头，长度为3～16个字符，只能使用字母、数字和下划线。"))
+    BAN_BY_REPORT = ErrorCodeField(10016, ugettext("由于多次被用户举报，你的帐号已被封禁24小时"))
