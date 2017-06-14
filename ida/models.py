@@ -223,8 +223,6 @@ def user_amount(start_date, end_date):
             data = {'user_id':log.user_id,'date':log.date,'end_date':log.end_date,'z_time':z_time,'amount':amount}
 
             datas.append(data)
-            print(data)
-            print(datas)
         a.append(amounts)
     datas.append(a[0])
     return datas
@@ -238,7 +236,6 @@ def user_amount_detail(start_date, end_date):
     for ulist in qset:
         tup = (ulist.user_id,ulist.date)
         user_list.append(tup)
-    print(user_list)
     for user_id, create_date in user_list:
         # 查询这个人所有的好友
         friend_ids = Friend.objects.filter(friend_id=user_id, date__gte=create_date) \

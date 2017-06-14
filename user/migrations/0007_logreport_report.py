@@ -12,21 +12,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='LogReport',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('user_id', models.IntegerField()),
-                ('user_reported_id', models.IntegerField()),
-                ('date', models.DateTimeField(auto_now_add=True)),
-            ],
-        ),
-        migrations.CreateModel(
-            name='Report',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('user_id', models.IntegerField()),
-                ('date', models.DateTimeField(auto_now_add=True)),
-            ],
-        ),
+        
     ]

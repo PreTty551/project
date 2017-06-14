@@ -75,7 +75,6 @@ def get_user_amount(request):
             end = datetime.datetime.strftime(end, "%Y-%m-%d %X")
         if(len(result) > 0):
             amounts = result[-1]
-            print(amounts)
             return render(request, 'ida/amount.html', {'result':result, 'amounts':amounts, 'date':date, 'end':end})
         else:
             return render(request, 'ida/amount.html', {'result':result})
