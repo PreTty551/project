@@ -8,4 +8,4 @@ from .init_data import init_data_to_user
 from .guess_know import guess_know_user, two_degree_relation
 from .feedback import FeedBack
 from .report import UserReport, SpecialReportUser
-# from .log import Logs
+from .log import Logs, ChannelLogType, LogCategory

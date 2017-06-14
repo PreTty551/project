@@ -14,9 +14,9 @@ from corelib.http import JsonResponse
 from corelib.websocket import Websocket
 from corelib.redis import redis
 
-from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, refresh, LiveLockLog
+from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, refresh, LiveLockLog, Logs
 from live.consts import ChannelType, MC_PA_PUSH_LOCK
-from user.models import User, Friend, UserContact, Place, guess_know_user, UserDynamic
+from user.models import User, Friend, UserContact, Place, guess_know_user, UserDynamic, ChannelLogType, LogCategory
 from user.consts import UserEnum
 from ida.models import Duty
 from widget import FriendListWidget, ChannelListWidget, ChannelInnerListWidget
@@ -254,7 +254,6 @@ def quit_channel(request):
         return JsonResponse({"feedback": False})
     else:
         UserDynamic.update_dynamic(user_id=request.user.id, paing=0)
-        refresh(user_id=request.user.id, channel_type=channel.channel_type)
     return JsonResponse({"feedback": False})
 
 
@@ -262,9 +261,14 @@ def quit_channel(request):
 @login_required_404
 def delete_channel(request):
     channel_id = request.POST.get("channel_id")
+    member_count = request.POST.get("member_count", "99")
     channel = Channel.get_channel(channel_id=channel_id)
     if channel:
         channel.delete_channel()
+        Logs.add(user_id=request.user.id,
+                 type=ChannelLogType.delete_channel.value,
+                 category=LogCategory.channel.value,
+                 extras={"member_count": member_count})
         refresh(user_id=request.user.id, channel_type=channel.channel_type)
         return JsonResponse()
     return HttpResponseServerError()
@@ -406,6 +410,11 @@ def poke(request):
         for i in list(range(int(push_lock))):
             icon += u"👉"
         message = u"%s%s" % (icon, message)
+
+        Logs.add(user_id=request.user.id,
+                 type=ChannelLogType.delete_channel.value,
+                 category=LogCategory.channel.value,
+                 extras={"member_count": member_count})
 
         SocketServer().invite_party_in_live(user_id=request.user.id,
                                             to_user_id=receiver_id,
