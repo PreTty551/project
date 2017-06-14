@@ -131,7 +131,7 @@ def verify_sms_code(request):
             user = authenticate(username=user.username, password=user.username)
             if user is not None:
                 login(request, user)
-                error = request.user.disable_login
+                error = user.disable_login
                 if error:
                     return JsonResponse(error=error)
 
@@ -181,7 +181,7 @@ def wx_user_login(request):
         if user:
             user.set_password(user.username)
             user.save()
-            error = request.user.disable_login
+            error = user.disable_login
             if error:
                 return JsonResponse(error=error)
 
@@ -225,7 +225,7 @@ def wb_user_login(request):
         user = User.objects.filter(mobile=third_user.mobile).first()
         user.set_password(user.username)
         user.save()
-        error = request.user.disable_login
+        error = user.disable_login
         if error:
             return JsonResponse(error=error)
 
@@ -362,7 +362,7 @@ def third_verify_sms_code(request):
     queue = django_rq.get_queue('avatar')
     queue.enqueue(update_avatar_in_third_login, temp_user.avatar, user.id)
 
-    error = request.user.disable_login
+    error = user.disable_login
     if error:
         return JsonResponse(error=error)
 
