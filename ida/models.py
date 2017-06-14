@@ -210,18 +210,6 @@ def user_amount(start_date, end_date):
 
             #moneys[time_uid] = money
             z_time = (seconds // 60)
-
-        # """
-        # out_trade_no = random_str()
-        # WalletRecharge.objects.create(user_id=user_id,
-        #                               out_trade_no=out_trade_no,
-        #                               amount=amount * 100)
-        # WalletRecharge.recharge_callback(out_trade_no=out_trade_no, category=4)
-        # """
-            # data.append(log.date)
-            # data.append(log.user_id)
-            # data.append(z_time)
-            # data.append(amount)
             data = {'user_id':log.user_id,'date':log.date,'end_date':log.end_date,'z_time':z_time,'amount':amount}
 
             datas.append(data)
