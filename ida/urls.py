@@ -10,4 +10,5 @@ urlpatterns = [
     url(r'^ida/weibo/$', views.weibo, name='weibo'),
     url(r'^ida/register/search/$', views.get_register_user, name='get_register_user'),
     url(r'^ida/user_amount/$', views.get_user_amount, name='get_user_amount'),
+    url(r'^ida/user_amount_detail/$', views.get_user_amount_detail, name='get_user_amount_detail'),
 ]
