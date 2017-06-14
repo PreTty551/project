@@ -14,9 +14,9 @@ from corelib.http import JsonResponse
 from corelib.websocket import Websocket
 from corelib.redis import redis
 
-from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, refresh, LiveLockLog, Logs
+from live.models import Channel, ChannelMember, GuessWord, InviteParty, LiveMediaLog, refresh, LiveLockLog
 from live.consts import ChannelType, MC_PA_PUSH_LOCK
-from user.models import User, Friend, UserContact, Place, guess_know_user, UserDynamic, ChannelLogType, LogCategory
+from user.models import User, Friend, UserContact, Place, guess_know_user, UserDynamic, ChannelLogType, LogCategory, Logs
 from user.consts import UserEnum
 from ida.models import Duty
 from widget import FriendListWidget, ChannelListWidget, ChannelInnerListWidget
