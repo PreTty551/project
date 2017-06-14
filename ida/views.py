@@ -1,10 +1,10 @@
+import datetime
 from django.shortcuts import render
 from django.http import HttpResponse
 
 from corelib.redis import redis
-from ida.models import duty_party_time
+from ida.models import duty_party_time, user_amount, user_amount_detail
 from user.models import User
-
 
 def duty_live_party_time(request):
     user_ids = request.GET.get("user_ids", "")
@@ -56,3 +56,48 @@ def get_register_user(request):
         else:
             user_count = User.objects.filter(date_joined__gte=start, platform=1).count()
     return render(request, 'ida/register.html', {"user_count": user_count})
+
+
+def get_user_amount(request):
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get('end_date')
+    if(start_date and end_date):
+        date = datetime.datetime.strptime(start_date, "%Y-%m-%d %X")
+        end = datetime.datetime.strptime(end_date, "%Y-%m-%d %X")
+    else:
+        date = datetime.datetime.now()
+        end = datetime.datetime.now()
+
+    result = []
+    if request.method == 'GET':
+        result = user_amount(start_date=date, end_date=end)
+        if(result):
+            date = datetime.datetime.strftime(date, "%Y-%m-%d %X")
+            end = datetime.datetime.strftime(end, "%Y-%m-%d %X")
+        if(len(result) > 0):
+            amounts = result[-1]
+            return render(request, 'ida/amount.html', {'result':result, 'amounts':amounts, 'date':date, 'end':end})
+        else:
+            return render(request, 'ida/amount.html', {'result':result})
+
+
+def get_user_amount_detail(request):
+    result = []
+    if request.method == 'GET':
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+
+        if(start_date and end_date):
+            date = datetime.datetime.strptime(start_date, "%Y-%m-%d %X")
+            end = datetime.datetime.strptime(end_date, "%Y-%m-%d %X")
+        else:
+            date = datetime.datetime.now()
+            end = datetime.datetime.now()
+
+        result = user_amount_detail(start_date=date, end_date=end)
+        if(len(result) > 0):
+            amounts = result[-1]
+            print(amounts)
+            return render(request, 'ida/amount_detail.html', {'result':result[0:-1], 'amounts':amounts})
+        else:
+            return render(request, 'ida/amount_detail.html', {'result':result})

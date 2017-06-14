@@ -1,0 +1,83 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>兼职人员开pa时长</title>
+
+    <!-- Bootstrap core CSS -->
+<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">  -->
+
+<!-- <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>  -->
+
+<link href="{% static 'bootstrap/css/laydate.css' %}" rel="stylesheet">
+  </head>
+
+  <body>
+
+    <div class="container">
+    <center>
+      <form class="form-inline" method="get" action="/ida/user_amount/" id='form'>
+        <h2 class="form-signin-heading">兼职人员金额显示页面</h2><br/>
+        <div class="form-group">
+          <label>开始时间：</label>
+          <input type="text" id="form-control" name='start_date' required class="laydate-icon" onclick="laydate({istime: true, format: 'YYYY-MM-DD hh:mm:ss'})">
+        </div>
+        <div class="form-group">
+          <label>结束时间：</label>
+          <input type="text" name='end_date' required class="laydate-icon" onclick="laydate({istime: true, format: 'YYYY-MM-DD hh:mm:ss'})">
+        </div>
+        <button type="submit" class="btn btn-default">Search</button>
+      </form>
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <caption>总金额：<b>{{ amounts }}</b>元</caption>
+          <tbody>
+            <tr>
+              <th>日期</th>
+              <th>PA主ID</th>
+              <th>时长</th>
+              <th>金额</th>
+            </tr>
+            {% for res in result %}
+            <tr>
+              <td>{{ res.date }}</td>
+              <td><a href="{% url 'get_user_amount_detail' %}?start_date={{date}}&end_date={{end}}">{{ res.user_id }}</a></td>
+              <td>{{ res.z_time }}</td>
+              <td>{{ res.amount }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+
+    </center>
+    </div> <!-- /container -->
+    <script type="text/javascript" src="{% static 'laydate.js' %}"></script>
+    <script type="text/javascript">
+      !function(){
+          laydate.skin('molv');//切换皮肤
+          laydate({elem: '#demo'});//绑定元素
+      }();
+
+      laydate({
+          elem: '#test1',
+          format: 'YYYY年MM月DD日',
+          festival: true, //显示节日
+          choose: function(datas){ //选择日期完毕的回调
+            alert('得到：'+datas);
+          }
+      });
+
+      </script>
+  </body>
+</html>

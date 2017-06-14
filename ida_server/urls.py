@@ -33,6 +33,7 @@ urlpatterns = [
     url(r'^apple-app-site-association$', file_download),
     url(r'^android_download/', android_download),
     url(r'^clause/$', views.clause),
+    url(r'^ida/', include('ida.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
