@@ -24,13 +24,9 @@ class Command(BaseCommand):
         start = '2017-06-08'
         end = '2017-06-09'
 
-        user_list = [(157123, '2017-06-08'), (167659, '2017-06-08'), (174136, '2017-06-08'), (89348, '2017-06-08'), \
-                    (173935, '2017-06-08'), (183067, '2017-06-10'), (81402, '2017-06-10'), (182941, '2017-06-10'), \
-                    (167, '2017-06-10'), (181621, '2017-06-10'), (172024, '2017-06-10'), \
-                    (246, '2017-06-10'), (182706, '2017-06-10'), (544, '2017-06-10')]
-
+        user_list = WageUser.objects.values_list("user_id", "date")
         for user_id, create_date in user_list:
-            print("user_id=",user_id)
+            print("user_id=", user_id)
             # 查询这个人所有的好友
             friend_ids = Friend.objects.filter(friend_id=user_id, date__gte=create_date) \
                                        .values_list("user_id", flat=True)
@@ -60,14 +56,18 @@ class Command(BaseCommand):
                 elif m:
                     wages += m
 
-                #moneys[time_uid] = money
                 z_time.append(seconds // 60)
 
-            out_trade_no = random_str()
-            WalletRecharge.objects.create(user_id=user_id,
-                                          out_trade_no=out_trade_no,
-                                          amount=wages * 100)
-            WalletRecharge.recharge_callback(out_trade_no=out_trade_no, category=4)
+            if amount > 0:
+                out_trade_no = random_str()
+                WalletRecharge.objects.create(user_id=user_id,
+                                              out_trade_no=out_trade_no,
+                                              amount=wages * 100)
+                WalletRecharge.recharge_callback(out_trade_no=out_trade_no, category=4)
+
+                from corelib.utils import send_msg_to_dingding
+                token = "f733841a6d71aee77fdc15b29758469451407eeb49b7a9fa47e140f2dab15947"
+                send_msg_to_dingding("给%s发工资: %s元" % (user_id, amount), token)
 
             print(z_time)
             print("time_uids", time_uids)
